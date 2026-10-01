@@ -10,7 +10,7 @@ from pdf_processor import (
     get_monthly_stats,
     PDFS_DIR
 )
-from ticket_ocr import get_monthly_summary
+from ticket_ocr import extract_data_from_image, get_monthly_summary
 from excel_exporter import generate_excel_report, generate_csv_report
 
 app = FastAPI(title="Escáner de Tickets Factura A")
@@ -35,6 +35,22 @@ async def serve_index():
     if not index_path:
         raise HTTPException(status_code=404, detail="Plantilla index.html no encontrada")
     return index_path.read_text(encoding="utf-8")
+
+@app.post("/api/scan-ocr-preview")
+async def scan_ocr_preview(file: UploadFile = File(...)):
+    """Pre-lectura ultra rápida para auto-completar los campos antes de guardar."""
+    try:
+        content = await file.read()
+        if not content:
+            return JSONResponse(content={"vendor": "", "total": 0.0})
+        data = extract_data_from_image(content, filename_hint=file.filename or "")
+        return JSONResponse(content={
+            "vendor": data.get("vendor", ""),
+            "total": data.get("total", 0.0),
+            "date": data.get("date", "")
+        })
+    except Exception as e:
+        return JSONResponse(content={"vendor": "", "total": 0.0, "error": str(e)})
 
 @app.post("/api/upload")
 async def upload_ticket(

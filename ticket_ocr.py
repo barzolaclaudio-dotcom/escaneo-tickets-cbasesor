@@ -14,7 +14,7 @@ DATA_DIR = BASE_DIR / "Datos_Mensuales"
 DATA_DIR.mkdir(exist_ok=True)
 
 def parse_amount(text_str: str) -> float:
-    """Convierte cadenas de texto de montos a float."""
+    """Convierte cadenas de texto de montos a float con precisión."""
     if not text_str:
         return 0.0
     try:
@@ -29,8 +29,13 @@ def parse_amount(text_str: str) -> float:
 
 def extract_data_from_image(image_bytes: bytes, filename_hint: str = "", user_vendor: str = None, user_total: float = None) -> dict:
     """
-    Analiza la imagen del ticket mediante OCR y combina los datos ingresados por el usuario.
-    Calcula automáticamente Neto e IVA Crédito Fiscal.
+    Analiza el ticket extrayendo estrictamente lo que informa el comprobante:
+    - Razón Social / Comercio
+    - CUIT
+    - Tipo de Comprobante
+    - Fecha
+    - Lectura directa de IVA 21%, IVA 10.5% e IVA 27% (sin cálculos genéricos)
+    - Monto Total
     """
     raw_text = ""
     try:
@@ -47,27 +52,32 @@ def extract_data_from_image(image_bytes: bytes, filename_hint: str = "", user_ve
 
     lines = [line.strip() for line in raw_text.split('\n') if line.strip()]
     
-    # 1. Vendor / Comercio
-    vendor = user_vendor if user_vendor and user_vendor.strip() else None
-    if not vendor:
-        for line in lines[:5]:
-            if len(line) > 3 and not re.search(r'factura|cuit|ticket|original|fecha', line, re.I):
-                vendor = line.title()
-                break
-        if not vendor:
-            vendor = "Comercio General"
-
-    # 2. Total
+    # 1. Total (Leído desde abajo hacia arriba)
     total = user_total if (user_total is not None and user_total > 0) else 0.0
     if total <= 0:
-        total_match = re.search(r'(?:TOTAL|IMPORTE TOTAL|\bTOTAL \$)\s*[:=]?\s*\$?\s*([\d\.,]+)', raw_text, re.I)
-        if total_match:
-            total = parse_amount(total_match.group(1))
-        else:
+        for line in reversed(lines):
+            m = re.search(r'^\s*(?:TOTAL|RECIBIMOS|SUMA DE SUS PAGOS|EFECTIVO)\s*[:=]?\s*\$?\s*([\d\.,]{4,12})\b', line, re.I)
+            if m:
+                val = parse_amount(m.group(1))
+                if val > 10:
+                    total = val
+                    break
+
+        if total <= 0:
             numbers = re.findall(r'\$?\s*([\d]{1,3}(?:\.[\d]{3})*(?:,[\d]{2})|\b[\d]+\.[\d]{2}\b)', raw_text)
             parsed_nums = [parse_amount(n) for n in numbers if parse_amount(n) > 0]
             if parsed_nums:
                 total = max(parsed_nums)
+
+    # 2. Vendor / Comercio
+    vendor = user_vendor if (user_vendor and user_vendor.strip()) else None
+    if not vendor:
+        for line in lines[:6]:
+            if len(line) > 3 and not re.search(r'factura|cuit|ticket|original|fecha|iva|responsable|direcc|remito', line, re.I):
+                vendor = line.title()
+                break
+        if not vendor:
+            vendor = "Comercio General"
 
     # 3. CUIT
     cuit_match = re.search(r'\b\d{2}-?\d{8}-?\d{1}\b', raw_text)
@@ -79,10 +89,47 @@ def extract_data_from_image(image_bytes: bytes, filename_hint: str = "", user_ve
 
     comp_type = "Factura A" if "FACTURA A" in raw_text.upper() else "Ticket / Comprobante"
 
-    # 5. Desglose impositivo
-    subtotal = round(total / 1.21, 2) if total > 0 else 0.0
-    iva_21 = round(total - subtotal, 2) if total > 0 else 0.0
+    # 5. Extracción directa del Subtotal Neto impreso (sin calcular)
+    subtotal = 0.0
+    for line in lines:
+        m = re.search(r'^\s*(?:TOTAL NETO SIN IVA|NETO GRAVADO|SUBTOTAL\s+21\.00\s*%|SUBTOTAL\s+10\.50\s*%|SUBTOTAL)\s*[:=]?\s*\$?\s*([\d\.,]{4,12})\b', line, re.I)
+        if m:
+            val = parse_amount(m.group(1))
+            if val > 0 and val < total:
+                subtotal = val
+                break
+
+    # 6. Extracción directa de los valores de IVA impresos (21%, 10.5%, 27%)
+    iva_21 = 0.0
+    for line in lines:
+        m = re.search(r'^\s*IVA\s*21(?:\.00)?\s*%\s*[:=]?\s*\$?\s*([\d\.,]{3,10})\b', line, re.I)
+        if m:
+            val = parse_amount(m.group(1))
+            if val > 0:
+                iva_21 = val
+                break
+
     iva_10_5 = 0.0
+    for line in lines:
+        m = re.search(r'^\s*IVA\s*10[\.,]5(?:\d)?\s*%\s*[:=]?\s*\$?\s*([\d\.,]{3,10})\b', line, re.I)
+        if m:
+            val = parse_amount(m.group(1))
+            if val > 0:
+                iva_10_5 = val
+                break
+
+    iva_27 = 0.0
+    for line in lines:
+        m = re.search(r'^\s*IVA\s*27(?:\.00)?\s*%\s*[:=]?\s*\$?\s*([\d\.,]{3,10})\b', line, re.I)
+        if m:
+            val = parse_amount(m.group(1))
+            if val > 0:
+                iva_27 = val
+                break
+
+    # Si se leyó subtotal pero no total
+    if subtotal == 0.0 and total > 0:
+        subtotal = round(total - (iva_21 + iva_10_5 + iva_27), 2)
 
     return {
         "id": datetime.now().strftime("%Y%m%d%H%M%S%f"),
@@ -93,6 +140,7 @@ def extract_data_from_image(image_bytes: bytes, filename_hint: str = "", user_ve
         "subtotal": subtotal,
         "iva_21": iva_21,
         "iva_10_5": iva_10_5,
+        "iva_27": iva_27,
         "total": total,
         "items": [],
         "filename": filename_hint
@@ -142,7 +190,7 @@ def get_monthly_summary(month_str: str) -> dict:
     
     total_spent = sum(t.get("total", 0.0) for t in tickets)
     total_subtotal = sum(t.get("subtotal", 0.0) for t in tickets)
-    total_iva = sum(t.get("iva_21", 0.0) + t.get("iva_10_5", 0.0) for t in tickets)
+    total_iva = sum(t.get("iva_21", 0.0) + t.get("iva_10_5", 0.0) + t.get("iva_27", 0.0) for t in tickets)
     total_items_count = sum(len(t.get("items", [])) for t in tickets)
     
     vendors = {}

@@ -180,7 +180,7 @@
                     <span>Excel Gastos</span>
                 </a>
                 <a id="download-csv-btn" href="#" target="_blank" class="py-2.5 px-3 bg-gold-500/15 hover:bg-gold-500/25 text-gold-400 font-bold rounded-xl border border-gold-500/40 text-xs flex items-center justify-center gap-1.5 transition">
-                    <svg class="w-4 h-4 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <svg class="w-4 h-4 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 01-2-2h5.586a1 1 0 01.707.293l5.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     <span>CSV Contador</span>
                 </a>
             </div>
@@ -234,21 +234,24 @@
                 </button>
             </div>
 
-            <!-- Campos de Entrada Rápida para Garantizar 100% de Precisión -->
+            <!-- Campos con Auto-Completado por OCR -->
             <div class="bg-[#181820] p-3.5 rounded-xl border border-gold-500/25 space-y-3">
-                <p class="text-xs font-bold text-gold-400 flex items-center gap-1">
-                    <svg class="w-4 h-4 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                    Datos del Ticket (Para Estadísticas y Excel):
-                </p>
+                <div class="flex items-center justify-between">
+                    <p class="text-xs font-bold text-gold-400 flex items-center gap-1">
+                        <svg class="w-4 h-4 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        Datos Detectados Automáticamente:
+                    </p>
+                    <span id="ocr-status-badge" class="text-[10px] text-cb-muted animate-pulse">Escaneando...</span>
+                </div>
 
                 <div class="space-y-1">
                     <label for="input-vendor" class="text-[11px] font-semibold text-slate-300">Comercio / Proveedor:</label>
-                    <input type="text" id="input-vendor" placeholder="ej: La Parola, YPF, Carrefour" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-400">
+                    <input type="text" id="input-vendor" placeholder="Buscando..." class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-400">
                 </div>
 
                 <div class="space-y-1">
                     <label for="input-total" class="text-[11px] font-semibold text-slate-300">Monto Total ($):</label>
-                    <input type="number" step="0.01" id="input-total" placeholder="ej: 141424.30" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs font-bold text-emerald-400 placeholder-slate-500 focus:outline-none focus:border-gold-400">
+                    <input type="number" step="0.01" id="input-total" placeholder="Buscando..." class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs font-bold text-emerald-400 placeholder-slate-500 focus:outline-none focus:border-gold-400">
                 </div>
             </div>
 
@@ -262,7 +265,7 @@
 
             <button id="upload-btn" onclick="submitTicket()" class="w-full py-4 bg-gradient-to-r from-gold-400 via-gold-500 to-gold-600 hover:from-gold-300 hover:to-gold-500 active:scale-[0.99] text-black font-extrabold text-base rounded-xl shadow-lg flex items-center justify-center gap-2 transition">
                 <svg id="upload-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                <span id="upload-btn-text">Guardar y Procesar Ticket</span>
+                <span id="upload-btn-text">Confirmar y Guardar Ticket</span>
             </button>
         </div>
 
@@ -547,7 +550,7 @@
                 cropper = new Cropper(imgElement, {
                     viewMode: 1,
                     dragMode: 'crop',
-                    autoCropArea: 0.9,
+                    autoCropArea: 0.95,
                     restore: false,
                     modal: true,
                     guides: true,
@@ -556,8 +559,41 @@
                     cropBoxResizable: true,
                     toggleDragModeOnDblclick: false,
                 });
+
+                // Lanzar auto-prelectura OCR en segundo plano para autocompletar campos
+                triggerOCRScanPreview(file);
             };
             reader.readAsDataURL(file);
+        }
+
+        async function triggerOCRScanPreview(file) {
+            const badge = document.getElementById('ocr-status-badge');
+            const inputVendor = document.getElementById('input-vendor');
+            const inputTotal = document.getElementById('input-total');
+            
+            badge.textContent = "Leyendo texto...";
+            badge.className = "text-[10px] text-amber-400 animate-pulse font-semibold";
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const res = await fetch('/api/scan-ocr-preview', { method: 'POST', body: formData });
+                const data = await res.json();
+
+                if (data.vendor) {
+                    inputVendor.value = data.vendor;
+                }
+                if (data.total && data.total > 0) {
+                    inputTotal.value = data.total;
+                }
+                
+                badge.textContent = "✓ Autocompletado";
+                badge.className = "text-[10px] text-emerald-400 font-bold";
+            } catch (err) {
+                badge.textContent = "Completar si es necesario";
+                badge.className = "text-[10px] text-cb-muted";
+            }
         }
 
         function rotateImage(deg) {
@@ -597,24 +633,25 @@
             const userTotal = document.getElementById('input-total').value;
 
             btn.disabled = true;
-            btnText.textContent = 'Procesando OCR y Guardando...';
+            btnText.textContent = 'Procesando...';
             btnIcon.innerHTML = `<svg class="animate-spin w-5 h-5 text-black" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
 
+            // Optimización de velocidad: Comprimir a max 1200px JPEG quality 0.82
             cropper.getCroppedCanvas({
-                maxWidth: 2400,
-                maxHeight: 3600,
+                maxWidth: 1200,
+                maxHeight: 1800,
                 fillColor: '#FFFFFF',
                 imageSmoothingEnabled: true,
-                imageSmoothingQuality: 'high',
+                imageSmoothingQuality: 'medium',
             }).toBlob(async (blob) => {
                 if (!blob) {
-                    alert('Error procesando el recorte');
+                    alert('Error procesando la imagen');
                     btn.disabled = false;
                     return;
                 }
 
                 const formData = new FormData();
-                formData.append('file', blob, selectedFile ? selectedFile.name : 'ticket_cropped.png');
+                formData.append('file', blob, selectedFile ? selectedFile.name : 'ticket_cropped.jpg');
                 formData.append('enhance', enhance);
                 formData.append('month', month);
                 if (userVendor) formData.append('vendor', userVendor);
@@ -638,10 +675,10 @@
                     alert('Error de conexión con el servidor: ' + err.message);
                 } finally {
                     btn.disabled = false;
-                    btnText.textContent = 'Guardar y Procesar Ticket';
+                    btnText.textContent = 'Confirmar y Guardar Ticket';
                     btnIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>`;
                 }
-            }, 'image/png');
+            }, 'image/jpeg', 0.82);
         }
 
         function showSuccess(total, monthKey) {
