@@ -7,6 +7,12 @@ from datetime import datetime
 from PIL import Image
 import pymupdf
 
+try:
+    import pytesseract
+    PYTESSERACT_AVAILABLE = True
+except ImportError:
+    PYTESSERACT_AVAILABLE = False
+
 logger = logging.getLogger("ticket_ocr")
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -27,17 +33,21 @@ def parse_amount(text_str: str) -> float:
     except Exception:
         return 0.0
 
-def extract_data_from_image(image_bytes: bytes, filename_hint: str = "", user_vendor: str = None, user_total: float = None) -> dict:
-    """
-    Analiza el ticket extrayendo estrictamente lo que informa el comprobante:
-    - Razón Social / Comercio
-    - CUIT
-    - Tipo de Comprobante
-    - Fecha
-    - Lectura directa de IVA 21%, IVA 10.5% e IVA 27% (sin cálculos genéricos)
-    - Monto Total
-    """
+def extract_raw_text_from_image(image_bytes: bytes) -> str:
+    """Extrae el texto impreso en la foto utilizando Tesseract OCR / PyMuPDF."""
     raw_text = ""
+    img = Image.open(io.BytesIO(image_bytes))
+    
+    # 1. Intentar con PyTesseract (Tesseract OCR Engine nativo)
+    if PYTESSERACT_AVAILABLE:
+        try:
+            raw_text = pytesseract.image_to_string(img, lang='spa+eng')
+            if len(raw_text.strip()) > 10:
+                return raw_text
+        except Exception as e:
+            logger.debug(f"PyTesseract error: {e}")
+            
+    # 2. Intentar con PyMuPDF OCR
     try:
         img_doc = pymupdf.open("png", image_bytes)
         pdf_bytes = img_doc.convert_to_pdf()
@@ -45,18 +55,50 @@ def extract_data_from_image(image_bytes: bytes, filename_hint: str = "", user_ve
         
         pdf_mem = pymupdf.open("pdf", pdf_bytes)
         page = pdf_mem[0]
-        raw_text = page.get_text("text")
+        
+        try:
+            tp = page.get_textpage_ocr(flags=0, language='spa')
+            raw_text = page.get_text("text", textpage=tp)
+        except Exception:
+            raw_text = page.get_text("text")
+            
         pdf_mem.close()
     except Exception as e:
-        logger.warning(f"Error en OCR inicial: {e}")
+        logger.warning(f"PyMuPDF OCR error: {e}")
+        
+    return raw_text
 
+def extract_data_from_image(
+    image_bytes: bytes,
+    filename_hint: str = "",
+    user_vendor: str = None,
+    user_total: float = None,
+    user_cuit: str = None,
+    user_date: str = None,
+    user_subtotal: float = None,
+    user_iva_21: float = None,
+    user_iva_10_5: float = None,
+    user_iva_27: float = None
+) -> dict:
+    """
+    Analiza la foto del ticket mediante OCR real en Linux/Windows y reconoce:
+    - Razón Social / Comercio
+    - CUIT
+    - Tipo de Comprobante
+    - Fecha
+    - Lectura directa de IVA 21%, IVA 10.5% e IVA 27% impresos
+    - Monto Total
+    
+    Permite sobreescribir cualquiera de los campos desde la interfaz de usuario si el usuario lo edita.
+    """
+    raw_text = extract_raw_text_from_image(image_bytes)
     lines = [line.strip() for line in raw_text.split('\n') if line.strip()]
     
-    # 1. Total (Leído desde abajo hacia arriba)
+    # 1. Total (Leído de abajo hacia arriba o mayor monto válido)
     total = user_total if (user_total is not None and user_total > 0) else 0.0
     if total <= 0:
         for line in reversed(lines):
-            m = re.search(r'^\s*(?:TOTAL|RECIBIMOS|SUMA DE SUS PAGOS|EFECTIVO)\s*[:=]?\s*\$?\s*([\d\.,]{4,12})\b', line, re.I)
+            m = re.search(r'(?:TOTAL|RECIBIMOS|SUMA DE SUS PAGOS|EFECTIVO|IMPORTE\s+TOTAL)\s*[:=]?\s*\$?\s*([\d\.,]{4,12})', line, re.I)
             if m:
                 val = parse_amount(m.group(1))
                 if val > 10:
@@ -70,66 +112,80 @@ def extract_data_from_image(image_bytes: bytes, filename_hint: str = "", user_ve
                 total = max(parsed_nums)
 
     # 2. Vendor / Comercio
-    vendor = user_vendor if (user_vendor and user_vendor.strip()) else None
+    vendor = user_vendor.strip() if (user_vendor and user_vendor.strip()) else None
     if not vendor:
         for line in lines[:6]:
-            if len(line) > 3 and not re.search(r'factura|cuit|ticket|original|fecha|iva|responsable|direcc|remito', line, re.I):
+            if len(line) > 3 and not re.search(r'factura|cuit|ticket|original|fecha|iva|responsable|direcc|remito|comprobante', line, re.I):
                 vendor = line.title()
                 break
         if not vendor:
             vendor = "Comercio General"
 
     # 3. CUIT
-    cuit_match = re.search(r'\b\d{2}-?\d{8}-?\d{1}\b', raw_text)
-    cuit = cuit_match.group(0) if cuit_match else ""
+    cuit = user_cuit.strip() if (user_cuit and user_cuit.strip()) else ""
+    if not cuit:
+        cuit_match = re.search(r'\b(2[0370]-?\d{8}-?\d)\b', raw_text)
+        if not cuit_match:
+            cuit_match = re.search(r'CUIT\s*[:=]?\s*(\d{2}-?\d{8}-?\d)', raw_text, re.I)
+        cuit = cuit_match.group(1) if cuit_match else ""
 
     # 4. Fecha
-    date_match = re.search(r'\b(\d{2}[/\.-]\d{2}[/\.-]\d{2,4})\b', raw_text)
-    date_str = date_match.group(1) if date_match else datetime.now().strftime("%d/%m/%Y")
+    date_str = user_date.strip() if (user_date and user_date.strip()) else ""
+    if not date_str:
+        date_match = re.search(r'\b(\d{2}[/\.-]\d{2}[/\.-]\d{2,4})\b', raw_text)
+        date_str = date_match.group(1) if date_match else datetime.now().strftime("%d/%m/%Y")
 
-    comp_type = "Factura A" if "FACTURA A" in raw_text.upper() else "Ticket / Comprobante"
+    comp_type = "Factura A" if ("FACTURA A" in raw_text.upper() or "TICKET FACTURA A" in raw_text.upper()) else "Ticket / Comprobante"
 
-    # 5. Extracción directa del Subtotal Neto impreso (sin calcular)
-    subtotal = 0.0
-    for line in lines:
-        m = re.search(r'^\s*(?:TOTAL NETO SIN IVA|NETO GRAVADO|SUBTOTAL\s+21\.00\s*%|SUBTOTAL\s+10\.50\s*%|SUBTOTAL)\s*[:=]?\s*\$?\s*([\d\.,]{4,12})\b', line, re.I)
-        if m:
-            val = parse_amount(m.group(1))
-            if val > 0 and val < total:
-                subtotal = val
-                break
+    # 5. IVA impreso (21%, 10.5%, 27%)
+    iva_21 = user_iva_21 if (user_iva_21 is not None and user_iva_21 >= 0) else None
+    if iva_21 is None:
+        iva_21 = 0.0
+        for line in lines:
+            m = re.search(r'(?:I\.?V\.?A\.?|IVA)\s*(?:GRAVADO\s*)?(?:21(?:[\.,]00)?)\s*%\s*[:=]?\s*\$?\s*([\d\.,]{3,12})', line, re.I)
+            if m:
+                val = parse_amount(m.group(1))
+                if val > 0:
+                    iva_21 = val
+                    break
 
-    # 6. Extracción directa de los valores de IVA impresos (21%, 10.5%, 27%)
-    iva_21 = 0.0
-    for line in lines:
-        m = re.search(r'^\s*IVA\s*21(?:\.00)?\s*%\s*[:=]?\s*\$?\s*([\d\.,]{3,10})\b', line, re.I)
-        if m:
-            val = parse_amount(m.group(1))
-            if val > 0:
-                iva_21 = val
-                break
+    iva_10_5 = user_iva_10_5 if (user_iva_10_5 is not None and user_iva_10_5 >= 0) else None
+    if iva_10_5 is None:
+        iva_10_5 = 0.0
+        for line in lines:
+            m = re.search(r'(?:I\.?V\.?A\.?|IVA)\s*(?:GRAVADO\s*)?(?:10[\.,]5\d?)\s*%\s*[:=]?\s*\$?\s*([\d\.,]{3,12})', line, re.I)
+            if m:
+                val = parse_amount(m.group(1))
+                if val > 0:
+                    iva_10_5 = val
+                    break
 
-    iva_10_5 = 0.0
-    for line in lines:
-        m = re.search(r'^\s*IVA\s*10[\.,]5(?:\d)?\s*%\s*[:=]?\s*\$?\s*([\d\.,]{3,10})\b', line, re.I)
-        if m:
-            val = parse_amount(m.group(1))
-            if val > 0:
-                iva_10_5 = val
-                break
+    iva_27 = user_iva_27 if (user_iva_27 is not None and user_iva_27 >= 0) else None
+    if iva_27 is None:
+        iva_27 = 0.0
+        for line in lines:
+            m = re.search(r'(?:I\.?V\.?A\.?|IVA)\s*(?:GRAVADO\s*)?(?:27(?:[\.,]00)?)\s*%\s*[:=]?\s*\$?\s*([\d\.,]{3,12})', line, re.I)
+            if m:
+                val = parse_amount(m.group(1))
+                if val > 0:
+                    iva_27 = val
+                    break
 
-    iva_27 = 0.0
-    for line in lines:
-        m = re.search(r'^\s*IVA\s*27(?:\.00)?\s*%\s*[:=]?\s*\$?\s*([\d\.,]{3,10})\b', line, re.I)
-        if m:
-            val = parse_amount(m.group(1))
-            if val > 0:
-                iva_27 = val
-                break
+    # 6. Subtotal Neto impreso
+    subtotal = user_subtotal if (user_subtotal is not None and user_subtotal > 0) else None
+    if subtotal is None or subtotal <= 0:
+        subtotal = 0.0
+        for line in lines:
+            m = re.search(r'(?:NETO\s+GRAVADO|SUBTOTAL\s+NETO|TOTAL\s+NETO|NETO\s+SIN\s+IVA|BASE\s+IMPONIBLE|SUBTOTAL)\s*[:=]?\s*\$?\s*([\d\.,]{3,12})', line, re.I)
+            if m:
+                val = parse_amount(m.group(1))
+                if val > 0 and (total == 0 or val <= total):
+                    subtotal = val
+                    break
 
-    # Si se leyó subtotal pero no total
-    if subtotal == 0.0 and total > 0:
-        subtotal = round(total - (iva_21 + iva_10_5 + iva_27), 2)
+        if subtotal == 0.0 and total > 0:
+            sum_iva = iva_21 + iva_10_5 + iva_27
+            subtotal = round(total - sum_iva, 2) if sum_iva > 0 else total
 
     return {
         "id": datetime.now().strftime("%Y%m%d%H%M%S%f"),

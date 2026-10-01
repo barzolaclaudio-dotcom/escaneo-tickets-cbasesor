@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+Datos_Mensuales/
+Imagenes_Originales/
+PDFs_Mensuales/
+.env

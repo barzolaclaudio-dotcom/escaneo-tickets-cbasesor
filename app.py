@@ -38,15 +38,20 @@ async def serve_index():
 
 @app.post("/api/scan-ocr-preview")
 async def scan_ocr_preview(file: UploadFile = File(...)):
-    """Pre-lectura ultra rápida para auto-completar los campos antes de guardar."""
+    """Pre-lectura ultra rápida para auto-completar todos los campos antes de guardar."""
     try:
         content = await file.read()
         if not content:
-            return JSONResponse(content={"vendor": "", "total": 0.0})
+            return JSONResponse(content={"vendor": "", "total": 0.0, "subtotal": 0.0, "iva_21": 0.0, "iva_10_5": 0.0, "iva_27": 0.0, "cuit": "", "date": ""})
         data = extract_data_from_image(content, filename_hint=file.filename or "")
         return JSONResponse(content={
             "vendor": data.get("vendor", ""),
             "total": data.get("total", 0.0),
+            "subtotal": data.get("subtotal", 0.0),
+            "iva_21": data.get("iva_21", 0.0),
+            "iva_10_5": data.get("iva_10_5", 0.0),
+            "iva_27": data.get("iva_27", 0.0),
+            "cuit": data.get("cuit", ""),
             "date": data.get("date", "")
         })
     except Exception as e:
@@ -58,7 +63,13 @@ async def upload_ticket(
     month: str = Form(None),
     enhance: bool = Form(True),
     vendor: str = Form(None),
-    total: float = Form(None)
+    total: float = Form(None),
+    cuit: str = Form(None),
+    date: str = Form(None),
+    subtotal: float = Form(None),
+    iva_21: float = Form(None),
+    iva_10_5: float = Form(None),
+    iva_27: float = Form(None)
 ):
     try:
         content = await file.read()
@@ -73,7 +84,13 @@ async def upload_ticket(
             month_str=month,
             enhance=enhance,
             user_vendor=vendor,
-            user_total=total
+            user_total=total,
+            user_cuit=cuit,
+            user_date=date,
+            user_subtotal=subtotal,
+            user_iva_21=iva_21,
+            user_iva_10_5=iva_10_5,
+            user_iva_27=iva_27
         )
         return JSONResponse(content=result)
         

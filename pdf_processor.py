@@ -56,7 +56,20 @@ def image_to_a4_pdf(img: Image.Image) -> bytes:
     doc.close()
     return pdf_bytes
 
-def append_ticket_to_month_pdf(image_bytes: bytes, filename_hint: str, month_str: str = None, enhance: bool = True, user_vendor: str = None, user_total: float = None) -> dict:
+def append_ticket_to_month_pdf(
+    image_bytes: bytes,
+    filename_hint: str,
+    month_str: str = None,
+    enhance: bool = True,
+    user_vendor: str = None,
+    user_total: float = None,
+    user_cuit: str = None,
+    user_date: str = None,
+    user_subtotal: float = None,
+    user_iva_21: float = None,
+    user_iva_10_5: float = None,
+    user_iva_27: float = None
+) -> dict:
     now = datetime.now()
     if not month_str:
         month_str = now.strftime("%Y_%m")
@@ -99,7 +112,18 @@ def append_ticket_to_month_pdf(image_bytes: bytes, filename_hint: str, month_str
         
     total_pages = len(pypdf.PdfReader(str(target_pdf_path)).pages)
     
-    extracted_data = extract_data_from_image(image_bytes, filename_hint=safe_filename, user_vendor=user_vendor, user_total=user_total)
+    extracted_data = extract_data_from_image(
+        image_bytes,
+        filename_hint=safe_filename,
+        user_vendor=user_vendor,
+        user_total=user_total,
+        user_cuit=user_cuit,
+        user_date=user_date,
+        user_subtotal=user_subtotal,
+        user_iva_21=user_iva_21,
+        user_iva_10_5=user_iva_10_5,
+        user_iva_27=user_iva_27
+    )
     add_ticket_expense(month_str, extracted_data)
     
     gdrive_link = sync_file_to_gdrive(target_pdf_path)
