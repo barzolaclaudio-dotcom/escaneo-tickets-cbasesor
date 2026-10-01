@@ -56,18 +56,14 @@
             border: 1px solid rgba(212, 175, 55, 0.5);
             box-shadow: 0 0 15px rgba(212, 175, 55, 0.15);
         }
-        /* Custom styles for Cropper.js container */
         .cropper-container {
             max-height: 380px !important;
         }
-        .cropper-view-box, .cropper-face {
-            border-radius: 4px;
+        .cropper-view-box {
+            outline: 2px solid #D4AF37 !important;
         }
         .cropper-line, .cropper-point {
             background-color: #D4AF37 !important;
-        }
-        .cropper-view-box {
-            outline: 2px solid #D4AF37 !important;
         }
     </style>
 </head>
@@ -83,9 +79,9 @@
                 <div>
                     <h1 class="font-bold text-base tracking-tight text-white flex items-center gap-1">
                         CB Asesor
-                        <span class="text-[10px] uppercase tracking-widest px-1.5 py-0.5 bg-gold-500/10 text-gold-400 border border-gold-500/30 rounded">Tickets</span>
+                        <span class="text-[10px] uppercase tracking-widest px-1.5 py-0.5 bg-gold-500/10 text-gold-400 border border-gold-500/30 rounded">Tickets & Gastos</span>
                     </h1>
-                    <p class="text-[11px] text-cb-muted">Consolidador Facturas A</p>
+                    <p class="text-[11px] text-cb-muted">Consolidador & Analytics</p>
                 </div>
             </div>
             
@@ -111,13 +107,11 @@
             
             <div class="relative">
                 <select id="month-selector" onchange="onMonthChange()" class="w-full bg-[#1c1c21] text-white border border-gold-500/40 rounded-xl px-3.5 py-3 font-semibold text-sm appearance-none focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition">
-                    <!-- Dinámico -->
                 </select>
                 <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gold-400">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </div>
             </div>
-            <p class="text-[11px] text-cb-muted italic">Podés cambiar de mes en cualquier momento para escanear tickets pasados.</p>
         </div>
 
         <!-- Target Month Info & Actions Card -->
@@ -136,7 +130,7 @@
                 </div>
             </div>
 
-            <!-- Botones de Eliminación -->
+            <!-- Botones de Gestión -->
             <div id="pdf-manage-actions" class="hidden pt-2 border-t border-slate-800 flex items-center justify-between gap-2 text-xs">
                 <button onclick="undoLastTicket()" class="flex-1 py-2 px-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-medium rounded-lg border border-amber-500/30 transition flex items-center justify-center gap-1">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
@@ -149,6 +143,49 @@
             </div>
         </div>
 
+        <!-- DASHBOARD DE GASTOS EN TIEMPO REAL -->
+        <div id="expenses-analytics-card" class="bg-cb-card rounded-2xl p-5 gold-border shadow-lg space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                    <svg class="w-5 h-5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    Control de Gastos en Tiempo Real
+                </h3>
+                <span id="expense-month-badge" class="text-[10px] font-semibold text-gold-400 bg-gold-500/10 px-2 py-0.5 rounded border border-gold-500/30">Octubre</span>
+            </div>
+
+            <!-- Métricas Principales -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-[#18181f] p-3.5 rounded-xl border border-gold-500/20">
+                    <span class="text-[10px] font-semibold uppercase text-cb-muted">Total Gastado</span>
+                    <p id="stat-total-spent" class="text-lg font-extrabold text-white mt-1">$0.00</p>
+                </div>
+                <div class="bg-[#18181f] p-3.5 rounded-xl border border-emerald-500/20">
+                    <span class="text-[10px] font-semibold uppercase text-emerald-400">IVA Crédito Fiscal</span>
+                    <p id="stat-total-iva" class="text-lg font-extrabold text-emerald-400 mt-1">$0.00</p>
+                </div>
+            </div>
+
+            <!-- Desglose por Comercios -->
+            <div class="space-y-2 pt-2 border-t border-slate-800">
+                <p class="text-xs font-bold text-slate-300">Gastos por Comercio:</p>
+                <div id="vendor-breakdown-list" class="space-y-2 text-xs">
+                    <p class="text-cb-muted italic text-[11px]">Cargando estadísticas...</p>
+                </div>
+            </div>
+
+            <!-- Descargas Excel & CSV -->
+            <div class="grid grid-cols-2 gap-2 pt-2">
+                <a id="download-excel-btn" href="#" target="_blank" class="py-2.5 px-3 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 font-bold rounded-xl border border-emerald-500/40 text-xs flex items-center justify-center gap-1.5 transition">
+                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span>Excel Gastos</span>
+                </a>
+                <a id="download-csv-btn" href="#" target="_blank" class="py-2.5 px-3 bg-gold-500/15 hover:bg-gold-500/25 text-gold-400 font-bold rounded-xl border border-gold-500/40 text-xs flex items-center justify-center gap-1.5 transition">
+                    <svg class="w-4 h-4 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span>CSV Contador</span>
+                </a>
+            </div>
+        </div>
+
         <!-- Captura de Ticket -->
         <div class="bg-cb-card rounded-2xl p-5 gold-border shadow-md space-y-4">
             <h3 class="font-bold text-white text-base flex items-center gap-2">
@@ -156,11 +193,9 @@
                 Capturar Ticket
             </h3>
 
-            <!-- Hidden Inputs -->
             <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden" onchange="handleFileSelect(event)">
             <input type="file" id="gallery-input" accept="image/*,application/pdf" class="hidden" onchange="handleFileSelect(event)">
 
-            <!-- Touch Buttons -->
             <div class="grid grid-cols-1 gap-3">
                 <button onclick="document.getElementById('camera-input').click()" class="w-full py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 active:scale-[0.99] text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-3 transition">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h0.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
@@ -184,12 +219,10 @@
                 <button onclick="cancelSelection()" class="text-xs font-semibold text-cb-muted hover:text-white">Cancelar</button>
             </div>
 
-            <!-- Cropper Image Container -->
             <div class="relative bg-black rounded-xl overflow-hidden border border-gold-500/30 min-h-[260px] flex items-center justify-center">
                 <img id="image-preview" src="" alt="Vista Previa" class="max-w-full block">
             </div>
 
-            <!-- Tool Controls for Cropper -->
             <div class="grid grid-cols-2 gap-2 text-xs">
                 <button onclick="rotateImage(90)" class="py-2.5 px-3 bg-[#181820] hover:bg-[#22222b] text-gold-400 font-semibold rounded-xl border border-gold-500/30 flex items-center justify-center gap-1.5 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
@@ -203,7 +236,6 @@
 
             <p class="text-[11px] text-gold-400/90 text-center italic"> Arrastrá los bordes con tu dedo para recortar únicamente el papel del ticket y quitar la mesa.</p>
 
-            <!-- Enhancement Toggle -->
             <div class="bg-[#18181f] p-3 rounded-xl border border-gold-500/20 flex items-center justify-between">
                 <label for="enhance-toggle" class="flex items-center gap-2 text-xs font-medium text-gold-400 cursor-pointer">
                     <svg class="w-4 h-4 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
@@ -214,7 +246,7 @@
 
             <button id="upload-btn" onclick="submitTicket()" class="w-full py-4 bg-gradient-to-r from-gold-400 via-gold-500 to-gold-600 hover:from-gold-300 hover:to-gold-500 active:scale-[0.99] text-black font-extrabold text-base rounded-xl shadow-lg flex items-center justify-center gap-2 transition">
                 <svg id="upload-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                <span id="upload-btn-text">Guardar y Agregar al PDF</span>
+                <span id="upload-btn-text">Guardar y Procesar Ticket</span>
             </button>
         </div>
 
@@ -264,7 +296,7 @@
         </div>
     </div>
 
-    <!-- Script Application Logic with Cropper.js -->
+    <!-- Script Application Logic -->
     <script>
         let selectedFile = null;
         let cropper = null;
@@ -299,6 +331,7 @@
 
         function onMonthChange() {
             updateSelectedMonthCard();
+            fetchExpensesData();
         }
 
         function updateSelectedMonthCard() {
@@ -311,6 +344,7 @@
             const monthName = `${MONTH_NAMES[monthIdx]} ${y}`;
             
             document.getElementById('selected-month-title').textContent = monthName;
+            document.getElementById('expense-month-badge').textContent = MONTH_NAMES[monthIdx];
             
             const badge = document.getElementById('badge-month-status');
             if (key === nowKey) {
@@ -340,6 +374,9 @@
                 pdfLink.classList.add('hidden');
                 manageActions.classList.add('hidden');
             }
+            
+            document.getElementById('download-excel-btn').href = `/download/excel/${key}`;
+            document.getElementById('download-csv-btn').href = `/download/csv/${key}`;
         }
 
         function getNowMonthKey() {
@@ -355,6 +392,7 @@
                 globalStatsData = await res.json();
                 
                 updateSelectedMonthCard();
+                fetchExpensesData();
                 
                 const list = document.getElementById('monthly-list');
                 list.innerHTML = '';
@@ -389,6 +427,43 @@
                 
             } catch (err) {
                 console.error("Error al cargar estadísticas:", err);
+            }
+        }
+
+        async function fetchExpensesData() {
+            const key = document.getElementById('month-selector').value;
+            try {
+                const res = await fetch(`/api/expenses/${key}`);
+                const data = await res.json();
+                
+                document.getElementById('stat-total-spent').textContent = `$${data.total_spent.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+                document.getElementById('stat-total-iva').textContent = `$${data.total_iva.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+                
+                const list = document.getElementById('vendor-breakdown-list');
+                list.innerHTML = '';
+                
+                if (data.vendor_breakdown.length === 0) {
+                    list.innerHTML = `<p class="text-cb-muted italic text-[11px]">No hay gastos registrados en este mes aún.</p>`;
+                    return;
+                }
+                
+                data.vendor_breakdown.forEach(v => {
+                    const row = document.createElement('div');
+                    row.className = "space-y-1";
+                    row.innerHTML = `
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="font-semibold text-white">${v.vendor}</span>
+                            <span class="font-mono font-bold text-gold-400">$${v.total.toLocaleString('es-AR', {minimumFractionDigits: 2})} <span class="text-[10px] text-cb-muted">(${v.percentage}%)</span></span>
+                        </div>
+                        <div class="w-full bg-[#101014] rounded-full h-1.5 border border-gold-500/20 overflow-hidden">
+                            <div class="bg-gradient-to-r from-gold-500 to-gold-400 h-1.5 rounded-full" style="width: ${v.percentage}%"></div>
+                        </div>
+                    `;
+                    list.appendChild(row);
+                });
+                
+            } catch (err) {
+                console.error("Error al cargar gastos:", err);
             }
         }
 
@@ -444,7 +519,6 @@
             reader.onload = function(e) {
                 const imgElement = document.getElementById('image-preview');
                 
-                // Destruir instancia anterior de Cropper si existe
                 if (cropper) {
                     cropper.destroy();
                     cropper = null;
@@ -454,7 +528,6 @@
                 document.getElementById('preview-card').classList.remove('hidden');
                 document.getElementById('preview-card').scrollIntoView({ behavior: 'smooth' });
 
-                // Inicializar Cropper.js
                 cropper = new Cropper(imgElement, {
                     viewMode: 1,
                     dragMode: 'crop',
@@ -504,10 +577,9 @@
             const month = document.getElementById('month-selector').value;
 
             btn.disabled = true;
-            btnText.textContent = 'Recortando y Guardando...';
+            btnText.textContent = 'Procesando OCR y Guardando...';
             btnIcon.innerHTML = `<svg class="animate-spin w-5 h-5 text-black" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
 
-            // Obtener la imagen recortada por el usuario como Blob PNG
             cropper.getCroppedCanvas({
                 maxWidth: 2400,
                 maxHeight: 3600,
@@ -544,7 +616,7 @@
                     alert('Error de conexión con el servidor: ' + err.message);
                 } finally {
                     btn.disabled = false;
-                    btnText.textContent = 'Guardar y Agregar al PDF';
+                    btnText.textContent = 'Guardar y Procesar Ticket';
                     btnIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>`;
                 }
             }, 'image/png');
@@ -553,7 +625,7 @@
         function showSuccess(total, monthKey) {
             const [y, m] = monthKey.split('_');
             const monthName = `${MONTH_NAMES[parseInt(m, 10) - 1]} ${y}`;
-            document.getElementById('success-title').textContent = `¡Ticket recortado y agregado a ${monthName}!`;
+            document.getElementById('success-title').textContent = `¡Ticket procesado y agregado a ${monthName}!`;
             document.getElementById('success-subtitle').textContent = `Total acumulado en este PDF: ${total} ticket${total === 1 ? '' : 's'}`;
             const alertBox = document.getElementById('success-alert');
             alertBox.classList.remove('hidden');

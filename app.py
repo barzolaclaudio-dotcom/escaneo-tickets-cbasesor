@@ -1,5 +1,5 @@
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
-from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, Response
 from pathlib import Path
 from datetime import datetime
 
@@ -10,13 +10,14 @@ from pdf_processor import (
     get_monthly_stats,
     PDFS_DIR
 )
+from ticket_ocr import get_monthly_summary
+from excel_exporter import generate_excel_report, generate_csv_report
 
 app = FastAPI(title="Escáner de Tickets Factura A")
 
 BASE_DIR = Path(__file__).resolve().parent
 
 def find_index_html() -> Path:
-    """Busca el archivo index.html en todas las ubicaciones posibles."""
     possible_paths = [
         BASE_DIR / "index.html",
         Path.cwd() / "index.html",
@@ -61,6 +62,37 @@ async def upload_ticket(
             status_code=500,
             content={"success": False, "error": str(e)}
         )
+
+@app.get("/api/expenses/{month}")
+async def get_expenses(month: str):
+    summary = get_monthly_summary(month)
+    return JSONResponse(content=summary)
+
+@app.get("/download/excel/{month}")
+async def download_excel(month: str):
+    try:
+        excel_bytes = generate_excel_report(month)
+        filename = f"Gastos_{month}.xlsx"
+        return Response(
+            content=excel_bytes,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/download/csv/{month}")
+async def download_csv(month: str):
+    try:
+        csv_bytes = generate_csv_report(month)
+        filename = f"Libro_IVA_Compras_{month}.csv"
+        return Response(
+            content=csv_bytes,
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/delete-last-ticket")
 async def delete_last_ticket(month: str = Form(...)):
