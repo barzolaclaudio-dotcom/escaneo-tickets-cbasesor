@@ -1,9 +1,6 @@
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-import shutil
-import socket
 from datetime import datetime
 
 from pdf_processor import append_ticket_to_month_pdf, get_monthly_stats, PDFS_DIR
@@ -11,13 +8,25 @@ from pdf_processor import append_ticket_to_month_pdf, get_monthly_stats, PDFS_DI
 app = FastAPI(title="Escáner de Tickets Factura A")
 
 BASE_DIR = Path(__file__).resolve().parent
-TEMPLATES_DIR = BASE_DIR / "templates"
+
+def find_index_html() -> Path:
+    """Busca el archivo index.html en todas las ubicaciones posibles."""
+    possible_paths = [
+        BASE_DIR / "index.html",
+        Path.cwd() / "index.html",
+        BASE_DIR / "templates" / "index.html",
+        Path.cwd() / "templates" / "index.html"
+    ]
+    for p in possible_paths:
+        if p.exists():
+            return p
+    return None
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
-    index_path = TEMPLATES_DIR / "index.html"
-    if not index_path.exists():
-        raise HTTPException(status_code=4404, detail="Plantilla no encontrada")
+    index_path = find_index_html()
+    if not index_path:
+        raise HTTPException(status_code=404, detail="Plantilla index.html no encontrada")
     return index_path.read_text(encoding="utf-8")
 
 @app.post("/api/upload")
@@ -31,7 +40,6 @@ async def upload_ticket(
         if not content:
             raise HTTPException(status_code=400, detail="El archivo subido está vacío")
             
-        # Determinar nombre base para guardado
         filename_hint = file.filename or "ticket.jpg"
         
         result = append_ticket_to_month_pdf(
