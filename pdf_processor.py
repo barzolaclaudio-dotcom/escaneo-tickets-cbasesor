@@ -70,7 +70,6 @@ def append_ticket_to_month_pdf(image_bytes: bytes, filename_hint: str, month_str
     else:
         month_str = month_str.replace("-", "_")
     
-    # 1. Guardar copia de seguridad de la imagen original
     month_img_dir = IMAGES_DIR / month_str
     month_img_dir.mkdir(parents=True, exist_ok=True)
     
@@ -80,7 +79,6 @@ def append_ticket_to_month_pdf(image_bytes: bytes, filename_hint: str, month_str
     with open(raw_img_path, "wb") as f:
         f.write(image_bytes)
         
-    # 2. Cargar y optimizar imagen
     img = Image.open(io.BytesIO(image_bytes))
     img = ImageOps.exif_transpose(img)
     if img.mode != 'RGB':
@@ -89,10 +87,8 @@ def append_ticket_to_month_pdf(image_bytes: bytes, filename_hint: str, month_str
     if enhance:
         img = enhance_thermal_ticket(img)
         
-    # 3. Generar página A4 PDF
     new_page_pdf_bytes = image_to_a4_pdf(img)
     
-    # 4. Anexar al PDF mensual indicado
     target_pdf_path = PDFS_DIR / f"Tickets_{month_str}.pdf"
     
     writer = pypdf.PdfWriter()
@@ -110,7 +106,6 @@ def append_ticket_to_month_pdf(image_bytes: bytes, filename_hint: str, month_str
         
     total_pages = len(pypdf.PdfReader(str(target_pdf_path)).pages)
     
-    # 5. Sincronización automática con Google Drive (opcional/si está configurado)
     gdrive_link = sync_file_to_gdrive(target_pdf_path)
     
     return {
@@ -121,6 +116,53 @@ def append_ticket_to_month_pdf(image_bytes: bytes, filename_hint: str, month_str
         "image_saved": str(raw_img_path.name),
         "gdrive_link": gdrive_link
     }
+
+def remove_last_page_from_pdf(month_str: str) -> dict:
+    """
+    Elimina la última página (último ticket) agregada al PDF del mes.
+    """
+    month_str = month_str.replace("-", "_")
+    target_pdf_path = PDFS_DIR / f"Tickets_{month_str}.pdf"
+    
+    if not target_pdf_path.exists() or target_pdf_path.stat().st_size == 0:
+        return {"success": False, "error": "No existe PDF para este mes"}
+        
+    reader = pypdf.PdfReader(str(target_pdf_path))
+    total = len(reader.pages)
+    
+    if total <= 1:
+        # Si tenía 1 sola página, se borra el archivo completo
+        target_pdf_path.unlink(missing_ok=True)
+        return {"success": True, "remaining_pages": 0, "month": month_str}
+        
+    # Crear nuevo PDF sin la última página
+    writer = pypdf.PdfWriter()
+    for idx in range(total - 1):
+        writer.add_page(reader.pages[idx])
+        
+    with open(target_pdf_path, 'wb') as f:
+        writer.write(f)
+        
+    gdrive_link = sync_file_to_gdrive(target_pdf_path)
+    
+    return {
+        "success": True,
+        "remaining_pages": total - 1,
+        "month": month_str,
+        "gdrive_link": gdrive_link
+    }
+
+def delete_entire_month_pdf(month_str: str) -> dict:
+    """
+    Elimina el archivo PDF completo del mes seleccionado.
+    """
+    month_str = month_str.replace("-", "_")
+    target_pdf_path = PDFS_DIR / f"Tickets_{month_str}.pdf"
+    
+    if target_pdf_path.exists():
+        target_pdf_path.unlink()
+        return {"success": True, "month": month_str, "message": "PDF eliminado completamente"}
+    return {"success": False, "error": "El archivo no existe"}
 
 def get_monthly_stats() -> list[dict]:
     """Retorna información de todos los PDFs mensuales existentes."""

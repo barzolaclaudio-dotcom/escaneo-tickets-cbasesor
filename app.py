@@ -3,7 +3,13 @@ from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from pathlib import Path
 from datetime import datetime
 
-from pdf_processor import append_ticket_to_month_pdf, get_monthly_stats, PDFS_DIR
+from pdf_processor import (
+    append_ticket_to_month_pdf,
+    remove_last_page_from_pdf,
+    delete_entire_month_pdf,
+    get_monthly_stats,
+    PDFS_DIR
+)
 
 app = FastAPI(title="Escáner de Tickets Factura A")
 
@@ -55,6 +61,22 @@ async def upload_ticket(
             status_code=500,
             content={"success": False, "error": str(e)}
         )
+
+@app.post("/api/delete-last-ticket")
+async def delete_last_ticket(month: str = Form(...)):
+    try:
+        res = remove_last_page_from_pdf(month)
+        return JSONResponse(content=res)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+
+@app.post("/api/delete-month-pdf")
+async def delete_month_pdf(month: str = Form(...)):
+    try:
+        res = delete_entire_month_pdf(month)
+        return JSONResponse(content=res)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
 
 @app.get("/api/stats")
 async def stats():
