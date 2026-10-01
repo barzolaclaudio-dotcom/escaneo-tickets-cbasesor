@@ -4,12 +4,21 @@ import json
 import logging
 from pathlib import Path
 from datetime import datetime
-from PIL import Image
+from PIL import Image, ImageEnhance, ImageOps
 import pymupdf
 
 try:
     import pytesseract
     PYTESSERACT_AVAILABLE = True
+    possible_tesseract_paths = [
+        Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe"),
+        Path(r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe"),
+        Path(r"C:\Users\barzo\AppData\Local\Programs\Tesseract-OCR\tesseract.exe")
+    ]
+    for tp in possible_tesseract_paths:
+        if tp.exists():
+            pytesseract.pytesseract.tesseract_cmd = str(tp)
+            break
 except ImportError:
     PYTESSERACT_AVAILABLE = False
 
@@ -34,22 +43,46 @@ def parse_amount(text_str: str) -> float:
         return 0.0
 
 def extract_raw_text_from_image(image_bytes: bytes) -> str:
-    """Extrae el texto impreso en la foto utilizando Tesseract OCR / PyMuPDF."""
+    """Extrae el texto impreso en la foto utilizando Tesseract OCR / PyMuPDF con pre-procesamiento."""
     raw_text = ""
-    img = Image.open(io.BytesIO(image_bytes))
-    
+    try:
+        img = Image.open(io.BytesIO(image_bytes))
+        img = ImageOps.exif_transpose(img)
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        # Redimensionar si la imagen es de baja resolución (aumenta definición de caracteres impresos)
+        w, h = img.size
+        if w < 1200:
+            scale = 1400.0 / float(w)
+            new_w = 1400
+            new_h = int(h * scale)
+            img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+            
+        # Crear versión mejorada con alto contraste y nitidez
+        img_contrast = ImageEnhance.Contrast(img).enhance(1.8)
+        img_contrast = ImageEnhance.Sharpness(img_contrast).enhance(1.8)
+        
+        enhanced_bytes_io = io.BytesIO()
+        img_contrast.save(enhanced_bytes_io, format='JPEG', quality=95)
+        enhanced_bytes = enhanced_bytes_io.getvalue()
+    except Exception as e:
+        logger.warning(f"Error procesando imagen para OCR: {e}")
+        enhanced_bytes = image_bytes
+        img = Image.open(io.BytesIO(image_bytes))
+
     # 1. Intentar con PyTesseract (Tesseract OCR Engine nativo)
     if PYTESSERACT_AVAILABLE:
         try:
-            raw_text = pytesseract.image_to_string(img, lang='spa+eng')
-            if len(raw_text.strip()) > 10:
+            raw_text = pytesseract.image_to_string(img_contrast, lang='spa+eng')
+            if len(raw_text.strip()) > 15:
                 return raw_text
         except Exception as e:
             logger.debug(f"PyTesseract error: {e}")
             
     # 2. Intentar con PyMuPDF OCR
     try:
-        img_doc = pymupdf.open("png", image_bytes)
+        img_doc = pymupdf.open("jpeg", enhanced_bytes)
         pdf_bytes = img_doc.convert_to_pdf()
         img_doc.close()
         
@@ -107,15 +140,15 @@ def extract_data_from_image(
 
         if total <= 0:
             numbers = re.findall(r'\$?\s*([\d]{1,3}(?:\.[\d]{3})*(?:,[\d]{2})|\b[\d]+\.[\d]{2}\b)', raw_text)
-            parsed_nums = [parse_amount(n) for n in numbers if parse_amount(n) > 0]
+            parsed_nums = [parse_amount(n) for n in numbers if parse_amount(n) > 10]
             if parsed_nums:
                 total = max(parsed_nums)
 
     # 2. Vendor / Comercio
     vendor = user_vendor.strip() if (user_vendor and user_vendor.strip()) else None
     if not vendor:
-        for line in lines[:6]:
-            if len(line) > 3 and not re.search(r'factura|cuit|ticket|original|fecha|iva|responsable|direcc|remito|comprobante', line, re.I):
+        for line in lines[:8]:
+            if len(line) > 3 and not re.search(r'factura|cuit|dom|inicio|iva|responsable|direcc|remito|comprobante|original|nro', line, re.I):
                 vendor = line.title()
                 break
         if not vendor:
@@ -124,10 +157,11 @@ def extract_data_from_image(
     # 3. CUIT
     cuit = user_cuit.strip() if (user_cuit and user_cuit.strip()) else ""
     if not cuit:
-        cuit_match = re.search(r'\b(2[0370]-?\d{8}-?\d)\b', raw_text)
-        if not cuit_match:
-            cuit_match = re.search(r'CUIT\s*[:=]?\s*(\d{2}-?\d{8}-?\d)', raw_text, re.I)
-        cuit = cuit_match.group(1) if cuit_match else ""
+        for line in lines:
+            cuit_match = re.search(r'\b(3[034]-?\d{8}-?\d|2[0370]-?\d{8}-?\d)\b', line)
+            if cuit_match:
+                cuit = cuit_match.group(1)
+                break
 
     # 4. Fecha
     date_str = user_date.strip() if (user_date and user_date.strip()) else ""
@@ -142,34 +176,40 @@ def extract_data_from_image(
     if iva_21 is None:
         iva_21 = 0.0
         for line in lines:
-            m = re.search(r'(?:I\.?V\.?A\.?|IVA)\s*(?:GRAVADO\s*)?(?:21(?:[\.,]00)?)\s*%\s*[:=]?\s*\$?\s*([\d\.,]{3,12})', line, re.I)
-            if m:
-                val = parse_amount(m.group(1))
-                if val > 0:
-                    iva_21 = val
-                    break
+            if re.search(r'(?:I\.?V\.?A\.?|IVA)\s*(?:GRAVADO\s*)?(?:21(?:[\.,]00)?)\s*%', line, re.I):
+                nums = re.findall(r'[\d]{1,3}(?:\.[\d]{3})*(?:,[\d]{2})|\b[\d]+\.[\d]{2}\b', line)
+                if nums:
+                    val_str = nums[-1] if ('BASE' in line.upper() and len(nums) >= 2) else nums[0]
+                    val = parse_amount(val_str)
+                    if val > 0 and val != 21.0:
+                        iva_21 = val
+                        break
 
     iva_10_5 = user_iva_10_5 if (user_iva_10_5 is not None and user_iva_10_5 >= 0) else None
     if iva_10_5 is None:
         iva_10_5 = 0.0
         for line in lines:
-            m = re.search(r'(?:I\.?V\.?A\.?|IVA)\s*(?:GRAVADO\s*)?(?:10[\.,]5\d?)\s*%\s*[:=]?\s*\$?\s*([\d\.,]{3,12})', line, re.I)
-            if m:
-                val = parse_amount(m.group(1))
-                if val > 0:
-                    iva_10_5 = val
-                    break
+            if re.search(r'(?:I\.?V\.?A\.?|IVA)\s*(?:GRAVADO\s*)?(?:10[\.,]5\d?)\s*%', line, re.I):
+                nums = re.findall(r'[\d]{1,3}(?:\.[\d]{3})*(?:,[\d]{2})|\b[\d]+\.[\d]{2}\b', line)
+                if nums:
+                    val_str = nums[-1] if ('BASE' in line.upper() and len(nums) >= 2) else nums[0]
+                    val = parse_amount(val_str)
+                    if val > 0 and val != 10.5:
+                        iva_10_5 = val
+                        break
 
     iva_27 = user_iva_27 if (user_iva_27 is not None and user_iva_27 >= 0) else None
     if iva_27 is None:
         iva_27 = 0.0
         for line in lines:
-            m = re.search(r'(?:I\.?V\.?A\.?|IVA)\s*(?:GRAVADO\s*)?(?:27(?:[\.,]00)?)\s*%\s*[:=]?\s*\$?\s*([\d\.,]{3,12})', line, re.I)
-            if m:
-                val = parse_amount(m.group(1))
-                if val > 0:
-                    iva_27 = val
-                    break
+            if re.search(r'(?:I\.?V\.?A\.?|IVA)\s*(?:GRAVADO\s*)?(?:27(?:[\.,]00)?)\s*%', line, re.I):
+                nums = re.findall(r'[\d]{1,3}(?:\.[\d]{3})*(?:,[\d]{2})|\b[\d]+\.[\d]{2}\b', line)
+                if nums:
+                    val_str = nums[-1] if ('BASE' in line.upper() and len(nums) >= 2) else nums[0]
+                    val = parse_amount(val_str)
+                    if val > 0 and val != 27.0:
+                        iva_27 = val
+                        break
 
     # 6. Subtotal Neto impreso
     subtotal = user_subtotal if (user_subtotal is not None and user_subtotal > 0) else None
