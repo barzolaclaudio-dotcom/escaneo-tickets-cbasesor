@@ -234,7 +234,23 @@
                 </button>
             </div>
 
-            <p class="text-[11px] text-gold-400/90 text-center italic"> Arrastrá los bordes con tu dedo para recortar únicamente el papel del ticket y quitar la mesa.</p>
+            <!-- Campos de Entrada Rápida para Garantizar 100% de Precisión -->
+            <div class="bg-[#181820] p-3.5 rounded-xl border border-gold-500/25 space-y-3">
+                <p class="text-xs font-bold text-gold-400 flex items-center gap-1">
+                    <svg class="w-4 h-4 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    Datos del Ticket (Para Estadísticas y Excel):
+                </p>
+
+                <div class="space-y-1">
+                    <label for="input-vendor" class="text-[11px] font-semibold text-slate-300">Comercio / Proveedor:</label>
+                    <input type="text" id="input-vendor" placeholder="ej: La Parola, YPF, Carrefour" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-400">
+                </div>
+
+                <div class="space-y-1">
+                    <label for="input-total" class="text-[11px] font-semibold text-slate-300">Monto Total ($):</label>
+                    <input type="number" step="0.01" id="input-total" placeholder="ej: 141424.30" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs font-bold text-emerald-400 placeholder-slate-500 focus:outline-none focus:border-gold-400">
+                </div>
+            </div>
 
             <div class="bg-[#18181f] p-3 rounded-xl border border-gold-500/20 flex items-center justify-between">
                 <label for="enhance-toggle" class="flex items-center gap-2 text-xs font-medium text-gold-400 cursor-pointer">
@@ -562,6 +578,8 @@
                 cropper.destroy();
                 cropper = null;
             }
+            document.getElementById('input-vendor').value = '';
+            document.getElementById('input-total').value = '';
             document.getElementById('camera-input').value = '';
             document.getElementById('gallery-input').value = '';
             document.getElementById('preview-card').classList.add('hidden');
@@ -575,6 +593,8 @@
             const btnIcon = document.getElementById('upload-icon');
             const enhance = document.getElementById('enhance-toggle').checked;
             const month = document.getElementById('month-selector').value;
+            const userVendor = document.getElementById('input-vendor').value;
+            const userTotal = document.getElementById('input-total').value;
 
             btn.disabled = true;
             btnText.textContent = 'Procesando OCR y Guardando...';
@@ -597,6 +617,8 @@
                 formData.append('file', blob, selectedFile ? selectedFile.name : 'ticket_cropped.png');
                 formData.append('enhance', enhance);
                 formData.append('month', month);
+                if (userVendor) formData.append('vendor', userVendor);
+                if (userTotal) formData.append('total', userTotal);
 
                 try {
                     const res = await fetch('/api/upload', {

@@ -40,7 +40,9 @@ async def serve_index():
 async def upload_ticket(
     file: UploadFile = File(...),
     month: str = Form(None),
-    enhance: bool = Form(True)
+    enhance: bool = Form(True),
+    vendor: str = Form(None),
+    total: float = Form(None)
 ):
     try:
         content = await file.read()
@@ -53,7 +55,9 @@ async def upload_ticket(
             image_bytes=content,
             filename_hint=filename_hint,
             month_str=month,
-            enhance=enhance
+            enhance=enhance,
+            user_vendor=vendor,
+            user_total=total
         )
         return JSONResponse(content=result)
         

@@ -21,11 +21,6 @@ PDFS_DIR.mkdir(exist_ok=True)
 IMAGES_DIR.mkdir(exist_ok=True)
 
 def enhance_thermal_ticket(img: Image.Image) -> Image.Image:
-    """
-    Aplica mejoras a tickets térmicos gastados o con poca luz:
-    - Corrige orientación EXIF.
-    - Aumenta contraste y nitidez para destacar texto borroso.
-    """
     img = ImageOps.exif_transpose(img)
     if img.mode != 'RGB':
         img = img.convert('RGB')
@@ -35,11 +30,8 @@ def enhance_thermal_ticket(img: Image.Image) -> Image.Image:
     return img
 
 def image_to_a4_pdf(img: Image.Image) -> bytes:
-    """
-    Convierte una imagen de ticket en una página PDF estándar A4 vertical centrado.
-    """
     a4_w, a4_h = 595.27, 841.89  # A4 a 72 dpi
-    margin = 36.0  # 0.5 pulgada
+    margin = 36.0
     max_w = a4_w - (margin * 2)
     max_h = a4_h - (margin * 2)
     
@@ -64,11 +56,7 @@ def image_to_a4_pdf(img: Image.Image) -> bytes:
     doc.close()
     return pdf_bytes
 
-def append_ticket_to_month_pdf(image_bytes: bytes, filename_hint: str, month_str: str = None, enhance: bool = True) -> dict:
-    """
-    Anexa el ticket al PDF del mes indicado (Tickets_YYYY_MM.pdf),
-    extrae automáticamente datos e ítems con OCR y los guarda en la base de datos de gastos.
-    """
+def append_ticket_to_month_pdf(image_bytes: bytes, filename_hint: str, month_str: str = None, enhance: bool = True, user_vendor: str = None, user_total: float = None) -> dict:
     now = datetime.now()
     if not month_str:
         month_str = now.strftime("%Y_%m")
@@ -111,8 +99,7 @@ def append_ticket_to_month_pdf(image_bytes: bytes, filename_hint: str, month_str
         
     total_pages = len(pypdf.PdfReader(str(target_pdf_path)).pages)
     
-    # Extraer datos OCR y agregar a base de datos de gastos
-    extracted_data = extract_data_from_image(image_bytes, filename_hint=safe_filename)
+    extracted_data = extract_data_from_image(image_bytes, filename_hint=safe_filename, user_vendor=user_vendor, user_total=user_total)
     add_ticket_expense(month_str, extracted_data)
     
     gdrive_link = sync_file_to_gdrive(target_pdf_path)
@@ -128,9 +115,6 @@ def append_ticket_to_month_pdf(image_bytes: bytes, filename_hint: str, month_str
     }
 
 def remove_last_page_from_pdf(month_str: str) -> dict:
-    """
-    Elimina la última página (último ticket) agregada al PDF y a la base de datos de gastos.
-    """
     month_str = month_str.replace("-", "_")
     target_pdf_path = PDFS_DIR / f"Tickets_{month_str}.pdf"
     
@@ -163,9 +147,6 @@ def remove_last_page_from_pdf(month_str: str) -> dict:
     }
 
 def delete_entire_month_pdf(month_str: str) -> dict:
-    """
-    Elimina el archivo PDF completo y los datos de gastos del mes seleccionado.
-    """
     month_str = month_str.replace("-", "_")
     target_pdf_path = PDFS_DIR / f"Tickets_{month_str}.pdf"
     
@@ -177,7 +158,6 @@ def delete_entire_month_pdf(month_str: str) -> dict:
     return {"success": False, "error": "El archivo no existe"}
 
 def get_monthly_stats() -> list[dict]:
-    """Retorna información de todos los PDFs mensuales existentes."""
     stats = []
     if not PDFS_DIR.exists():
         return stats
