@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Escáner de Tickets | CB Asesor Profesional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gold: {
+                            400: '#e8c132',
+                            500: '#D4AF37',
+                            600: '#b8951c',
+                            700: '#9a7a10',
+                        },
+                        cb: {
+                            bg: '#09090b',
+                            card: '#121215',
+                            cardBorder: 'rgba(212, 175, 55, 0.22)',
+                            cardHover: '#18181c',
+                            text: '#f4f4f5',
+                            muted: '#a1a1aa'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        serif: ['"Playfair Display"', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #09090b;
+            color: #f4f4f5;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .gold-gradient-text {
+            background: linear-gradient(135deg, #FFF0B3 0%, #D4AF37 50%, #9A7A10 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .gold-border {
+            border: 1px solid rgba(212, 175, 55, 0.25);
+        }
+        .gold-border-glow {
+            border: 1px solid rgba(212, 175, 55, 0.5);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.15);
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-14 font-sans selection:bg-gold-500 selection:text-black">
+
+    <!-- Navbar CB Asesor Style -->
+    <header class="bg-[#0c0c0e] border-b border-gold-500/20 sticky top-0 z-30 backdrop-blur-md bg-opacity-90">
+        <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <!-- Monograma CB en Dorado -->
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-gold-400 via-gold-500 to-gold-700 flex items-center justify-center font-bold text-black text-lg shadow-md shadow-gold-500/20 tracking-tighter">
+                    CB
+                </div>
+                <div>
+                    <h1 class="font-bold text-base tracking-tight text-white flex items-center gap-1">
+                        CB Asesor
+                        <span class="text-[10px] uppercase tracking-widest px-1.5 py-0.5 bg-gold-500/10 text-gold-400 border border-gold-500/30 rounded">Tickets</span>
+                    </h1>
+                    <p class="text-[11px] text-cb-muted">Consolidador Facturas A</p>
+                </div>
+            </div>
+            
+            <button onclick="toggleQRModal()" class="p-2 bg-gold-500/10 hover:bg-gold-500/20 border border-gold-500/30 rounded-xl text-gold-400 text-xs font-semibold flex items-center gap-1.5 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                <span>Conectar</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-md mx-auto px-4 mt-5 space-y-5">
+
+        <!-- Selector de Mes de Destino (SIEMPRE VISIBLE) -->
+        <div class="bg-cb-card rounded-2xl p-4 gold-border shadow-lg space-y-2">
+            <div class="flex items-center justify-between">
+                <label for="month-selector" class="text-xs font-bold uppercase tracking-wider text-gold-400 flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    Mes al que pertenece el ticket:
+                </label>
+                <span id="badge-month-status" class="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Vigente</span>
+            </div>
+            
+            <div class="relative">
+                <select id="month-selector" onchange="onMonthChange()" class="w-full bg-[#1c1c21] text-white border border-gold-500/40 rounded-xl px-3.5 py-3 font-semibold text-sm appearance-none focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition">
+                    <!-- Dinámico vía JS -->
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gold-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+            </div>
+            <p class="text-[11px] text-cb-muted italic">Podés cambiar de mes en cualquier momento para escanear tickets pasados.</p>
+        </div>
+
+        <!-- Target Month Info Card -->
+        <div id="status-card" class="bg-gradient-to-r from-[#141419] to-[#1a1a20] rounded-2xl p-4 gold-border shadow-md flex items-center justify-between">
+            <div>
+                <span class="text-[11px] font-medium uppercase tracking-wider text-cb-muted">PDF Seleccionado</span>
+                <h2 id="selected-month-title" class="text-lg font-bold text-white leading-snug">Cargando...</h2>
+                <p id="selected-count-text" class="text-xs font-semibold text-gold-400 mt-0.5">0 tickets guardados en este mes</p>
+            </div>
+            <div id="download-btn-container">
+                <a id="selected-pdf-link" href="#" target="_blank" class="hidden inline-flex items-center gap-1.5 px-3 py-2 bg-gold-500/15 hover:bg-gold-500/25 text-gold-400 text-xs font-bold rounded-xl border border-gold-500/40 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V7.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 1H7a2 2 0 00-2 2v14a2 2 0 002 2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9d0 012 0v6m0 0l-2-2m2 2l2-2"/></svg>
+                    <span>Ver PDF</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Captura de Ticket -->
+        <div class="bg-cb-card rounded-2xl p-5 gold-border shadow-md space-y-4">
+            <h3 class="font-bold text-white text-base flex items-center gap-2">
+                <svg class="w-5 h-5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h0.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Capturar Ticket
+            </h3>
+
+            <!-- Hidden Inputs -->
+            <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden" onchange="handleFileSelect(event)">
+            <input type="file" id="gallery-input" accept="image/*,application/pdf" class="hidden" onchange="handleFileSelect(event)">
+
+            <!-- Big Touch Action Buttons -->
+            <div class="grid grid-cols-1 gap-3">
+                <button onclick="document.getElementById('camera-input').click()" class="w-full py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 active:scale-[0.99] text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-3 transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h0.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <span class="text-base">Tomar Foto con Cámara</span>
+                </button>
+
+                <button onclick="document.getElementById('gallery-input').click()" class="w-full py-3 bg-[#1c1c22] hover:bg-[#25252b] active:scale-[0.99] text-cb-text font-semibold rounded-xl border border-slate-800 flex items-center justify-center gap-2 transition text-sm">
+                    <svg class="w-5 h-5 text-cb-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <span>Seleccionar de Galería</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Preview Card -->
+        <div id="preview-card" class="hidden bg-cb-card rounded-2xl p-5 gold-border-glow space-y-4">
+            <div class="flex items-center justify-between">
+                <h4 class="font-bold text-white text-sm flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                    Vista previa de imagen
+                </h4>
+                <button onclick="cancelSelection()" class="text-xs font-semibold text-cb-muted hover:text-white">Cancelar</button>
+            </div>
+
+            <div class="relative bg-black rounded-xl overflow-hidden max-h-80 flex items-center justify-center border border-gold-500/30">
+                <img id="image-preview" src="" alt="Vista Previa" class="max-h-80 object-contain w-full">
+            </div>
+
+            <!-- Enhancement Toggle -->
+            <div class="bg-[#18181f] p-3 rounded-xl border border-gold-500/20 flex items-center justify-between">
+                <label for="enhance-toggle" class="flex items-center gap-2 text-xs font-medium text-gold-400 cursor-pointer">
+                    <svg class="w-4 h-4 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    Filtro térmico (Mejorar texto gastado)
+                </label>
+                <input type="checkbox" id="enhance-toggle" checked class="w-5 h-5 accent-gold-500 rounded cursor-pointer">
+            </div>
+
+            <!-- Action Button -->
+            <button id="upload-btn" onclick="submitTicket()" class="w-full py-4 bg-gradient-to-r from-gold-400 via-gold-500 to-gold-600 hover:from-gold-300 hover:to-gold-500 active:scale-[0.99] text-black font-extrabold text-base rounded-xl shadow-lg flex items-center justify-center gap-2 transition">
+                <svg id="upload-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                <span id="upload-btn-text">Agregar al PDF del Mes</span>
+            </button>
+        </div>
+
+        <!-- Success Toast -->
+        <div id="success-alert" class="hidden bg-emerald-950/90 border border-emerald-500/50 text-white rounded-2xl p-4 shadow-xl flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-emerald-600 rounded-xl text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                </div>
+                <div>
+                    <p class="font-bold text-sm text-emerald-200" id="success-title">¡Ticket guardado!</p>
+                    <p class="text-xs text-emerald-300" id="success-subtitle">Total acumulado: 1</p>
+                </div>
+            </div>
+            <button onclick="dismissSuccess()" class="text-xs bg-emerald-800 hover:bg-emerald-700 px-3 py-1.5 rounded-lg font-bold">OK</button>
+        </div>
+
+        <!-- Monthly History List -->
+        <div class="bg-cb-card rounded-2xl p-5 gold-border space-y-3">
+            <h3 class="font-bold text-white text-sm flex items-center justify-between">
+                <span class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
+                    Historial de PDFs Mensuales
+                </span>
+            </h3>
+            <div id="monthly-list" class="space-y-2">
+                <p class="text-xs text-cb-muted italic">Cargando PDFs...</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- QR Modal -->
+    <div id="qr-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-[#121215] gold-border rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4">
+            <div class="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center font-bold text-black text-xl">CB</div>
+            <h3 class="font-bold text-white text-lg">Conectar Celular</h3>
+            <p class="text-xs text-cb-muted">Escaneá este código QR con la cámara de tu celular para ingresar:</p>
+
+            <div class="flex justify-center bg-white p-4 rounded-xl border border-gold-500/30">
+                <div id="qrcode"></div>
+            </div>
+
+            <p id="qr-url-text" class="text-xs font-mono text-gold-400 break-all bg-[#1a1a20] p-2 rounded-lg border border-gold-500/20"></p>
+
+            <button onclick="toggleQRModal()" class="w-full py-2.5 bg-gold-500 hover:bg-gold-400 text-black font-extrabold rounded-xl text-sm transition">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        let selectedFile = null;
+        let globalStatsData = null;
+        const MONTH_NAMES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            populateMonthDropdown();
+            fetchStats();
+            setupQR();
+        });
+
+        function populateMonthDropdown() {
+            const select = document.getElementById('month-selector');
+            select.innerHTML = '';
+            
+            const now = new Date();
+            // Mostrar últimos 12 meses + 2 meses futuros (por si acaso)
+            for (let i = -1; i < 12; i++) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const key = `${y}_${m}`;
+                const label = `${MONTH_NAMES[d.getMonth()]} ${y}`;
+                
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = label + (i === 0 ? ' (Mes Actual)' : '');
+                if (i === 0) opt.selected = true;
+                select.appendChild(opt);
+            }
+        }
+
+        function onMonthChange() {
+            updateSelectedMonthCard();
+        }
+
+        function updateSelectedMonthCard() {
+            const select = document.getElementById('month-selector');
+            const key = select.value;
+            const nowKey = getNowMonthKey();
+            
+            const [y, m] = key.split('_');
+            const monthIdx = parseInt(m, 10) - 1;
+            const monthName = `${MONTH_NAMES[monthIdx]} ${y}`;
+            
+            document.getElementById('selected-month-title').textContent = monthName;
+            
+            const badge = document.getElementById('badge-month-status');
+            if (key === nowKey) {
+                badge.textContent = "Mes Actual";
+                badge.className = "text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20";
+            } else {
+                badge.textContent = "Histórico";
+                badge.className = "text-[10px] font-semibold text-gold-400 bg-gold-500/10 px-2 py-0.5 rounded border border-gold-500/20";
+            }
+            
+            // Buscar stats de este mes específico
+            let count = 0;
+            if (globalStatsData && globalStatsData.monthly_files) {
+                const found = globalStatsData.monthly_files.find(f => f.month_key === key);
+                if (found) count = found.pages;
+            }
+            
+            document.getElementById('selected-count-text').textContent = `${count} ticket${count === 1 ? '' : 's'} en este PDF`;
+            
+            const pdfLink = document.getElementById('selected-pdf-link');
+            if (count > 0) {
+                pdfLink.href = `/download/Tickets_${key}.pdf`;
+                pdfLink.classList.remove('hidden');
+            } else {
+                pdfLink.classList.add('hidden');
+            }
+        }
+
+        function getNowMonthKey() {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            return `${y}_${m}`;
+        }
+
+        async function fetchStats() {
+            try {
+                const res = await fetch('/api/stats');
+                globalStatsData = await res.json();
+                
+                updateSelectedMonthCard();
+                
+                // Renderizar lista completa de PDFs históricos
+                const list = document.getElementById('monthly-list');
+                list.innerHTML = '';
+                
+                if (globalStatsData.monthly_files.length === 0) {
+                    list.innerHTML = `<p class="text-xs text-cb-muted italic">No hay PDFs generados aún. ¡Tomá tu primer ticket arriba!</p>`;
+                    return;
+                }
+                
+                globalStatsData.monthly_files.forEach(item => {
+                    const [itemY, itemM] = item.month_key.split('_');
+                    const nameStr = `${MONTH_NAMES[parseInt(itemM, 10) - 1]} ${itemY}`;
+                    
+                    const div = document.createElement('div');
+                    div.className = "flex items-center justify-between p-3 bg-[#18181d] hover:bg-[#202026] rounded-xl border border-gold-500/15 transition";
+                    div.innerHTML = `
+                        <div>
+                            <p class="font-bold text-xs text-white">${nameStr}</p>
+                            <p class="text-[11px] text-cb-muted">${item.pages} ticket${item.pages === 1 ? '' : 's'} (${item.size_mb} MB) • ${item.last_updated}</p>
+                        </div>
+                        <a href="/download/${item.filename}" target="_blank" class="px-3 py-1.5 bg-gold-500/10 hover:bg-gold-500/20 border border-gold-500/40 rounded-lg text-xs font-bold text-gold-400 transition">
+                            Descargar
+                        </a>
+                    `;
+                    list.appendChild(div);
+                });
+                
+            } catch (err) {
+                console.error("Error al cargar estadísticas:", err);
+            }
+        }
+
+        function handleFileSelect(evt) {
+            const file = evt.target.files[0];
+            if (!file) return;
+            selectedFile = file;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('image-preview').src = e.target.result;
+                document.getElementById('preview-card').classList.remove('hidden');
+                document.getElementById('preview-card').scrollIntoView({ behavior: 'smooth' });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function cancelSelection() {
+            selectedFile = null;
+            document.getElementById('camera-input').value = '';
+            document.getElementById('gallery-input').value = '';
+            document.getElementById('preview-card').classList.add('hidden');
+        }
+
+        async function submitTicket() {
+            if (!selectedFile) return;
+
+            const btn = document.getElementById('upload-btn');
+            const btnText = document.getElementById('upload-btn-text');
+            const btnIcon = document.getElementById('upload-icon');
+            const enhance = document.getElementById('enhance-toggle').checked;
+            const month = document.getElementById('month-selector').value;
+
+            btn.disabled = true;
+            btnText.textContent = 'Guardando e integrando...';
+            btnIcon.innerHTML = `<svg class="animate-spin w-5 h-5 text-black" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('enhance', enhance);
+            formData.append('month', month);
+
+            try {
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    cancelSelection();
+                    showSuccess(data.total_tickets, month);
+                    fetchStats();
+                } else {
+                    alert('Error al guardar ticket: ' + (data.error || 'Error desconocido'));
+                }
+            } catch (err) {
+                alert('Error de conexión con el servidor: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = 'Agregar al PDF del Mes';
+                btnIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>`;
+            }
+        }
+
+        function showSuccess(total, monthKey) {
+            const [y, m] = monthKey.split('_');
+            const monthName = `${MONTH_NAMES[parseInt(m, 10) - 1]} ${y}`;
+            document.getElementById('success-title').textContent = `¡Ticket agregado a ${monthName}!`;
+            document.getElementById('success-subtitle').textContent = `Total acumulado en este PDF: ${total} ticket${total === 1 ? '' : 's'}`;
+            const alertBox = document.getElementById('success-alert');
+            alertBox.classList.remove('hidden');
+            alertBox.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function dismissSuccess() {
+            document.getElementById('success-alert').classList.add('hidden');
+        }
+
+        function setupQR() {
+            const currentUrl = window.location.href;
+            document.getElementById('qr-url-text').textContent = currentUrl;
+            new QRCode(document.getElementById("qrcode"), {
+                text: currentUrl,
+                width: 180,
+                height: 180
+            });
+        }
+
+        function toggleQRModal() {
+            const modal = document.getElementById('qr-modal');
+            modal.classList.toggle('hidden');
+        }
+    </script>
+</body>
+</html>
