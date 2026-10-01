@@ -556,6 +556,8 @@
             }
         }
 
+        let ocrTimeout = null;
+
         function handleFileSelect(evt) {
             const file = evt.target.files[0];
             if (!file) return;
@@ -585,52 +587,98 @@
                     cropBoxMovable: true,
                     cropBoxResizable: true,
                     toggleDragModeOnDblclick: false,
+                    ready() {
+                        scheduleOCRScanPreview();
+                    },
+                    cropend() {
+                        scheduleOCRScanPreview();
+                    }
                 });
-
-                // Lanzar auto-prelectura OCR en segundo plano para autocompletar campos
-                triggerOCRScanPreview(file);
             };
             reader.readAsDataURL(file);
         }
 
-        async function triggerOCRScanPreview(file) {
-            const badge = document.getElementById('ocr-status-badge');
+        function scheduleOCRScanPreview() {
+            if (ocrTimeout) clearTimeout(ocrTimeout);
+            ocrTimeout = setTimeout(() => {
+                triggerOCRScanPreviewFromCropper();
+            }, 300);
+        }
+
+        async function triggerOCRScanPreviewFromCropper() {
+            if (!cropper) return;
             
-            badge.textContent = "Leyendo texto...";
+            const badge = document.getElementById('ocr-status-badge');
+            badge.textContent = "Leyendo recuadre...";
             badge.className = "text-[10px] text-amber-400 animate-pulse font-semibold";
 
-            const formData = new FormData();
-            formData.append('file', file);
+            cropper.getCroppedCanvas({
+                maxWidth: 1400,
+                maxHeight: 2000,
+                fillColor: '#FFFFFF',
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high',
+            }).toBlob(async (blob) => {
+                if (!blob) return;
 
-            try {
-                const res = await fetch('/api/scan-ocr-preview', { method: 'POST', body: formData });
-                const data = await res.json();
+                const formData = new FormData();
+                formData.append('file', blob, 'ticket_crop_preview.jpg');
 
-                if (data.vendor) document.getElementById('input-vendor').value = data.vendor;
-                if (data.total && data.total > 0) document.getElementById('input-total').value = data.total;
-                if (data.subtotal && data.subtotal > 0) document.getElementById('input-subtotal').value = data.subtotal;
-                if (data.iva_21 !== undefined && data.iva_21 !== null && data.iva_21 > 0) document.getElementById('input-iva-21').value = data.iva_21;
-                if (data.iva_10_5 !== undefined && data.iva_10_5 !== null && data.iva_10_5 > 0) document.getElementById('input-iva-10-5').value = data.iva_10_5;
-                if (data.cuit) document.getElementById('input-cuit').value = data.cuit;
-                if (data.date) document.getElementById('input-date').value = data.date;
-                
-                badge.textContent = "✓ Autocompletado";
-                badge.className = "text-[10px] text-emerald-400 font-bold";
-            } catch (err) {
-                badge.textContent = "Completar si es necesario";
-                badge.className = "text-[10px] text-cb-muted";
-            }
+                try {
+                    const res = await fetch('/api/scan-ocr-preview', { method: 'POST', body: formData });
+                    const data = await res.json();
+
+                    if (data.vendor && data.vendor !== 'Comercio General') {
+                        document.getElementById('input-vendor').value = data.vendor;
+                    }
+                    if (data.total && data.total > 0) {
+                        document.getElementById('input-total').value = data.total;
+                    } else {
+                        document.getElementById('input-total').value = '';
+                    }
+                    if (data.subtotal && data.subtotal > 0) {
+                        document.getElementById('input-subtotal').value = data.subtotal;
+                    } else {
+                        document.getElementById('input-subtotal').value = '';
+                    }
+                    if (data.iva_21 !== undefined && data.iva_21 !== null && data.iva_21 > 0) {
+                        document.getElementById('input-iva-21').value = data.iva_21;
+                    } else {
+                        document.getElementById('input-iva-21').value = '';
+                    }
+                    if (data.iva_10_5 !== undefined && data.iva_10_5 !== null && data.iva_10_5 > 0) {
+                        document.getElementById('input-iva-10-5').value = data.iva_10_5;
+                    } else {
+                        document.getElementById('input-iva-10-5').value = '';
+                    }
+                    if (data.cuit) document.getElementById('input-cuit').value = data.cuit;
+                    if (data.date) document.getElementById('input-date').value = data.date;
+
+                    if (data.total && data.total > 0) {
+                        badge.textContent = "✓ Autocompletado";
+                        badge.className = "text-[10px] text-emerald-400 font-bold";
+                    } else {
+                        badge.textContent = "Ajustar recuadre o completar datos";
+                        badge.className = "text-[10px] text-amber-400 font-semibold";
+                    }
+                } catch (err) {
+                    badge.textContent = "Completar si es necesario";
+                    badge.className = "text-[10px] text-cb-muted";
+                }
+            }, 'image/jpeg', 0.90);
         }
 
         function rotateImage(deg) {
             if (cropper) {
                 cropper.rotate(deg);
+                scheduleOCRScanPreview();
             }
         }
 
         function resetCrop() {
             if (cropper) {
                 cropper.reset();
+                scheduleOCRScanPreview();
             }
         }
 
@@ -659,10 +707,10 @@
             const month = document.getElementById('month-selector').value;
             
             const userVendor = document.getElementById('input-vendor').value;
-            const userTotal = document.getElementById('input-total').value;
-            const userSubtotal = document.getElementById('input-subtotal').value;
-            const userIva21 = document.getElementById('input-iva-21').value;
-            const userIva105 = document.getElementById('input-iva-10-5').value;
+            const userTotal = parseFloat(document.getElementById('input-total').value);
+            const userSubtotal = parseFloat(document.getElementById('input-subtotal').value);
+            const userIva21 = parseFloat(document.getElementById('input-iva-21').value);
+            const userIva105 = parseFloat(document.getElementById('input-iva-10-5').value);
             const userCuit = document.getElementById('input-cuit').value;
             const userDate = document.getElementById('input-date').value;
 
@@ -670,13 +718,12 @@
             btnText.textContent = 'Procesando...';
             btnIcon.innerHTML = `<svg class="animate-spin w-5 h-5 text-black" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
 
-            // Optimización de velocidad: Comprimir a max 1200px JPEG quality 0.82
             cropper.getCroppedCanvas({
-                maxWidth: 1200,
-                maxHeight: 1800,
+                maxWidth: 1400,
+                maxHeight: 2000,
                 fillColor: '#FFFFFF',
                 imageSmoothingEnabled: true,
-                imageSmoothingQuality: 'medium',
+                imageSmoothingQuality: 'high',
             }).toBlob(async (blob) => {
                 if (!blob) {
                     alert('Error procesando la imagen');
@@ -688,13 +735,13 @@
                 formData.append('file', blob, selectedFile ? selectedFile.name : 'ticket_cropped.jpg');
                 formData.append('enhance', enhance);
                 formData.append('month', month);
-                if (userVendor) formData.append('vendor', userVendor);
-                if (userTotal) formData.append('total', userTotal);
-                if (userSubtotal) formData.append('subtotal', userSubtotal);
-                if (userIva21 !== '') formData.append('iva_21', userIva21);
-                if (userIva105 !== '') formData.append('iva_10_5', userIva105);
-                if (userCuit) formData.append('cuit', userCuit);
-                if (userDate) formData.append('date', userDate);
+                if (userVendor && userVendor !== 'Comercio General') formData.append('vendor', userVendor);
+                if (!isNaN(userTotal) && userTotal > 0) formData.append('total', userTotal);
+                if (!isNaN(userSubtotal) && userSubtotal > 0) formData.append('subtotal', userSubtotal);
+                if (!isNaN(userIva21) && userIva21 > 0) formData.append('iva_21', userIva21);
+                if (!isNaN(userIva105) && userIva105 > 0) formData.append('iva_10_5', userIva105);
+                if (userCuit && !userCuit.includes('X')) formData.append('cuit', userCuit);
+                if (userDate && !userDate.includes('D')) formData.append('date', userDate);
 
                 try {
                     const res = await fetch('/api/upload', {
