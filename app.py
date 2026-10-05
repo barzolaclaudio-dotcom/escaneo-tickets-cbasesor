@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, BackgroundTasks
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, Response
 from pathlib import Path
 from datetime import datetime
@@ -12,7 +12,7 @@ from pdf_processor import (
 )
 from ticket_ocr import extract_data_from_image, get_monthly_summary, DATA_DIR
 from excel_exporter import generate_excel_report, generate_csv_report
-from gdrive_sync import restore_all_from_gdrive
+from gdrive_sync import restore_all_from_gdrive, sync_month_to_gdrive
 
 app = FastAPI(title="Escáner de Tickets Factura A")
 
@@ -67,6 +67,7 @@ async def scan_ocr_preview(file: UploadFile = File(...)):
 
 @app.post("/api/upload")
 async def upload_ticket(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     month: str = Form(None),
     enhance: bool = Form(True),
@@ -100,6 +101,11 @@ async def upload_ticket(
             user_iva_10_5=iva_10_5,
             user_iva_27=iva_27
         )
+        
+        month_key = result.get("month")
+        if month_key:
+            background_tasks.add_task(sync_month_to_gdrive, month_key, PDFS_DIR, DATA_DIR)
+            
         return JSONResponse(content=result)
         
     except Exception as e:
@@ -116,6 +122,7 @@ async def get_expenses(month: str):
 @app.get("/download/excel/{month}")
 async def download_excel(month: str):
     try:
+        restore_all_from_gdrive(PDFS_DIR, DATA_DIR)
         excel_bytes = generate_excel_report(month)
         filename = f"Gastos_{month}.xlsx"
         return Response(
@@ -129,6 +136,7 @@ async def download_excel(month: str):
 @app.get("/download/csv/{month}")
 async def download_csv(month: str):
     try:
+        restore_all_from_gdrive(PDFS_DIR, DATA_DIR)
         csv_bytes = generate_csv_report(month)
         filename = f"Libro_IVA_Compras_{month}.csv"
         return Response(
@@ -140,9 +148,12 @@ async def download_csv(month: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/delete-last-ticket")
-async def delete_last_ticket(month: str = Form(...)):
+async def delete_last_ticket(month: str = Form(...), background_tasks: BackgroundTasks = BackgroundTasks()):
     try:
         res = remove_last_page_from_pdf(month)
+        month_key = res.get("month")
+        if month_key:
+            background_tasks.add_task(sync_month_to_gdrive, month_key, PDFS_DIR, DATA_DIR)
         return JSONResponse(content=res)
     except Exception as e:
         return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
@@ -174,6 +185,12 @@ async def stats():
 @app.get("/download/{filename}")
 async def download_pdf(filename: str):
     file_path = PDFS_DIR / filename
+    if not file_path.exists():
+        try:
+            restore_all_from_gdrive(PDFS_DIR, DATA_DIR)
+        except Exception:
+            pass
+            
     if not file_path.exists() or not file_path.name.startswith("Tickets_"):
         raise HTTPException(status_code=404, detail="Archivo PDF no encontrado")
         

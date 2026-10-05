@@ -154,3 +154,17 @@ def restore_all_from_gdrive(pdfs_dir: Path, data_dir: Path):
     except Exception as e:
         logger.error(f"Error al restaurar archivos de Google Drive: {e}")
 
+def sync_month_to_gdrive(month_str: str, pdfs_dir: Path, data_dir: Path):
+    """Sincroniza el PDF y JSON del mes especificado con Google Drive en segundo plano."""
+    try:
+        pdf_path = pdfs_dir / f"Tickets_{month_str}.pdf"
+        json_path = data_dir / f"Gastos_{month_str}.json"
+        
+        if pdf_path.exists():
+            sync_file_to_gdrive(pdf_path)
+        if json_path.exists():
+            sync_file_to_gdrive(json_path)
+    except Exception as e:
+        logger.error(f"Error en sincronización en segundo plano de {month_str}: {e}")
+
+

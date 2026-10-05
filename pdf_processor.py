@@ -128,20 +128,13 @@ def append_ticket_to_month_pdf(
     )
     add_ticket_expense(month_str, extracted_data)
     
-    gdrive_link = sync_file_to_gdrive(target_pdf_path)
-    from ticket_ocr import get_month_data_file
-    json_path = get_month_data_file(month_str)
-    if json_path.exists():
-        sync_file_to_gdrive(json_path)
-    
     return {
         "success": True,
         "month": month_str,
         "pdf_filename": f"Tickets_{month_str}.pdf",
         "total_tickets": total_pages,
         "image_saved": str(raw_img_path.name),
-        "extracted_data": extracted_data,
-        "gdrive_link": gdrive_link
+        "extracted_data": extracted_data
     }
 
 def remove_last_page_from_pdf(month_str: str) -> dict:
@@ -168,17 +161,10 @@ def remove_last_page_from_pdf(month_str: str) -> dict:
     with open(target_pdf_path, 'wb') as f:
         writer.write(f)
         
-    gdrive_link = sync_file_to_gdrive(target_pdf_path)
-    from ticket_ocr import get_month_data_file
-    json_path = get_month_data_file(month_str)
-    if json_path.exists():
-        sync_file_to_gdrive(json_path)
-    
     return {
         "success": True,
         "remaining_pages": total - 1,
-        "month": month_str,
-        "gdrive_link": gdrive_link
+        "month": month_str
     }
 
 def delete_entire_month_pdf(month_str: str) -> dict:
