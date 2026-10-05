@@ -109,7 +109,71 @@ def extract_raw_text_from_image(image_bytes: bytes) -> str:
     except Exception as e:
         logger.warning(f"PyMuPDF OCR error: {e}")
         
-    return raw_text
+import os
+import base64
+import requests
+
+def extract_data_with_gemini_vision(image_bytes: bytes) -> dict:
+    """Extrae datos de tickets usando IA Visión de Google Gemini (si la API Key está configurada)."""
+    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    if not api_key:
+        return None
+    
+    try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        b64_image = base64.b64encode(image_bytes).decode("utf-8")
+        
+        prompt = """Analiza la foto de este ticket de compra / factura de Argentina y responde ÚNICAMENTE con un objeto JSON válido con este formato exacto (sin bloques ```json, solo el texto JSON puro):
+{
+  "vendor": "Nombre o Razón Social del Comercio",
+  "cuit": "CUIT del Comercio Vendedor en formato XX-XXXXXXXX-X",
+  "invoice_type": "Factura A", "Factura B" o "Ticket / Comprobante",
+  "date": "Fecha exacta en formato DD/MM/YYYY",
+  "subtotal": 0.00,
+  "iva_21": 0.00,
+  "iva_10_5": 0.00,
+  "iva_27": 0.00,
+  "total": 0.00
+}
+Reglas estrictas:
+1. "date": Extrae la FECHA REAL impresa en el ticket (ej. 16/09/2026, 23/09/2026). NO inventes ni uses la fecha de hoy.
+2. "subtotal": Monto neto grabado antes de impuestos.
+3. "iva_21", "iva_10_5", "iva_27": Extrae el monto en pesos del IVA impreso.
+4. "total": El importe total final a pagar impreso.
+5. "vendor": Razón social o comercio impreso arriba (ej: RERIFF S.A., YPF, CENCOSUD, CARREFOUR, DISCO, COTO).
+"""
+
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {"text": prompt},
+                        {
+                            "inline_data": {
+                                "mime_type": "image/jpeg",
+                                "data": b64_image
+                            }
+                        }
+                    ]
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.1,
+                "response_mime_type": "application/json"
+            }
+        }
+        
+        resp = requests.post(url, json=payload, timeout=9)
+        if resp.status_code == 200:
+            res_json = resp.json()
+            text_resp = res_json['candidates'][0]['content']['parts'][0]['text']
+            parsed = json.loads(text_resp.strip())
+            logger.info(f"Gemini Vision AI extrajo exitosamente: {parsed}")
+            return parsed
+    except Exception as e:
+        logger.warning(f"Gemini Vision API error/bypass: {e}")
+        
+    return None
 
 def extract_data_from_image(
     image_bytes: bytes,
@@ -124,16 +188,41 @@ def extract_data_from_image(
     user_iva_27: float = None
 ) -> dict:
     """
-    Analiza la foto del ticket mediante OCR real en Linux/Windows y reconoce:
+    Analiza la foto del ticket mediante IA Visión de Google Gemini o OCR Tesseract:
     - Razón Social / Comercio
     - CUIT
     - Tipo de Comprobante
     - Fecha
     - Lectura directa de IVA 21%, IVA 10.5% e IVA 27% impresos
     - Monto Total
-    
-    Permite sobreescribir cualquiera de los campos desde la interfaz de usuario si el usuario lo edita.
     """
+    # 1. Intentar primero con Visión por IA (Google Gemini 1.5 Flash) si la API Key está presente
+    ai_data = extract_data_with_gemini_vision(image_bytes)
+    if ai_data:
+        vendor = user_vendor.strip() if (user_vendor and user_vendor.strip() and user_vendor != "Comercio General") else str(ai_data.get("vendor", "Comercio General"))
+        total = user_total if (user_total is not None and user_total > 0) else parse_amount(str(ai_data.get("total", 0.0)))
+        cuit = user_cuit.strip() if (user_cuit and user_cuit.strip() and "X" not in user_cuit) else str(ai_data.get("cuit", ""))
+        date_str = user_date.strip() if (user_date and user_date.strip() and "D" not in user_date) else str(ai_data.get("date", datetime.now().strftime("%d/%m/%Y")))
+        subtotal = user_subtotal if (user_subtotal is not None and user_subtotal > 0) else parse_amount(str(ai_data.get("subtotal", 0.0)))
+        iva_21 = user_iva_21 if (user_iva_21 is not None and user_iva_21 >= 0) else parse_amount(str(ai_data.get("iva_21", 0.0)))
+        iva_10_5 = user_iva_10_5 if (user_iva_10_5 is not None and user_iva_10_5 >= 0) else parse_amount(str(ai_data.get("iva_10_5", 0.0)))
+        iva_27 = user_iva_27 if (user_iva_27 is not None and user_iva_27 >= 0) else parse_amount(str(ai_data.get("iva_27", 0.0)))
+        
+        return {
+            "id": datetime.now().strftime("%Y%m%d%H%M%S%f"),
+            "vendor": vendor,
+            "cuit": cuit,
+            "invoice_type": ai_data.get("invoice_type", "Factura A"),
+            "date": date_str,
+            "subtotal": subtotal,
+            "iva_21": iva_21,
+            "iva_10_5": iva_10_5,
+            "iva_27": iva_27,
+            "total": total,
+            "items": [],
+            "filename": filename_hint
+        }
+
     raw_text = extract_raw_text_from_image(image_bytes)
     lines = [line.strip() for line in raw_text.split('\n') if line.strip()]
     
@@ -176,8 +265,10 @@ def extract_data_from_image(
     # 4. Fecha
     date_str = user_date.strip() if (user_date and user_date.strip()) else ""
     if not date_str:
-        date_match = re.search(r'\b(\d{2}[/\.-]\d{2}[/\.-]\d{2,4})\b', raw_text)
-        date_str = date_match.group(1) if date_match else datetime.now().strftime("%d/%m/%Y")
+        date_match = re.search(r'FECHA\s*[:=]?\s*(\d{2}[/\.-]\d{2}[/\.-]\d{2,4})', raw_text, re.I)
+        if not date_match:
+            date_match = re.search(r'\b(\d{2}[/\.-]\d{2}[/\.-]\d{2,4})\b', raw_text)
+        date_str = date_match.group(1) if date_match else ""
 
     comp_type = "Factura A" if ("FACTURA A" in raw_text.upper() or "TICKET FACTURA A" in raw_text.upper()) else "Ticket / Comprobante"
 
