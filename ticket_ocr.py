@@ -71,14 +71,18 @@ def extract_raw_text_from_image(image_bytes: bytes) -> str:
         enhanced_bytes = image_bytes
         img = Image.open(io.BytesIO(image_bytes))
 
-    # 1. Intentar con PyTesseract (Tesseract OCR Engine nativo)
+    # 1. Intentar con PyTesseract con cadena de fallback de idioma (spa+eng -> eng -> spa -> default)
     if PYTESSERACT_AVAILABLE:
-        try:
-            raw_text = pytesseract.image_to_string(img_contrast, lang='spa+eng')
-            if len(raw_text.strip()) > 15:
-                return raw_text
-        except Exception as e:
-            logger.debug(f"PyTesseract error: {e}")
+        for lang_option in ['spa+eng', 'eng', 'spa', None]:
+            try:
+                if lang_option:
+                    txt = pytesseract.image_to_string(img_contrast, lang=lang_option)
+                else:
+                    txt = pytesseract.image_to_string(img_contrast)
+                if txt and len(txt.strip()) > 10:
+                    return txt
+            except Exception as e:
+                logger.warning(f"PyTesseract error con lang={lang_option}: {e}")
             
     # 2. Intentar con PyMuPDF OCR
     try:
@@ -89,10 +93,16 @@ def extract_raw_text_from_image(image_bytes: bytes) -> str:
         pdf_mem = pymupdf.open("pdf", pdf_bytes)
         page = pdf_mem[0]
         
-        try:
-            tp = page.get_textpage_ocr(flags=0, language='spa')
-            raw_text = page.get_text("text", textpage=tp)
-        except Exception:
+        for lang_option in ['eng', 'spa']:
+            try:
+                tp = page.get_textpage_ocr(flags=0, language=lang_option)
+                raw_text = page.get_text("text", textpage=tp)
+                if raw_text and len(raw_text.strip()) > 10:
+                    break
+            except Exception:
+                continue
+                
+        if not raw_text or len(raw_text.strip()) <= 10:
             raw_text = page.get_text("text")
             
         pdf_mem.close()
