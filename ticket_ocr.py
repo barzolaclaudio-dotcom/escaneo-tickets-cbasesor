@@ -163,13 +163,17 @@ Reglas estrictas:
             }
         }
         
-        resp = requests.post(url, json=payload, timeout=9)
-        if resp.status_code == 200:
-            res_json = resp.json()
-            text_resp = res_json['candidates'][0]['content']['parts'][0]['text']
-            parsed = json.loads(text_resp.strip())
-            logger.info(f"Gemini Vision AI extrajo exitosamente: {parsed}")
-            return parsed
+        for model_name in ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-2.5-flash"]:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+            resp = requests.post(url, json=payload, timeout=9)
+            if resp.status_code == 200:
+                res_json = resp.json()
+                text_resp = res_json['candidates'][0]['content']['parts'][0]['text']
+                parsed = json.loads(text_resp.strip())
+                logger.info(f"Gemini Vision AI ({model_name}) extrajo exitosamente: {parsed}")
+                return parsed
+            else:
+                logger.warning(f"Gemini Vision API ({model_name}) HTTP {resp.status_code}: {resp.text[:150]}")
     except Exception as e:
         logger.warning(f"Gemini Vision API error/bypass: {e}")
         
