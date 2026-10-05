@@ -10,10 +10,18 @@ from pdf_processor import (
     get_monthly_stats,
     PDFS_DIR
 )
-from ticket_ocr import extract_data_from_image, get_monthly_summary
+from ticket_ocr import extract_data_from_image, get_monthly_summary, DATA_DIR
 from excel_exporter import generate_excel_report, generate_csv_report
+from gdrive_sync import restore_all_from_gdrive
 
 app = FastAPI(title="Escáner de Tickets Factura A")
+
+@app.on_event("startup")
+async def startup_event():
+    try:
+        restore_all_from_gdrive(PDFS_DIR, DATA_DIR)
+    except Exception as e:
+        print(f"Startup GDrive restore error: {e}")
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -149,6 +157,10 @@ async def delete_month_pdf(month: str = Form(...)):
 
 @app.get("/api/stats")
 async def stats():
+    try:
+        restore_all_from_gdrive(PDFS_DIR, DATA_DIR)
+    except Exception:
+        pass
     monthly = get_monthly_stats()
     current_month_key = datetime.now().strftime("%Y_%m")
     current_stat = next((m for m in monthly if m["month_key"] == current_month_key), None)

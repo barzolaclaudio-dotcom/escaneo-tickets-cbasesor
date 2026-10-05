@@ -71,7 +71,7 @@ def get_or_create_folder(service, folder_name: str) -> str:
 
 def sync_file_to_gdrive(file_path: Path, target_folder_name: str = GDRIVE_FOLDER_NAME) -> str:
     """
-    Sube o actualiza un archivo local en Google Drive.
+    Sube o actualiza un archivo local (PDF o JSON) en Google Drive.
     Retorna el link directo de Google Drive o None.
     """
     service = get_gdrive_service()
@@ -84,12 +84,12 @@ def sync_file_to_gdrive(file_path: Path, target_folder_name: str = GDRIVE_FOLDER
             return None
 
         filename = file_path.name
-        # Buscar si el archivo ya existe en esa carpeta
         query = f"name = '{filename}' and '{folder_id}' in parents and trashed = false"
         results = service.files().list(q=query, fields="files(id, webViewLink)").execute()
         files = results.get('files', [])
 
-        media = MediaFileUpload(str(file_path), mimetype='application/pdf', resumable=True)
+        mimetype = 'application/json' if file_path.suffix == '.json' else 'application/pdf'
+        media = MediaFileUpload(str(file_path), mimetype=mimetype, resumable=True)
 
         if files:
             # Actualizar archivo existente
@@ -116,3 +116,41 @@ def sync_file_to_gdrive(file_path: Path, target_folder_name: str = GDRIVE_FOLDER
     except Exception as e:
         logger.error(f"Error sincronizando {file_path.name} con Google Drive: {e}")
         return None
+
+def restore_all_from_gdrive(pdfs_dir: Path, data_dir: Path):
+    """
+    Restaura automáticamente los archivos PDFs y JSONs desde Google Drive si el servidor se reinició.
+    """
+    service = get_gdrive_service()
+    if not service:
+        return
+
+    try:
+        folder_id = get_or_create_folder(service, GDRIVE_FOLDER_NAME)
+        if not folder_id:
+            return
+
+        query = f"'{folder_id}' in parents and trashed = false"
+        results = service.files().list(q=query, fields="files(id, name)").execute()
+        files = results.get('files', [])
+
+        for f_info in files:
+            fname = f_info['name']
+            fid = f_info['id']
+
+            if fname.startswith("Tickets_") and fname.endswith(".pdf"):
+                local_path = pdfs_dir / fname
+            elif fname.startswith("Gastos_") and fname.endswith(".json"):
+                local_path = data_dir / fname
+            else:
+                continue
+
+            if not local_path.exists() or local_path.stat().st_size == 0:
+                request = service.files().get_media(fileId=fid)
+                content = request.execute()
+                with open(local_path, "wb") as f:
+                    f.write(content)
+                logger.info(f"Archivo restaurado exitosamente de Google Drive: {fname}")
+    except Exception as e:
+        logger.error(f"Error al restaurar archivos de Google Drive: {e}")
+

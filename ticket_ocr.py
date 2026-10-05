@@ -389,13 +389,13 @@ def save_monthly_expenses(month_str: str, tickets_list: list[dict]):
 
 def add_ticket_expense(month_str: str, ticket_data: dict):
     current = load_monthly_expenses(month_str)
-    current.append(ticket_data)
+    current.insert(0, ticket_data)
     save_monthly_expenses(month_str, current)
 
 def remove_last_ticket_expense(month_str: str):
     current = load_monthly_expenses(month_str)
     if current:
-        current.pop()
+        current.pop(0)
         save_monthly_expenses(month_str, current)
 
 def delete_month_expenses(month_str: str):
