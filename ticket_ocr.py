@@ -132,7 +132,14 @@ def extract_data_with_gemini_vision(image_bytes: bytes) -> dict:
   "iva_21": 0.00,
   "iva_10_5": 0.00,
   "iva_27": 0.00,
-  "total": 0.00
+  "total": 0.00,
+  "items": [
+    {
+      "name": "Nombre o descripción del producto/servicio",
+      "qty": 1.0,
+      "price": 0.00
+    }
+  ]
 }
 Reglas estrictas:
 1. "date": Extrae la FECHA REAL impresa en el ticket (ej. 16/09/2026, 23/09/2026). NO inventes ni uses la fecha de hoy.
@@ -140,6 +147,7 @@ Reglas estrictas:
 3. "iva_21", "iva_10_5", "iva_27": Extrae el monto en pesos del IVA impreso.
 4. "total": El importe total final a pagar impreso.
 5. "vendor": Razón social o comercio impreso arriba (ej: RERIFF S.A., YPF, CENCOSUD, CARREFOUR, DISCO, COTO).
+6. "items": Lista detallada de productos/servicios comprados (ej. Nafta Super XXI, Leche 1L, Huevos, Dulce de Membrillo). Si no se pueden identificar los ítems, devuelve una lista vacía [].
 """
 
         payload = {
@@ -216,6 +224,7 @@ def extract_data_from_image(
     - Fecha
     - Lectura directa de IVA 21%, IVA 10.5% e IVA 27% impresos
     - Monto Total
+    - Detalle de ítems comprados
     """
     # 1. Intentar primero con Visión por IA (Google Gemini 1.5 Flash) si la API Key está presente
     ai_data = extract_data_with_gemini_vision(image_bytes)
@@ -228,6 +237,8 @@ def extract_data_from_image(
         iva_21 = user_iva_21 if (user_iva_21 is not None and user_iva_21 >= 0) else parse_amount(str(ai_data.get("iva_21", 0.0)))
         iva_10_5 = user_iva_10_5 if (user_iva_10_5 is not None and user_iva_10_5 >= 0) else parse_amount(str(ai_data.get("iva_10_5", 0.0)))
         iva_27 = user_iva_27 if (user_iva_27 is not None and user_iva_27 >= 0) else parse_amount(str(ai_data.get("iva_27", 0.0)))
+        raw_items = ai_data.get("items", [])
+        items = raw_items if isinstance(raw_items, list) else []
         
         return {
             "id": datetime.now().strftime("%Y%m%d%H%M%S%f"),
@@ -240,7 +251,7 @@ def extract_data_from_image(
             "iva_10_5": iva_10_5,
             "iva_27": iva_27,
             "total": total,
-            "items": [],
+            "items": items,
             "filename": filename_hint
         }
 

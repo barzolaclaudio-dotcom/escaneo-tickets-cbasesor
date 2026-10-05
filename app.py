@@ -8,6 +8,7 @@ from pdf_processor import (
     remove_last_page_from_pdf,
     delete_entire_month_pdf,
     get_monthly_stats,
+    generate_zip_report,
     PDFS_DIR
 )
 from ticket_ocr import extract_data_from_image, get_monthly_summary, DATA_DIR
@@ -43,6 +44,49 @@ async def serve_index():
     if not index_path:
         raise HTTPException(status_code=404, detail="Plantilla index.html no encontrada")
     return index_path.read_text(encoding="utf-8")
+
+@app.get("/manifest.json")
+async def manifest():
+    manifest_path = BASE_DIR / "manifest.json"
+    if manifest_path.exists():
+        return FileResponse(manifest_path, media_type="application/manifest+json")
+    return JSONResponse({
+        "name": "CB Asesor Tickets & Gastos",
+        "short_name": "CB Tickets",
+        "description": "Escáner y gestor de tickets y gastos para CB Asesor",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#09090b",
+        "theme_color": "#D4AF37",
+        "icons": [
+            {
+                "src": "https://img.icons8.com/color/192/000000/receipt.png",
+                "sizes": "192x192",
+                "type": "image/png"
+            },
+            {
+                "src": "https://img.icons8.com/color/512/000000/receipt.png",
+                "sizes": "512x512",
+                "type": "image/png"
+            }
+        ]
+    })
+
+@app.get("/sw.js")
+async def service_worker():
+    sw_path = BASE_DIR / "sw.js"
+    if sw_path.exists():
+        return FileResponse(sw_path, media_type="application/javascript")
+    sw_code = """
+    self.addEventListener('install', (e) => {
+        self.skipWaiting();
+    });
+    self.addEventListener('activate', (e) => {
+        e.waitUntil(clients.claim());
+    });
+    self.addEventListener('fetch', (e) => {});
+    """
+    return Response(content=sw_code, media_type="application/javascript")
 
 @app.post("/api/scan-ocr-preview")
 async def scan_ocr_preview(file: UploadFile = File(...)):
@@ -148,6 +192,21 @@ async def download_csv(month: str, user_email: str = None):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/download/zip/{month}")
+async def download_zip(month: str, user_email: str = None):
+    try:
+        restore_all_from_gdrive(PDFS_DIR, DATA_DIR, user_email=user_email)
+        zip_bytes = generate_zip_report(month, user_email=user_email)
+        filename = f"Fotos_Tickets_{month}.zip"
+        return Response(
+            content=zip_bytes,
+            media_type="application/zip",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/api/delete-last-ticket")
 async def delete_last_ticket(month: str = Form(...), user_email: str = Form(None), background_tasks: BackgroundTasks = BackgroundTasks()):

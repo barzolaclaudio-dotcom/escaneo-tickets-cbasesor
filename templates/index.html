@@ -11,6 +11,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
+    <meta name="theme-color" content="#D4AF37">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="/manifest.json">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -180,23 +184,30 @@
                 </div>
             </div>
 
-            <!-- Desglose por Comercios -->
+            <!-- Desglose por Comercios con Búsqueda -->
             <div class="space-y-2 pt-2 border-t border-slate-800">
-                <p class="text-xs font-bold text-slate-300">Gastos por Comercio:</p>
+                <div class="flex items-center justify-between">
+                    <p class="text-xs font-bold text-slate-300">Gastos por Comercio:</p>
+                    <input type="text" id="vendor-search-input" oninput="filterVendorBreakdown()" placeholder="🔍 Buscar comercio..." class="bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-500 focus:outline-none focus:border-gold-400 w-36">
+                </div>
                 <div id="vendor-breakdown-list" class="space-y-2 text-xs">
                     <p class="text-cb-muted italic text-[11px]">Cargando estadísticas...</p>
                 </div>
             </div>
 
-            <!-- Descargas Excel & CSV -->
-            <div class="grid grid-cols-2 gap-2 pt-2">
-                <a id="download-excel-btn" href="#" target="_blank" class="py-2.5 px-3 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 font-bold rounded-xl border border-emerald-500/40 text-xs flex items-center justify-center gap-1.5 transition">
-                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    <span>Excel Gastos</span>
+            <!-- Descargas Excel, CSV & Fotos ZIP -->
+            <div class="grid grid-cols-3 gap-2 pt-2">
+                <a id="download-excel-btn" href="#" target="_blank" class="py-2.5 px-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 font-bold rounded-xl border border-emerald-500/40 text-[11px] flex items-center justify-center gap-1 transition">
+                    <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span>Excel</span>
                 </a>
-                <a id="download-csv-btn" href="#" target="_blank" class="py-2.5 px-3 bg-gold-500/15 hover:bg-gold-500/25 text-gold-400 font-bold rounded-xl border border-gold-500/40 text-xs flex items-center justify-center gap-1.5 transition">
-                    <svg class="w-4 h-4 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 01-2-2h5.586a1 1 0 01.707.293l5.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    <span>CSV Contador</span>
+                <a id="download-csv-btn" href="#" target="_blank" class="py-2.5 px-2 bg-gold-500/15 hover:bg-gold-500/25 text-gold-400 font-bold rounded-xl border border-gold-500/40 text-[11px] flex items-center justify-center gap-1 transition">
+                    <svg class="w-3.5 h-3.5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 01-2-2h5.586a1 1 0 01.707.293l5.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span>CSV</span>
+                </a>
+                <a id="download-zip-btn" href="#" target="_blank" class="py-2.5 px-2 bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 font-bold rounded-xl border border-purple-500/40 text-[11px] flex items-center justify-center gap-1 transition">
+                    <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <span>Fotos ZIP</span>
                 </a>
             </div>
         </div>
@@ -369,6 +380,9 @@
             populateMonthDropdown();
             fetchStats();
             setupQR();
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW reg error:', err));
+            }
         });
 
         function getUserEmail() {
@@ -483,6 +497,8 @@
             
             document.getElementById('download-excel-btn').href = `/download/excel/${key}?t=${Date.now()}${emailParam}`;
             document.getElementById('download-csv-btn').href = `/download/csv/${key}?t=${Date.now()}${emailParam}`;
+            const zipBtn = document.getElementById('download-zip-btn');
+            if (zipBtn) zipBtn.href = `/download/zip/${key}?t=${Date.now()}${emailParam}`;
         }
 
         function getNowMonthKey() {
@@ -539,6 +555,41 @@
             }
         }
 
+        let lastVendorBreakdown = [];
+
+        function filterVendorBreakdown() {
+            const searchInput = document.getElementById('vendor-search-input');
+            const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            const filtered = lastVendorBreakdown.filter(v => v.vendor.toLowerCase().includes(query));
+            renderVendorBreakdown(filtered);
+        }
+
+        function renderVendorBreakdown(breakdown) {
+            const list = document.getElementById('vendor-breakdown-list');
+            if (!list) return;
+            list.innerHTML = '';
+            
+            if (!breakdown || breakdown.length === 0) {
+                list.innerHTML = `<p class="text-cb-muted italic text-[11px]">No hay gastos registrados en este mes aún.</p>`;
+                return;
+            }
+            
+            breakdown.forEach(v => {
+                const row = document.createElement('div');
+                row.className = "space-y-1";
+                row.innerHTML = `
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="font-semibold text-white">${v.vendor}</span>
+                        <span class="font-mono font-bold text-gold-400">$${v.total.toLocaleString('es-AR', {minimumFractionDigits: 2})} <span class="text-[10px] text-cb-muted">(${v.percentage}%)</span></span>
+                    </div>
+                    <div class="w-full bg-[#101014] rounded-full h-1.5 border border-gold-500/20 overflow-hidden">
+                        <div class="bg-gradient-to-r from-gold-500 to-gold-400 h-1.5 rounded-full" style="width: ${v.percentage}%"></div>
+                    </div>
+                `;
+                list.appendChild(row);
+            });
+        }
+
         async function fetchExpensesData() {
             const key = document.getElementById('month-selector').value;
             const email = getUserEmail();
@@ -550,28 +601,12 @@
                 document.getElementById('stat-total-spent').textContent = `$${data.total_spent.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
                 document.getElementById('stat-total-iva').textContent = `$${data.total_iva.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
                 
-                const list = document.getElementById('vendor-breakdown-list');
-                list.innerHTML = '';
-                
-                if (data.vendor_breakdown.length === 0) {
-                    list.innerHTML = `<p class="text-cb-muted italic text-[11px]">No hay gastos registrados en este mes aún.</p>`;
-                    return;
-                }
-                
-                data.vendor_breakdown.forEach(v => {
-                    const row = document.createElement('div');
-                    row.className = "space-y-1";
-                    row.innerHTML = `
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="font-semibold text-white">${v.vendor}</span>
-                            <span class="font-mono font-bold text-gold-400">$${v.total.toLocaleString('es-AR', {minimumFractionDigits: 2})} <span class="text-[10px] text-cb-muted">(${v.percentage}%)</span></span>
-                        </div>
-                        <div class="w-full bg-[#101014] rounded-full h-1.5 border border-gold-500/20 overflow-hidden">
-                            <div class="bg-gradient-to-r from-gold-500 to-gold-400 h-1.5 rounded-full" style="width: ${v.percentage}%"></div>
-                        </div>
-                    `;
-                    list.appendChild(row);
-                });
+                lastVendorBreakdown = data.vendor_breakdown || [];
+                filterVendorBreakdown();
+            } catch (err) {
+                console.error("Error al cargar gastos:", err);
+            }
+        }
                 
             } catch (err) {
                 console.error("Error al cargar gastos:", err);

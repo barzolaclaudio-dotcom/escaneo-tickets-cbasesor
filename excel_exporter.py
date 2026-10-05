@@ -104,12 +104,15 @@ def generate_excel_report(month_str: str) -> bytes:
         
     for t in tickets:
         for item in t.get("items", []):
+            item_name = item.get("name") or item.get("description") or "Producto / Servicio"
+            item_qty = item.get("qty") or item.get("quantity") or 1
+            item_price = item.get("price") or item.get("amount") or 0.0
             ws3.append([
                 t.get("date", ""),
                 t.get("vendor", ""),
-                item.get("name", ""),
-                item.get("qty", 1),
-                item.get("price", 0.0)
+                item_name,
+                item_qty,
+                item_price
             ])
             
     # Ajustar ancho de columnas automáticamente

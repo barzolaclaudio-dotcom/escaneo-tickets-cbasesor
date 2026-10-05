@@ -1,4 +1,5 @@
 import io
+import zipfile
 from pathlib import Path
 from datetime import datetime
 from PIL import Image, ImageEnhance, ImageOps
@@ -236,3 +237,41 @@ def get_monthly_stats(user_email: str = None) -> list[dict]:
         except Exception as e:
             print(f"Error leyendo {pdf_file}: {e}")
     return stats
+
+def generate_zip_report(month_str: str, user_email: str = None) -> bytes:
+    """
+    Genera un archivo ZIP con todas las imágenes de los tickets del mes.
+    Si las imágenes en la carpeta de imágenes no están disponibles, las extrae del PDF.
+    """
+    month_key = month_str.replace("-", "_")
+    zip_buffer = io.BytesIO()
+    
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        month_img_dir = IMAGES_DIR / month_key
+        added_files = 0
+        if month_img_dir.exists():
+            for img_path in sorted(month_img_dir.glob("*")):
+                if img_path.is_file() and img_path.suffix.lower() in ['.jpg', '.jpeg', '.png', '.webp']:
+                    zip_file.write(img_path, arcname=img_path.name)
+                    added_files += 1
+                    
+        # Si no hay imágenes directas en disco, extraer del PDF del usuario
+        if added_files == 0:
+            target_pdf_dir = get_user_pdf_dir(user_email)
+            pdf_path = target_pdf_dir / f"Tickets_{month_key}.pdf"
+            if pdf_path.exists():
+                doc = fitz.open(str(pdf_path))
+                for page_num in range(len(doc)):
+                    page = doc[page_num]
+                    image_list = page.get_images()
+                    for img_index, img_info in enumerate(image_list):
+                        xref = img_info[0]
+                        base_img = doc.extract_image(xref)
+                        img_bytes = base_img["image"]
+                        ext = base_img["ext"]
+                        filename = f"Ticket_{month_key}_pag_{page_num+1}.{ext}"
+                        zip_file.writestr(filename, img_bytes)
+                doc.close()
+                
+    return zip_buffer.getvalue()
+
