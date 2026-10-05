@@ -120,14 +120,13 @@ def extract_data_with_gemini_vision(image_bytes: bytes) -> dict:
         return None
     
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
         b64_image = base64.b64encode(image_bytes).decode("utf-8")
         
-        prompt = """Analiza la foto de este ticket de compra / factura de Argentina y responde ÚNICAMENTE con un objeto JSON válido con este formato exacto (sin bloques ```json, solo el texto JSON puro):
+        prompt = """Analiza la foto de este ticket de compra / factura de Argentina y responde ÚNICAMENTE con un objeto JSON válido con este formato exacto:
 {
   "vendor": "Nombre o Razón Social del Comercio",
   "cuit": "CUIT del Comercio Vendedor en formato XX-XXXXXXXX-X",
-  "invoice_type": "Factura A", "Factura B" o "Ticket / Comprobante",
+  "invoice_type": "Factura A",
   "date": "Fecha exacta en formato DD/MM/YYYY",
   "subtotal": 0.00,
   "iva_21": 0.00,
@@ -137,7 +136,7 @@ def extract_data_with_gemini_vision(image_bytes: bytes) -> dict:
 }
 Reglas estrictas:
 1. "date": Extrae la FECHA REAL impresa en el ticket (ej. 16/09/2026, 23/09/2026). NO inventes ni uses la fecha de hoy.
-2. "subtotal": Monto neto grabado antes de impuestos.
+2. "subtotal": Monto neto gravado antes de impuestos.
 3. "iva_21", "iva_10_5", "iva_27": Extrae el monto en pesos del IVA impreso.
 4. "total": El importe total final a pagar impreso.
 5. "vendor": Razón social o comercio impreso arriba (ej: RERIFF S.A., YPF, CENCOSUD, CARREFOUR, DISCO, COTO).
@@ -163,17 +162,35 @@ Reglas estrictas:
             }
         }
         
-        for model_name in ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-2.5-flash"]:
+        models_to_try = [
+            "gemini-3.1-flash-lite",
+            "gemini-flash-lite-latest",
+            "gemini-3.5-flash-lite",
+            "gemini-3.5-flash",
+            "gemini-3.8-flash"
+        ]
+        
+        for model_name in models_to_try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
-            resp = requests.post(url, json=payload, timeout=9)
-            if resp.status_code == 200:
-                res_json = resp.json()
-                text_resp = res_json['candidates'][0]['content']['parts'][0]['text']
-                parsed = json.loads(text_resp.strip())
-                logger.info(f"Gemini Vision AI ({model_name}) extrajo exitosamente: {parsed}")
-                return parsed
-            else:
-                logger.warning(f"Gemini Vision API ({model_name}) HTTP {resp.status_code}: {resp.text[:150]}")
+            try:
+                resp = requests.post(url, json=payload, timeout=12)
+                if resp.status_code == 200:
+                    res_json = resp.json()
+                    candidates = res_json.get('candidates', [])
+                    if not candidates:
+                        continue
+                    parts = candidates[0].get('content', {}).get('parts', [])
+                    text_resp = "".join([p.get('text', '') for p in parts if 'text' in p]).strip()
+                    if text_resp.startswith("```"):
+                        text_resp = re.sub(r'^```(?:json)?\s*', '', text_resp)
+                        text_resp = re.sub(r'\s*```$', '', text_resp)
+                    parsed = json.loads(text_resp.strip())
+                    logger.info(f"Gemini Vision AI ({model_name}) extrajo exitosamente: {parsed}")
+                    return parsed
+                else:
+                    logger.warning(f"Gemini Vision API ({model_name}) HTTP {resp.status_code}: {resp.text[:150]}")
+            except Exception as ex_mod:
+                logger.warning(f"Gemini Vision API ({model_name}) error: {ex_mod}")
     except Exception as e:
         logger.warning(f"Gemini Vision API error/bypass: {e}")
         
