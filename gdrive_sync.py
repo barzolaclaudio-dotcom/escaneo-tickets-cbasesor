@@ -143,10 +143,19 @@ def sync_file_to_gdrive(file_path: Path, target_folder_name: str = GDRIVE_FOLDER
         logger.error(f"Error sincronizando {file_path.name} con Google Drive: {e}")
         return None
 
+_last_restore_time = {}
+
 def restore_all_from_gdrive(pdfs_dir: Path, data_dir: Path, user_email: str = None):
     """
     Restaura automáticamente los archivos PDFs y JSONs desde Google Drive si el servidor se reinició.
     """
+    import time
+    safe_key = (user_email or "").strip().lower()
+    now = time.time()
+    if safe_key in _last_restore_time and (now - _last_restore_time[safe_key]) < 60:
+        return
+    _last_restore_time[safe_key] = now
+
     service = get_gdrive_service()
     if not service:
         return

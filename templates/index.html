@@ -107,10 +107,10 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"/></svg>
                     Tu Email / Registro de Cuenta:
                 </label>
-                <span class="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Vinculado</span>
+                <span id="email-status-badge" class="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Vinculado</span>
             </div>
             <div class="relative">
-                <input type="email" id="user-email-input" placeholder="ejemplo@cbasesor.com" onchange="onEmailChange()" class="w-full bg-[#1c1c21] text-white border border-gold-500/40 rounded-xl px-3.5 py-2.5 font-semibold text-sm focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition">
+                <input type="email" id="user-email-input" placeholder="ejemplo@cbasesor.com" oninput="onEmailChange()" onblur="onEmailChange()" class="w-full bg-[#1c1c21] text-white border border-gold-500/40 rounded-xl px-3.5 py-2.5 font-semibold text-sm focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition">
             </div>
         </div>
 
@@ -378,6 +378,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             initEmail();
             populateMonthDropdown();
+            updateSelectedMonthCard();
             fetchStats();
             setupQR();
             if ('serviceWorker' in navigator) {
@@ -390,18 +391,43 @@
             return el ? el.value.trim() : '';
         }
 
+        function updateEmailStatusBadge() {
+            const email = getUserEmail();
+            const badge = document.getElementById('email-status-badge');
+            if (badge) {
+                if (email) {
+                    badge.textContent = "Vinculado";
+                    badge.className = "text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20";
+                } else {
+                    badge.textContent = "Sin vincular";
+                    badge.className = "text-[10px] font-semibold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20";
+                }
+            }
+        }
+
         function initEmail() {
             const saved = localStorage.getItem('user_email');
             if (saved) {
                 const input = document.getElementById('user-email-input');
                 if (input) input.value = saved;
             }
+            updateEmailStatusBadge();
         }
 
+        let emailDebounceTimer = null;
         function onEmailChange() {
             const email = getUserEmail();
-            if (email) localStorage.setItem('user_email', email);
-            fetchStats();
+            if (email) {
+                localStorage.setItem('user_email', email);
+            } else {
+                localStorage.removeItem('user_email');
+            }
+            updateEmailStatusBadge();
+            
+            if (emailDebounceTimer) clearTimeout(emailDebounceTimer);
+            emailDebounceTimer = setTimeout(() => {
+                fetchStats();
+            }, 350);
         }
 
         function ensureMonthInDropdown(monthKey) {
@@ -603,11 +629,6 @@
                 
                 lastVendorBreakdown = data.vendor_breakdown || [];
                 filterVendorBreakdown();
-            } catch (err) {
-                console.error("Error al cargar gastos:", err);
-            }
-        }
-                
             } catch (err) {
                 console.error("Error al cargar gastos:", err);
             }

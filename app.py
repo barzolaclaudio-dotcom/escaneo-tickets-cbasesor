@@ -19,10 +19,8 @@ app = FastAPI(title="Escáner de Tickets Factura A")
 
 @app.on_event("startup")
 async def startup_event():
-    try:
-        restore_all_from_gdrive(PDFS_DIR, DATA_DIR)
-    except Exception as e:
-        print(f"Startup GDrive restore error: {e}")
+    # El servidor inicia instantáneamente sin bloquear la cola de peticiones HTTP
+    pass
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -168,7 +166,6 @@ async def get_expenses(month: str, user_email: str = None):
 @app.get("/download/excel/{month}")
 async def download_excel(month: str, user_email: str = None):
     try:
-        restore_all_from_gdrive(PDFS_DIR, DATA_DIR, user_email=user_email)
         excel_bytes = generate_excel_report(month)
         filename = f"Gastos_{month}.xlsx"
         return Response(
@@ -182,7 +179,6 @@ async def download_excel(month: str, user_email: str = None):
 @app.get("/download/csv/{month}")
 async def download_csv(month: str, user_email: str = None):
     try:
-        restore_all_from_gdrive(PDFS_DIR, DATA_DIR, user_email=user_email)
         csv_bytes = generate_csv_report(month)
         filename = f"Libro_IVA_Compras_{month}.csv"
         return Response(
@@ -196,7 +192,6 @@ async def download_csv(month: str, user_email: str = None):
 @app.get("/download/zip/{month}")
 async def download_zip(month: str, user_email: str = None):
     try:
-        restore_all_from_gdrive(PDFS_DIR, DATA_DIR, user_email=user_email)
         zip_bytes = generate_zip_report(month, user_email=user_email)
         filename = f"Fotos_Tickets_{month}.zip"
         return Response(
@@ -228,14 +223,13 @@ async def delete_month_pdf(month: str = Form(...), user_email: str = Form(None))
         return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
 
 @app.get("/api/stats")
-async def stats(user_email: str = None):
-    try:
-        restore_all_from_gdrive(PDFS_DIR, DATA_DIR, user_email=user_email)
-    except Exception:
-        pass
+async def stats(background_tasks: BackgroundTasks, user_email: str = None):
     monthly = get_monthly_stats(user_email=user_email)
     current_month_key = datetime.now().strftime("%Y_%m")
     current_stat = next((m for m in monthly if m["month_key"] == current_month_key), None)
+    
+    # Sincronización diferida en segundo plano sin ralentizar la respuesta HTTP
+    background_tasks.add_task(restore_all_from_gdrive, PDFS_DIR, DATA_DIR, user_email)
     
     return {
         "current_month_key": current_month_key,
@@ -249,14 +243,20 @@ async def download_pdf(filename: str, user_email: str = None):
     target_pdf_dir = get_user_pdf_dir(user_email)
     file_path = target_pdf_dir / filename
     
-    if not file_path.exists():
-        try:
-            restore_all_from_gdrive(PDFS_DIR, DATA_DIR, user_email=user_email)
-        except Exception:
-            pass
-            
     if not file_path.exists() or not file_path.name.startswith("Tickets_"):
         raise HTTPException(status_code=404, detail="Archivo PDF no encontrado")
+        
+    return FileResponse(
+        path=file_path,
+        media_type="application/pdf",
+        filename=filename,
+        headers={
+            "Content-Disposition": f"inline; filename={filename}",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
         
     return FileResponse(
         path=file_path,
