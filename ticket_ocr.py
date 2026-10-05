@@ -364,12 +364,44 @@ def extract_data_from_image(
         "filename": filename_hint
     }
 
-def get_month_data_file(month_str: str) -> Path:
-    month_key = month_str.replace("-", "_")
-    return DATA_DIR / f"Gastos_{month_key}.json"
+def sanitize_email(email: str) -> str:
+    """Sanitiza una dirección de correo para usar como nombre de carpeta seguro."""
+    if not email or not isinstance(email, str):
+        return ""
+    clean = re.sub(r'[^a-zA-Z0-9_.]', '_', email.strip().lower())
+    return clean
 
-def load_monthly_expenses(month_str: str) -> list[dict]:
-    data_file = get_month_data_file(month_str)
+def extract_month_from_date(date_str: str) -> str:
+    """Extrae YYYY_MM a partir de una cadena de fecha DD/MM/YYYY o DD-MM-YYYY."""
+    if not date_str or not isinstance(date_str, str):
+        return None
+    try:
+        parts = re.split(r'[/.-]', date_str.strip())
+        if len(parts) == 3:
+            d, m, y = int(parts[0]), int(parts[1]), int(parts[2])
+            if y < 100:
+                y += 2000
+            if 1 <= m <= 12 and 2000 <= y <= 2100:
+                return f"{y:04d}_{m:02d}"
+    except Exception:
+        pass
+    return None
+
+def get_user_data_dir(user_email: str = None) -> Path:
+    safe_email = sanitize_email(user_email)
+    if safe_email:
+        user_dir = DATA_DIR / safe_email
+        user_dir.mkdir(parents=True, exist_ok=True)
+        return user_dir
+    return DATA_DIR
+
+def get_month_data_file(month_str: str, user_email: str = None) -> Path:
+    month_key = month_str.replace("-", "_")
+    target_dir = get_user_data_dir(user_email)
+    return target_dir / f"Gastos_{month_key}.json"
+
+def load_monthly_expenses(month_str: str, user_email: str = None) -> list[dict]:
+    data_file = get_month_data_file(month_str, user_email)
     if not data_file.exists():
         return []
     try:
@@ -379,32 +411,32 @@ def load_monthly_expenses(month_str: str) -> list[dict]:
         logger.error(f"Error cargando gastos de {month_str}: {e}")
         return []
 
-def save_monthly_expenses(month_str: str, tickets_list: list[dict]):
-    data_file = get_month_data_file(month_str)
+def save_monthly_expenses(month_str: str, tickets_list: list[dict], user_email: str = None):
+    data_file = get_month_data_file(month_str, user_email)
     try:
         with open(data_file, 'w', encoding='utf-8') as f:
             json.dump(tickets_list, f, ensure_ascii=False, indent=2)
     except Exception as e:
         logger.error(f"Error guardando gastos de {month_str}: {e}")
 
-def add_ticket_expense(month_str: str, ticket_data: dict):
-    current = load_monthly_expenses(month_str)
+def add_ticket_expense(month_str: str, ticket_data: dict, user_email: str = None):
+    current = load_monthly_expenses(month_str, user_email)
     current.insert(0, ticket_data)
-    save_monthly_expenses(month_str, current)
+    save_monthly_expenses(month_str, current, user_email)
 
-def remove_last_ticket_expense(month_str: str):
-    current = load_monthly_expenses(month_str)
+def remove_last_ticket_expense(month_str: str, user_email: str = None):
+    current = load_monthly_expenses(month_str, user_email)
     if current:
         current.pop(0)
-        save_monthly_expenses(month_str, current)
+        save_monthly_expenses(month_str, current, user_email)
 
-def delete_month_expenses(month_str: str):
-    data_file = get_month_data_file(month_str)
+def delete_month_expenses(month_str: str, user_email: str = None):
+    data_file = get_month_data_file(month_str, user_email)
     if data_file.exists():
         data_file.unlink()
 
-def get_monthly_summary(month_str: str) -> dict:
-    tickets = load_monthly_expenses(month_str)
+def get_monthly_summary(month_str: str, user_email: str = None) -> dict:
+    tickets = load_monthly_expenses(month_str, user_email)
     
     total_spent = sum(t.get("total", 0.0) for t in tickets)
     total_subtotal = sum(t.get("subtotal", 0.0) for t in tickets)

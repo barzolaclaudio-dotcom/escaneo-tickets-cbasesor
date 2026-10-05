@@ -78,7 +78,8 @@ async def upload_ticket(
     subtotal: float = Form(None),
     iva_21: float = Form(None),
     iva_10_5: float = Form(None),
-    iva_27: float = Form(None)
+    iva_27: float = Form(None),
+    user_email: str = Form(None)
 ):
     try:
         content = await file.read()
@@ -99,12 +100,13 @@ async def upload_ticket(
             user_subtotal=subtotal,
             user_iva_21=iva_21,
             user_iva_10_5=iva_10_5,
-            user_iva_27=iva_27
+            user_iva_27=iva_27,
+            user_email=user_email
         )
         
         month_key = result.get("month")
         if month_key:
-            background_tasks.add_task(sync_month_to_gdrive, month_key, PDFS_DIR, DATA_DIR)
+            background_tasks.add_task(sync_month_to_gdrive, month_key, PDFS_DIR, DATA_DIR, user_email)
             
         return JSONResponse(content=result)
         
@@ -115,14 +117,14 @@ async def upload_ticket(
         )
 
 @app.get("/api/expenses/{month}")
-async def get_expenses(month: str):
-    summary = get_monthly_summary(month)
+async def get_expenses(month: str, user_email: str = None):
+    summary = get_monthly_summary(month, user_email=user_email)
     return JSONResponse(content=summary)
 
 @app.get("/download/excel/{month}")
-async def download_excel(month: str):
+async def download_excel(month: str, user_email: str = None):
     try:
-        restore_all_from_gdrive(PDFS_DIR, DATA_DIR)
+        restore_all_from_gdrive(PDFS_DIR, DATA_DIR, user_email=user_email)
         excel_bytes = generate_excel_report(month)
         filename = f"Gastos_{month}.xlsx"
         return Response(
@@ -134,9 +136,9 @@ async def download_excel(month: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/download/csv/{month}")
-async def download_csv(month: str):
+async def download_csv(month: str, user_email: str = None):
     try:
-        restore_all_from_gdrive(PDFS_DIR, DATA_DIR)
+        restore_all_from_gdrive(PDFS_DIR, DATA_DIR, user_email=user_email)
         csv_bytes = generate_csv_report(month)
         filename = f"Libro_IVA_Compras_{month}.csv"
         return Response(
@@ -148,31 +150,31 @@ async def download_csv(month: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/delete-last-ticket")
-async def delete_last_ticket(month: str = Form(...), background_tasks: BackgroundTasks = BackgroundTasks()):
+async def delete_last_ticket(month: str = Form(...), user_email: str = Form(None), background_tasks: BackgroundTasks = BackgroundTasks()):
     try:
-        res = remove_last_page_from_pdf(month)
+        res = remove_last_page_from_pdf(month, user_email=user_email)
         month_key = res.get("month")
         if month_key:
-            background_tasks.add_task(sync_month_to_gdrive, month_key, PDFS_DIR, DATA_DIR)
+            background_tasks.add_task(sync_month_to_gdrive, month_key, PDFS_DIR, DATA_DIR, user_email)
         return JSONResponse(content=res)
     except Exception as e:
         return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
 
 @app.post("/api/delete-month-pdf")
-async def delete_month_pdf(month: str = Form(...)):
+async def delete_month_pdf(month: str = Form(...), user_email: str = Form(None)):
     try:
-        res = delete_entire_month_pdf(month)
+        res = delete_entire_month_pdf(month, user_email=user_email)
         return JSONResponse(content=res)
     except Exception as e:
         return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
 
 @app.get("/api/stats")
-async def stats():
+async def stats(user_email: str = None):
     try:
-        restore_all_from_gdrive(PDFS_DIR, DATA_DIR)
+        restore_all_from_gdrive(PDFS_DIR, DATA_DIR, user_email=user_email)
     except Exception:
         pass
-    monthly = get_monthly_stats()
+    monthly = get_monthly_stats(user_email=user_email)
     current_month_key = datetime.now().strftime("%Y_%m")
     current_stat = next((m for m in monthly if m["month_key"] == current_month_key), None)
     
@@ -183,11 +185,14 @@ async def stats():
     }
 
 @app.get("/download/{filename}")
-async def download_pdf(filename: str):
-    file_path = PDFS_DIR / filename
+async def download_pdf(filename: str, user_email: str = None):
+    from pdf_processor import get_user_pdf_dir
+    target_pdf_dir = get_user_pdf_dir(user_email)
+    file_path = target_pdf_dir / filename
+    
     if not file_path.exists():
         try:
-            restore_all_from_gdrive(PDFS_DIR, DATA_DIR)
+            restore_all_from_gdrive(PDFS_DIR, DATA_DIR, user_email=user_email)
         except Exception:
             pass
             

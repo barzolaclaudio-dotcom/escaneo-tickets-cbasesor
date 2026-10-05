@@ -69,7 +69,35 @@ def get_or_create_folder(service, folder_name: str) -> str:
         logger.error(f"Error al obtener/crear carpeta Google Drive '{folder_name}': {e}")
         return None
 
-def sync_file_to_gdrive(file_path: Path, target_folder_name: str = GDRIVE_FOLDER_NAME) -> str:
+def get_target_folder_id(service, user_email: str = None) -> str:
+    """Retorna la ID de la carpeta principal o de la subcarpeta del usuario en Google Drive."""
+    main_folder_id = get_or_create_folder(service, GDRIVE_FOLDER_NAME)
+    if not main_folder_id:
+        return None
+    from ticket_ocr import sanitize_email
+    safe_email = sanitize_email(user_email)
+    if not safe_email:
+        return main_folder_id
+        
+    try:
+        query = f"name = '{safe_email}' and '{main_folder_id}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
+        results = service.files().list(q=query, fields="files(id, name)").execute()
+        files = results.get('files', [])
+        if files:
+            return files[0]['id']
+
+        folder_metadata = {
+            'name': safe_email,
+            'mimeType': 'application/vnd.google-apps.folder',
+            'parents': [main_folder_id]
+        }
+        folder = service.files().create(body=folder_metadata, fields='id').execute()
+        return folder.get('id')
+    except Exception as e:
+        logger.error(f"Error al obtener subcarpeta Google Drive para '{user_email}': {e}")
+        return main_folder_id
+
+def sync_file_to_gdrive(file_path: Path, target_folder_name: str = GDRIVE_FOLDER_NAME, user_email: str = None) -> str:
     """
     Sube o actualiza un archivo local (PDF o JSON) en Google Drive.
     Retorna el link directo de Google Drive o None.
@@ -79,7 +107,7 @@ def sync_file_to_gdrive(file_path: Path, target_folder_name: str = GDRIVE_FOLDER
         return None
 
     try:
-        folder_id = get_or_create_folder(service, target_folder_name)
+        folder_id = get_target_folder_id(service, user_email)
         if not folder_id:
             return None
 
@@ -92,7 +120,6 @@ def sync_file_to_gdrive(file_path: Path, target_folder_name: str = GDRIVE_FOLDER
         media = MediaFileUpload(str(file_path), mimetype=mimetype, resumable=True)
 
         if files:
-            # Actualizar archivo existente
             file_id = files[0]['id']
             updated_file = service.files().update(
                 fileId=file_id,
@@ -101,7 +128,6 @@ def sync_file_to_gdrive(file_path: Path, target_folder_name: str = GDRIVE_FOLDER
             ).execute()
             return updated_file.get('webViewLink')
         else:
-            # Subir nuevo archivo
             file_metadata = {
                 'name': filename,
                 'parents': [folder_id]
@@ -117,7 +143,7 @@ def sync_file_to_gdrive(file_path: Path, target_folder_name: str = GDRIVE_FOLDER
         logger.error(f"Error sincronizando {file_path.name} con Google Drive: {e}")
         return None
 
-def restore_all_from_gdrive(pdfs_dir: Path, data_dir: Path):
+def restore_all_from_gdrive(pdfs_dir: Path, data_dir: Path, user_email: str = None):
     """
     Restaura automáticamente los archivos PDFs y JSONs desde Google Drive si el servidor se reinició.
     """
@@ -126,9 +152,15 @@ def restore_all_from_gdrive(pdfs_dir: Path, data_dir: Path):
         return
 
     try:
-        folder_id = get_or_create_folder(service, GDRIVE_FOLDER_NAME)
+        folder_id = get_target_folder_id(service, user_email)
         if not folder_id:
             return
+
+        from ticket_ocr import get_user_data_dir
+        from pdf_processor import get_user_pdf_dir
+
+        target_pdf_dir = get_user_pdf_dir(user_email)
+        target_data_dir = get_user_data_dir(user_email)
 
         query = f"'{folder_id}' in parents and trashed = false"
         results = service.files().list(q=query, fields="files(id, name)").execute()
@@ -139,9 +171,9 @@ def restore_all_from_gdrive(pdfs_dir: Path, data_dir: Path):
             fid = f_info['id']
 
             if fname.startswith("Tickets_") and fname.endswith(".pdf"):
-                local_path = pdfs_dir / fname
+                local_path = target_pdf_dir / fname
             elif fname.startswith("Gastos_") and fname.endswith(".json"):
-                local_path = data_dir / fname
+                local_path = target_data_dir / fname
             else:
                 continue
 
@@ -154,26 +186,29 @@ def restore_all_from_gdrive(pdfs_dir: Path, data_dir: Path):
     except Exception as e:
         logger.error(f"Error al restaurar archivos de Google Drive: {e}")
 
-def sync_month_to_gdrive(month_str: str, pdfs_dir: Path, data_dir: Path):
+def sync_month_to_gdrive(month_str: str, pdfs_dir: Path, data_dir: Path, user_email: str = None):
     """Sincroniza el PDF y JSON del mes especificado con Google Drive en segundo plano."""
     try:
-        pdf_path = pdfs_dir / f"Tickets_{month_str}.pdf"
-        json_path = data_dir / f"Gastos_{month_str}.json"
+        from ticket_ocr import get_user_data_dir
+        from pdf_processor import get_user_pdf_dir
+
+        pdf_path = get_user_pdf_dir(user_email) / f"Tickets_{month_str}.pdf"
+        json_path = get_user_data_dir(user_email) / f"Gastos_{month_str}.json"
         
         if pdf_path.exists():
-            sync_file_to_gdrive(pdf_path)
+            sync_file_to_gdrive(pdf_path, user_email=user_email)
         if json_path.exists():
-            sync_file_to_gdrive(json_path)
+            sync_file_to_gdrive(json_path, user_email=user_email)
     except Exception as e:
         logger.error(f"Error en sincronización en segundo plano de {month_str}: {e}")
 
-def delete_file_from_gdrive(filename: str, target_folder_name: str = GDRIVE_FOLDER_NAME):
+def delete_file_from_gdrive(filename: str, target_folder_name: str = GDRIVE_FOLDER_NAME, user_email: str = None):
     """Elimina un archivo de Google Drive por su nombre para evitar restauraciones fantasma."""
     service = get_gdrive_service()
     if not service:
         return
     try:
-        folder_id = get_or_create_folder(service, target_folder_name)
+        folder_id = get_target_folder_id(service, user_email)
         if not folder_id:
             return
         query = f"name = '{filename}' and '{folder_id}' in parents and trashed = false"

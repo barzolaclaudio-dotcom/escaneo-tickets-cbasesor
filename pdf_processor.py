@@ -10,7 +10,9 @@ from ticket_ocr import (
     extract_data_from_image,
     add_ticket_expense,
     remove_last_ticket_expense,
-    delete_month_expenses
+    delete_month_expenses,
+    sanitize_email,
+    extract_month_from_date
 )
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -19,6 +21,14 @@ IMAGES_DIR = BASE_DIR / "Imagenes_Originales"
 
 PDFS_DIR.mkdir(exist_ok=True)
 IMAGES_DIR.mkdir(exist_ok=True)
+
+def get_user_pdf_dir(user_email: str = None) -> Path:
+    safe_email = sanitize_email(user_email)
+    if safe_email:
+        user_dir = PDFS_DIR / safe_email
+        user_dir.mkdir(parents=True, exist_ok=True)
+        return user_dir
+    return PDFS_DIR
 
 def enhance_thermal_ticket(img: Image.Image) -> Image.Image:
     img = ImageOps.exif_transpose(img)
@@ -68,19 +78,42 @@ def append_ticket_to_month_pdf(
     user_subtotal: float = None,
     user_iva_21: float = None,
     user_iva_10_5: float = None,
-    user_iva_27: float = None
+    user_iva_27: float = None,
+    user_email: str = None
 ) -> dict:
     now = datetime.now()
-    if not month_str:
-        month_str = now.strftime("%Y_%m")
-    else:
-        month_str = month_str.replace("-", "_")
     
-    month_img_dir = IMAGES_DIR / month_str
-    month_img_dir.mkdir(parents=True, exist_ok=True)
-    
+    # 1. Extraer datos del ticket primero para identificar la fecha real impresa
     timestamp = now.strftime("%Y%m%d_%H%M%S")
     safe_filename = f"{timestamp}_{filename_hint}"
+    
+    extracted_data = extract_data_from_image(
+        image_bytes,
+        filename_hint=safe_filename,
+        user_vendor=user_vendor,
+        user_total=user_total,
+        user_cuit=user_cuit,
+        user_date=user_date,
+        user_subtotal=user_subtotal,
+        user_iva_21=user_iva_21,
+        user_iva_10_5=user_iva_10_5,
+        user_iva_27=user_iva_27
+    )
+    
+    # 2. Ruteo automático del mes según la FECHA REAL del ticket
+    printed_date = user_date or extracted_data.get("date")
+    auto_month = extract_month_from_date(printed_date)
+    
+    if auto_month:
+        target_month = auto_month
+    elif month_str:
+        target_month = month_str.replace("-", "_")
+    else:
+        target_month = now.strftime("%Y_%m")
+        
+    month_img_dir = IMAGES_DIR / target_month
+    month_img_dir.mkdir(parents=True, exist_ok=True)
+    
     raw_img_path = month_img_dir / safe_filename
     with open(raw_img_path, "wb") as f:
         f.write(image_bytes)
@@ -95,15 +128,16 @@ def append_ticket_to_month_pdf(
         
     new_page_pdf_bytes = image_to_a4_pdf(img)
     
-    target_pdf_path = PDFS_DIR / f"Tickets_{month_str}.pdf"
+    target_pdf_dir = get_user_pdf_dir(user_email)
+    target_pdf_path = target_pdf_dir / f"Tickets_{target_month}.pdf"
     
     writer = pypdf.PdfWriter()
-    # 1. Agregar PRIMERO el nuevo ticket (Página 1) para visualización inmediata
+    # 1. Agregar PRIMERO el nuevo ticket (Página 1)
     new_reader = pypdf.PdfReader(io.BytesIO(new_page_pdf_bytes))
     for page in new_reader.pages:
         writer.add_page(page)
         
-    # 2. Agregar a continuación los tickets anteriores (Páginas 2, 3...)
+    # 2. Agregar los tickets anteriores (Páginas 2, 3...)
     if target_pdf_path.exists() and target_pdf_path.stat().st_size > 0:
         reader = pypdf.PdfReader(str(target_pdf_path))
         for page in reader.pages:
@@ -114,34 +148,23 @@ def append_ticket_to_month_pdf(
         
     total_pages = len(pypdf.PdfReader(str(target_pdf_path)).pages)
     
-    extracted_data = extract_data_from_image(
-        image_bytes,
-        filename_hint=safe_filename,
-        user_vendor=user_vendor,
-        user_total=user_total,
-        user_cuit=user_cuit,
-        user_date=user_date,
-        user_subtotal=user_subtotal,
-        user_iva_21=user_iva_21,
-        user_iva_10_5=user_iva_10_5,
-        user_iva_27=user_iva_27
-    )
-    add_ticket_expense(month_str, extracted_data)
+    add_ticket_expense(target_month, extracted_data, user_email)
     
     return {
         "success": True,
-        "month": month_str,
-        "pdf_filename": f"Tickets_{month_str}.pdf",
+        "month": target_month,
+        "pdf_filename": f"Tickets_{target_month}.pdf",
         "total_tickets": total_pages,
         "image_saved": str(raw_img_path.name),
         "extracted_data": extracted_data
     }
 
-def remove_last_page_from_pdf(month_str: str) -> dict:
+def remove_last_page_from_pdf(month_str: str, user_email: str = None) -> dict:
     month_str = month_str.replace("-", "_")
-    target_pdf_path = PDFS_DIR / f"Tickets_{month_str}.pdf"
+    target_pdf_dir = get_user_pdf_dir(user_email)
+    target_pdf_path = target_pdf_dir / f"Tickets_{month_str}.pdf"
     
-    remove_last_ticket_expense(month_str)
+    remove_last_ticket_expense(month_str, user_email)
     
     if not target_pdf_path.exists() or target_pdf_path.stat().st_size == 0:
         return {"success": False, "error": "No existe PDF para este mes"}
@@ -152,14 +175,13 @@ def remove_last_page_from_pdf(month_str: str) -> dict:
     if total <= 1:
         target_pdf_path.unlink(missing_ok=True)
         try:
-            delete_file_from_gdrive(f"Tickets_{month_str}.pdf")
-            delete_file_from_gdrive(f"Gastos_{month_str}.json")
+            delete_file_from_gdrive(f"Tickets_{month_str}.pdf", user_email=user_email)
+            delete_file_from_gdrive(f"Gastos_{month_str}.json", user_email=user_email)
         except Exception:
             pass
         return {"success": True, "remaining_pages": 0, "month": month_str}
         
     writer = pypdf.PdfWriter()
-    # Omitir la primera página (el último ticket cargado) y conservar las demás
     for idx in range(1, total):
         writer.add_page(reader.pages[idx])
         
@@ -172,29 +194,31 @@ def remove_last_page_from_pdf(month_str: str) -> dict:
         "month": month_str
     }
 
-def delete_entire_month_pdf(month_str: str) -> dict:
+def delete_entire_month_pdf(month_str: str, user_email: str = None) -> dict:
     month_str = month_str.replace("-", "_")
-    target_pdf_path = PDFS_DIR / f"Tickets_{month_str}.pdf"
+    target_pdf_dir = get_user_pdf_dir(user_email)
+    target_pdf_path = target_pdf_dir / f"Tickets_{month_str}.pdf"
     
-    delete_month_expenses(month_str)
+    delete_month_expenses(month_str, user_email)
     
     if target_pdf_path.exists():
         target_pdf_path.unlink()
         
     try:
-        delete_file_from_gdrive(f"Tickets_{month_str}.pdf")
-        delete_file_from_gdrive(f"Gastos_{month_str}.json")
+        delete_file_from_gdrive(f"Tickets_{month_str}.pdf", user_email=user_email)
+        delete_file_from_gdrive(f"Gastos_{month_str}.json", user_email=user_email)
     except Exception:
         pass
         
     return {"success": True, "month": month_str, "message": "PDF y datos eliminados completamente"}
 
-def get_monthly_stats() -> list[dict]:
+def get_monthly_stats(user_email: str = None) -> list[dict]:
     stats = []
-    if not PDFS_DIR.exists():
+    target_pdf_dir = get_user_pdf_dir(user_email)
+    if not target_pdf_dir.exists():
         return stats
         
-    for pdf_file in sorted(PDFS_DIR.glob("Tickets_*.pdf"), reverse=True):
+    for pdf_file in sorted(target_pdf_dir.glob("Tickets_*.pdf"), reverse=True):
         try:
             reader = pypdf.PdfReader(str(pdf_file))
             num_pages = len(reader.pages)

@@ -96,6 +96,20 @@
     <!-- Main Container -->
     <main class="max-w-md mx-auto px-4 mt-5 space-y-5">
 
+        <!-- Email de Usuario / Cuenta Registrada -->
+        <div class="bg-cb-card rounded-2xl p-4 gold-border shadow-lg space-y-2">
+            <div class="flex items-center justify-between">
+                <label for="user-email-input" class="text-xs font-bold uppercase tracking-wider text-gold-400 flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"/></svg>
+                    Tu Email / Registro de Cuenta:
+                </label>
+                <span class="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Vinculado</span>
+            </div>
+            <div class="relative">
+                <input type="email" id="user-email-input" placeholder="ejemplo@cbasesor.com" onchange="onEmailChange()" class="w-full bg-[#1c1c21] text-white border border-gold-500/40 rounded-xl px-3.5 py-2.5 font-semibold text-sm focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition">
+            </div>
+        </div>
+
         <!-- Selector de Mes de Destino -->
         <div class="bg-cb-card rounded-2xl p-4 gold-border shadow-lg space-y-2">
             <div class="flex items-center justify-between">
@@ -351,10 +365,53 @@
         const MONTH_NAMES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
         document.addEventListener('DOMContentLoaded', () => {
+            initEmail();
             populateMonthDropdown();
             fetchStats();
             setupQR();
         });
+
+        function getUserEmail() {
+            const el = document.getElementById('user-email-input');
+            return el ? el.value.trim() : '';
+        }
+
+        function initEmail() {
+            const saved = localStorage.getItem('user_email');
+            if (saved) {
+                const input = document.getElementById('user-email-input');
+                if (input) input.value = saved;
+            }
+        }
+
+        function onEmailChange() {
+            const email = getUserEmail();
+            if (email) localStorage.setItem('user_email', email);
+            fetchStats();
+        }
+
+        function ensureMonthInDropdown(monthKey) {
+            if (!monthKey || !monthKey.includes('_')) return;
+            const select = document.getElementById('month-selector');
+            let exists = false;
+            for (let i = 0; i < select.options.length; i++) {
+                if (select.options[i].value === monthKey) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) {
+                const [y, m] = monthKey.split('_');
+                const mIdx = parseInt(m, 10) - 1;
+                if (mIdx >= 0 && mIdx < 12) {
+                    const label = `${MONTH_NAMES[mIdx]} ${y}`;
+                    const opt = document.createElement('option');
+                    opt.value = monthKey;
+                    opt.textContent = label;
+                    select.appendChild(opt);
+                }
+            }
+        }
 
         function populateMonthDropdown() {
             const select = document.getElementById('month-selector');
@@ -385,6 +442,8 @@
             const select = document.getElementById('month-selector');
             const key = select.value;
             const nowKey = getNowMonthKey();
+            const email = getUserEmail();
+            const emailParam = email ? `&user_email=${encodeURIComponent(email)}` : '';
             
             const [y, m] = key.split('_');
             const monthIdx = parseInt(m, 10) - 1;
@@ -414,7 +473,7 @@
             const manageActions = document.getElementById('pdf-manage-actions');
             
             if (count > 0) {
-                pdfLink.href = `/download/Tickets_${key}.pdf?t=${Date.now()}`;
+                pdfLink.href = `/download/Tickets_${key}.pdf?t=${Date.now()}${emailParam}`;
                 pdfLink.classList.remove('hidden');
                 manageActions.classList.remove('hidden');
             } else {
@@ -422,8 +481,8 @@
                 manageActions.classList.add('hidden');
             }
             
-            document.getElementById('download-excel-btn').href = `/download/excel/${key}?t=${Date.now()}`;
-            document.getElementById('download-csv-btn').href = `/download/csv/${key}?t=${Date.now()}`;
+            document.getElementById('download-excel-btn').href = `/download/excel/${key}?t=${Date.now()}${emailParam}`;
+            document.getElementById('download-csv-btn').href = `/download/csv/${key}?t=${Date.now()}${emailParam}`;
         }
 
         function getNowMonthKey() {
@@ -435,7 +494,9 @@
 
         async function fetchStats() {
             try {
-                const res = await fetch('/api/stats');
+                const email = getUserEmail();
+                const url = email ? `/api/stats?user_email=${encodeURIComponent(email)}` : '/api/stats';
+                const res = await fetch(url);
                 globalStatsData = await res.json();
                 
                 updateSelectedMonthCard();
@@ -452,6 +513,7 @@
                 globalStatsData.monthly_files.forEach(item => {
                     const [itemY, itemM] = item.month_key.split('_');
                     const nameStr = `${MONTH_NAMES[parseInt(itemM, 10) - 1]} ${itemY}`;
+                    const emailParam = email ? `&user_email=${encodeURIComponent(email)}` : '';
                     
                     const div = document.createElement('div');
                     div.className = "flex items-center justify-between p-3 bg-[#18181d] hover:bg-[#202026] rounded-xl border border-gold-500/15 transition";
@@ -461,7 +523,7 @@
                             <p class="text-[11px] text-cb-muted">${item.pages} ticket${item.pages === 1 ? '' : 's'} (${item.size_mb} MB) • ${item.last_updated}</p>
                         </div>
                         <div class="flex items-center gap-2">
-                            <a href="/download/${item.filename}?t=${Date.now()}" target="_blank" class="px-3 py-1.5 bg-gold-500/10 hover:bg-gold-500/20 border border-gold-500/40 rounded-lg text-xs font-bold text-gold-400 transition">
+                            <a href="/download/${item.filename}?t=${Date.now()}${emailParam}" target="_blank" class="px-3 py-1.5 bg-gold-500/10 hover:bg-gold-500/20 border border-gold-500/40 rounded-lg text-xs font-bold text-gold-400 transition">
                                 Descargar
                             </a>
                             <button onclick="deleteSpecificMonthPDF('${item.month_key}')" class="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg border border-rose-500/20 transition" title="Eliminar este PDF">
@@ -479,8 +541,10 @@
 
         async function fetchExpensesData() {
             const key = document.getElementById('month-selector').value;
+            const email = getUserEmail();
+            const url = email ? `/api/expenses/${key}?user_email=${encodeURIComponent(email)}` : `/api/expenses/${key}`;
             try {
-                const res = await fetch(`/api/expenses/${key}`);
+                const res = await fetch(url);
                 const data = await res.json();
                 
                 document.getElementById('stat-total-spent').textContent = `$${data.total_spent.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
@@ -520,6 +584,8 @@
             
             const formData = new FormData();
             formData.append('month', monthKey);
+            const email = getUserEmail();
+            if (email) formData.append('user_email', email);
             
             try {
                 const res = await fetch('/api/delete-last-ticket', { method: 'POST', body: formData });
@@ -543,6 +609,8 @@
         async function deleteSpecificMonthPDF(monthKey) {
             const formData = new FormData();
             formData.append('month', monthKey);
+            const email = getUserEmail();
+            if (email) formData.append('user_email', email);
             
             try {
                 const res = await fetch('/api/delete-month-pdf', { method: 'POST', body: formData });
@@ -660,7 +728,18 @@
                         document.getElementById('input-iva-10-5').value = '';
                     }
                     if (data.cuit) document.getElementById('input-cuit').value = data.cuit;
-                    if (data.date) document.getElementById('input-date').value = data.date;
+                    if (data.date) {
+                        document.getElementById('input-date').value = data.date;
+                        const parts = data.date.split(/[/.-]/);
+                        if (parts.length === 3) {
+                            const m = parts[1].padStart(2, '0');
+                            const y = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+                            const monthKey = `${y}_${m}`;
+                            ensureMonthInDropdown(monthKey);
+                            document.getElementById('month-selector').value = monthKey;
+                            updateSelectedMonthCard();
+                        }
+                    }
 
                     if (data.total && data.total > 0) {
                         badge.textContent = "✓ Autocompletado";
@@ -720,6 +799,7 @@
             const btnIcon = document.getElementById('upload-icon');
             const enhance = document.getElementById('enhance-toggle').checked;
             const month = document.getElementById('month-selector').value;
+            const email = getUserEmail();
             
             const userVendor = document.getElementById('input-vendor').value;
             const userTotal = parseFloat(document.getElementById('input-total').value);
@@ -750,6 +830,7 @@
                 formData.append('file', blob, selectedFile ? selectedFile.name : 'ticket_cropped.jpg');
                 formData.append('enhance', enhance);
                 formData.append('month', month);
+                if (email) formData.append('user_email', email);
                 if (userVendor && userVendor !== 'Comercio General') formData.append('vendor', userVendor);
                 if (!isNaN(userTotal) && userTotal > 0) formData.append('total', userTotal);
                 if (!isNaN(userSubtotal) && userSubtotal > 0) formData.append('subtotal', userSubtotal);
@@ -766,8 +847,11 @@
                     const data = await res.json();
 
                     if (data.success) {
+                        const targetMonth = data.month || month;
+                        ensureMonthInDropdown(targetMonth);
+                        document.getElementById('month-selector').value = targetMonth;
                         cancelSelection();
-                        showSuccess(data.total_tickets, month);
+                        showSuccess(data.total_tickets, targetMonth);
                         fetchStats();
                     } else {
                         alert('Error al guardar ticket: ' + (data.error || 'Error desconocido'));
