@@ -414,7 +414,7 @@
             const manageActions = document.getElementById('pdf-manage-actions');
             
             if (count > 0) {
-                pdfLink.href = `/download/Tickets_${key}.pdf`;
+                pdfLink.href = `/download/Tickets_${key}.pdf?t=${Date.now()}`;
                 pdfLink.classList.remove('hidden');
                 manageActions.classList.remove('hidden');
             } else {
@@ -422,8 +422,8 @@
                 manageActions.classList.add('hidden');
             }
             
-            document.getElementById('download-excel-btn').href = `/download/excel/${key}`;
-            document.getElementById('download-csv-btn').href = `/download/csv/${key}`;
+            document.getElementById('download-excel-btn').href = `/download/excel/${key}?t=${Date.now()}`;
+            document.getElementById('download-csv-btn').href = `/download/csv/${key}?t=${Date.now()}`;
         }
 
         function getNowMonthKey() {
@@ -461,7 +461,7 @@
                             <p class="text-[11px] text-cb-muted">${item.pages} ticket${item.pages === 1 ? '' : 's'} (${item.size_mb} MB) • ${item.last_updated}</p>
                         </div>
                         <div class="flex items-center gap-2">
-                            <a href="/download/${item.filename}" target="_blank" class="px-3 py-1.5 bg-gold-500/10 hover:bg-gold-500/20 border border-gold-500/40 rounded-lg text-xs font-bold text-gold-400 transition">
+                            <a href="/download/${item.filename}?t=${Date.now()}" target="_blank" class="px-3 py-1.5 bg-gold-500/10 hover:bg-gold-500/20 border border-gold-500/40 rounded-lg text-xs font-bold text-gold-400 transition">
                                 Descargar
                             </a>
                             <button onclick="deleteSpecificMonthPDF('${item.month_key}')" class="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg border border-rose-500/20 transition" title="Eliminar este PDF">

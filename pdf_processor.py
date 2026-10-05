@@ -5,7 +5,7 @@ from PIL import Image, ImageEnhance, ImageOps
 import pymupdf as fitz
 import pypdf
 
-from gdrive_sync import sync_file_to_gdrive
+from gdrive_sync import sync_file_to_gdrive, delete_file_from_gdrive
 from ticket_ocr import (
     extract_data_from_image,
     add_ticket_expense,
@@ -151,6 +151,11 @@ def remove_last_page_from_pdf(month_str: str) -> dict:
     
     if total <= 1:
         target_pdf_path.unlink(missing_ok=True)
+        try:
+            delete_file_from_gdrive(f"Tickets_{month_str}.pdf")
+            delete_file_from_gdrive(f"Gastos_{month_str}.json")
+        except Exception:
+            pass
         return {"success": True, "remaining_pages": 0, "month": month_str}
         
     writer = pypdf.PdfWriter()
@@ -175,8 +180,14 @@ def delete_entire_month_pdf(month_str: str) -> dict:
     
     if target_pdf_path.exists():
         target_pdf_path.unlink()
-        return {"success": True, "month": month_str, "message": "PDF y datos eliminados completamente"}
-    return {"success": False, "error": "El archivo no existe"}
+        
+    try:
+        delete_file_from_gdrive(f"Tickets_{month_str}.pdf")
+        delete_file_from_gdrive(f"Gastos_{month_str}.json")
+    except Exception:
+        pass
+        
+    return {"success": True, "month": month_str, "message": "PDF y datos eliminados completamente"}
 
 def get_monthly_stats() -> list[dict]:
     stats = []

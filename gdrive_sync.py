@@ -167,4 +167,22 @@ def sync_month_to_gdrive(month_str: str, pdfs_dir: Path, data_dir: Path):
     except Exception as e:
         logger.error(f"Error en sincronización en segundo plano de {month_str}: {e}")
 
+def delete_file_from_gdrive(filename: str, target_folder_name: str = GDRIVE_FOLDER_NAME):
+    """Elimina un archivo de Google Drive por su nombre para evitar restauraciones fantasma."""
+    service = get_gdrive_service()
+    if not service:
+        return
+    try:
+        folder_id = get_or_create_folder(service, target_folder_name)
+        if not folder_id:
+            return
+        query = f"name = '{filename}' and '{folder_id}' in parents and trashed = false"
+        results = service.files().list(q=query, fields="files(id)").execute()
+        for f_item in results.get('files', []):
+            service.files().delete(fileId=f_item['id']).execute()
+            logger.info(f"Eliminado de Google Drive: {filename}")
+    except Exception as e:
+        logger.error(f"Error eliminando {filename} de Google Drive: {e}")
+
+
 

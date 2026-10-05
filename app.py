@@ -198,5 +198,10 @@ async def download_pdf(filename: str):
         path=file_path,
         media_type="application/pdf",
         filename=filename,
-        headers={"Content-Disposition": f"inline; filename={filename}"}
+        headers={
+            "Content-Disposition": f"inline; filename={filename}",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
     )
