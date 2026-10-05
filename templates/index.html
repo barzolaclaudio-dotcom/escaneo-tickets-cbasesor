@@ -57,7 +57,8 @@
             box-shadow: 0 0 15px rgba(212, 175, 55, 0.15);
         }
         .cropper-container {
-            max-height: 380px !important;
+            max-height: 65vh !important;
+            border-radius: 0.75rem;
         }
         .cropper-view-box {
             outline: 2px solid #D4AF37 !important;
@@ -577,9 +578,9 @@
                 document.getElementById('preview-card').scrollIntoView({ behavior: 'smooth' });
 
                 cropper = new Cropper(imgElement, {
-                    viewMode: 1,
+                    viewMode: 0,
                     dragMode: 'crop',
-                    autoCropArea: 0.95,
+                    autoCropArea: 1.0,
                     restore: false,
                     modal: true,
                     guides: true,
@@ -588,6 +589,13 @@
                     cropBoxResizable: true,
                     toggleDragModeOnDblclick: false,
                     ready() {
+                        const canvasData = this.cropper.getCanvasData();
+                        this.cropper.setCropBoxData({
+                            left: canvasData.left,
+                            top: canvasData.top,
+                            width: canvasData.width,
+                            height: canvasData.height
+                        });
                         scheduleOCRScanPreview();
                     },
                     cropend() {
@@ -678,6 +686,13 @@
         function resetCrop() {
             if (cropper) {
                 cropper.reset();
+                const canvasData = cropper.getCanvasData();
+                cropper.setCropBoxData({
+                    left: canvasData.left,
+                    top: canvasData.top,
+                    width: canvasData.width,
+                    height: canvasData.height
+                });
                 scheduleOCRScanPreview();
             }
         }
