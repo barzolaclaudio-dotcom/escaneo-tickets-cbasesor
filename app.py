@@ -22,6 +22,11 @@ async def startup_event():
     # El servidor inicia instantáneamente sin bloquear la cola de peticiones HTTP
     pass
 
+@app.api_route("/health", methods=["GET", "HEAD"])
+async def health():
+    """Endpoint liviano para monitores externos (mantiene el servicio activo)."""
+    return {"status": "ok"}
+
 BASE_DIR = Path(__file__).resolve().parent
 
 def find_index_html() -> Path:
