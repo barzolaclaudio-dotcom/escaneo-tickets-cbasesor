@@ -13,7 +13,8 @@ from ticket_ocr import (
     remove_last_ticket_expense,
     delete_month_expenses,
     sanitize_email,
-    extract_month_from_date
+    extract_month_from_date,
+    get_monthly_summary
 )
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -164,13 +165,16 @@ def append_ticket_to_month_pdf(
     import gc
     gc.collect()
     
+    summary = get_monthly_summary(target_month, user_email)
+    
     return {
         "success": True,
         "month": target_month,
         "pdf_filename": f"Tickets_{target_month}.pdf",
         "total_tickets": total_pages,
         "image_saved": str(raw_img_path.name),
-        "extracted_data": extracted_data
+        "extracted_data": extracted_data,
+        "expenses_summary": summary
     }
 
 def remove_last_page_from_pdf(month_str: str, user_email: str = None) -> dict:

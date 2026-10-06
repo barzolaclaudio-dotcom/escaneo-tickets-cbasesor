@@ -212,7 +212,7 @@ async def get_expenses(month: str, user_email: str = None):
 @app.get("/download/excel/{month}")
 async def download_excel(month: str, user_email: str = None):
     try:
-        excel_bytes = generate_excel_report(month)
+        excel_bytes = generate_excel_report(month, user_email=user_email)
         filename = f"Gastos_{month}.xlsx"
         return Response(
             content=excel_bytes,
@@ -225,7 +225,7 @@ async def download_excel(month: str, user_email: str = None):
 @app.get("/download/csv/{month}")
 async def download_csv(month: str, user_email: str = None):
     try:
-        csv_bytes = generate_csv_report(month)
+        csv_bytes = generate_csv_report(month, user_email=user_email)
         filename = f"Libro_IVA_Compras_{month}.csv"
         return Response(
             content=csv_bytes,
@@ -282,6 +282,40 @@ async def stats(background_tasks: BackgroundTasks, user_email: str = None):
         "current_tickets_count": current_stat["pages"] if current_stat else 0,
         "monthly_files": monthly
     }
+
+@app.post("/api/sync-restore-expenses")
+async def sync_restore_expenses(
+    month: str = Form(...),
+    expenses_json: str = Form(...),
+    user_email: str = Form(None)
+):
+    try:
+        import json
+        from ticket_ocr import save_monthly_expenses
+        tickets = json.loads(expenses_json)
+        save_monthly_expenses(month, tickets, user_email)
+        return {"success": True, "count": len(tickets), "month": month}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+
+@app.post("/api/sync-restore-pdf")
+async def sync_restore_pdf(
+    month: str = Form(...),
+    file: UploadFile = File(...),
+    user_email: str = Form(None)
+):
+    try:
+        from pdf_processor import get_user_pdf_dir
+        target_pdf_dir = get_user_pdf_dir(user_email)
+        month_key = month.replace("-", "_")
+        pdf_path = target_pdf_dir / f"Tickets_{month_key}.pdf"
+        content = await file.read()
+        if content:
+            with open(pdf_path, "wb") as f:
+                f.write(content)
+        return {"success": True, "month": month_key, "size": len(content)}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
 
 @app.get("/download/{filename}")
 async def download_pdf(filename: str, user_email: str = None):

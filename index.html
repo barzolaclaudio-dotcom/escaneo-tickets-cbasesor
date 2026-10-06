@@ -143,6 +143,17 @@
             <div class="relative">
                 <input type="email" id="user-email-input" placeholder="ejemplo@cbasesor.com" oninput="onEmailChange()" onblur="onEmailChange()" class="w-full bg-[#1c1c21] text-white border border-gold-500/40 rounded-xl px-3.5 py-2.5 font-semibold text-sm focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition">
             </div>
+            <div class="flex items-center justify-between gap-2 pt-1 text-[11px] text-cb-muted border-t border-gold-500/15">
+                <button onclick="exportFullBackupJSON()" class="hover:text-gold-400 flex items-center gap-1 transition" title="Descargar copia de seguridad de tus tickets">
+                    <svg class="w-3.5 h-3.5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    <span>Copia de Seguridad</span>
+                </button>
+                <label class="hover:text-gold-400 flex items-center gap-1 cursor-pointer transition" title="Restaurar copia de seguridad">
+                    <svg class="w-3.5 h-3.5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    <span>Restaurar Datos</span>
+                    <input type="file" id="import-backup-input" accept=".json" class="hidden" onchange="importFullBackupJSON(event)">
+                </label>
+            </div>
         </div>
 
         <!-- Selector de Mes de Destino -->
@@ -505,6 +516,179 @@
             if (modal) modal.classList.toggle('hidden');
         }
 
+        // ==========================================
+        // INDEXEDDB VAULT (Persistencia Blindada en Celular)
+        // ==========================================
+        const DB_NAME = 'CBTicketsVault';
+        const DB_VERSION = 1;
+
+        function openVaultDB() {
+            return new Promise((resolve) => {
+                const req = indexedDB.open(DB_NAME, DB_VERSION);
+                req.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains('months')) {
+                        db.createObjectStore('months', { keyPath: 'vaultKey' });
+                    }
+                };
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => resolve(null);
+            });
+        }
+
+        async function saveMonthToVault(email, monthKey, summaryData, pdfBlob) {
+            if (!monthKey || !summaryData) return;
+            try {
+                const db = await openVaultDB();
+                if (!db) return;
+                const tx = db.transaction('months', 'readwrite');
+                const store = tx.objectStore('months');
+                const vaultKey = `${(email || 'default').toLowerCase()}_${monthKey}`;
+                
+                let existingBlob = null;
+                if (!pdfBlob) {
+                    const prev = await new Promise(r => {
+                        const q = store.get(vaultKey);
+                        q.onsuccess = () => r(q.result);
+                        q.onerror = () => r(null);
+                    });
+                    if (prev && prev.pdfBlob) existingBlob = prev.pdfBlob;
+                }
+
+                store.put({
+                    vaultKey,
+                    email: (email || '').toLowerCase(),
+                    monthKey,
+                    expensesData: summaryData,
+                    pdfBlob: pdfBlob || existingBlob,
+                    updatedAt: Date.now()
+                });
+            } catch (err) {
+                console.warn("Vault write error:", err);
+            }
+        }
+
+        async function getMonthFromVault(email, monthKey) {
+            try {
+                const db = await openVaultDB();
+                if (!db) return null;
+                const tx = db.transaction('months', 'readonly');
+                const store = tx.objectStore('months');
+                const vaultKey = `${(email || 'default').toLowerCase()}_${monthKey}`;
+                return new Promise((resolve) => {
+                    const req = store.get(vaultKey);
+                    req.onsuccess = () => resolve(req.result || null);
+                    req.onerror = () => resolve(null);
+                });
+            } catch (err) {
+                return null;
+            }
+        }
+
+        async function getAllMonthsFromVault(email) {
+            try {
+                const db = await openVaultDB();
+                if (!db) return [];
+                const tx = db.transaction('months', 'readonly');
+                const store = tx.objectStore('months');
+                return new Promise((resolve) => {
+                    const req = store.getAll();
+                    req.onsuccess = () => {
+                        const safeEmail = (email || '').toLowerCase();
+                        const filtered = (req.result || []).filter(item => item.email === safeEmail);
+                        resolve(filtered);
+                    };
+                    req.onerror = () => resolve([]);
+                });
+            } catch (err) {
+                return [];
+            }
+        }
+
+        async function exportFullBackupJSON() {
+            const email = getUserEmail();
+            const months = await getAllMonthsFromVault(email);
+            if (!months || months.length === 0) {
+                alert("No hay tickets guardados localmente para exportar.");
+                return;
+            }
+            const cleanData = months.map(m => ({
+                monthKey: m.monthKey,
+                expensesData: m.expensesData,
+                updatedAt: m.updatedAt
+            }));
+            const jsonStr = JSON.stringify({ email, exportedAt: new Date().toISOString(), months: cleanData }, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `Backup_Tickets_${email ? email.replace(/[@.]/g, '_') : 'CB'}_${Date.now()}.json`;
+            a.click();
+        }
+
+        async function importFullBackupJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!data.months || !Array.isArray(data.months)) {
+                        alert("El archivo no tiene el formato de copia de seguridad válido.");
+                        return;
+                    }
+                    const email = getUserEmail() || data.email;
+                    for (const m of data.months) {
+                        if (m.monthKey && m.expensesData) {
+                            await saveMonthToVault(email, m.monthKey, m.expensesData);
+                            const fd = new FormData();
+                            fd.append('month', m.monthKey);
+                            fd.append('expenses_json', JSON.stringify(m.expensesData.tickets || []));
+                            if (email) fd.append('user_email', email);
+                            await fetch('/api/sync-restore-expenses', { method: 'POST', body: fd });
+                        }
+                    }
+                    alert("¡Copia de seguridad restaurada con éxito!");
+                    fetchStats();
+                } catch (err) {
+                    alert("Error importando backup: " + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        let isRestoringToServer = false;
+        async function autoSyncVaultToServer(email, cachedMonths) {
+            if (isRestoringToServer || !cachedMonths || cachedMonths.length === 0) return;
+            isRestoringToServer = true;
+            try {
+                for (const m of cachedMonths) {
+                    const tickets = m.expensesData ? (m.expensesData.tickets || []) : [];
+                    if (tickets.length > 0) {
+                        const fd = new FormData();
+                        fd.append('month', m.monthKey);
+                        fd.append('expenses_json', JSON.stringify(tickets));
+                        if (email) fd.append('user_email', email);
+                        await fetch('/api/sync-restore-expenses', { method: 'POST', body: fd });
+
+                        if (m.pdfBlob) {
+                            const pdfFd = new FormData();
+                            pdfFd.append('month', m.monthKey);
+                            pdfFd.append('file', m.pdfBlob, `Tickets_${m.monthKey}.pdf`);
+                            if (email) pdfFd.append('user_email', email);
+                            await fetch('/api/sync-restore-pdf', { method: 'POST', body: pdfFd });
+                        }
+                    }
+                }
+                console.log("Restauración automática a Render completada.");
+                const badge = document.getElementById('email-status-badge');
+                if (badge) badge.textContent = "Sincronizado";
+            } catch (err) {
+                console.warn("Auto-sync error:", err);
+            } finally {
+                isRestoringToServer = false;
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             initEmail();
             populateMonthDropdown();
@@ -668,22 +852,46 @@
         async function fetchStats() {
             try {
                 const email = getUserEmail();
+                const cachedMonths = await getAllMonthsFromVault(email);
+                
                 const url = email ? `/api/stats?user_email=${encodeURIComponent(email)}` : '/api/stats';
                 const res = await fetch(url);
                 globalStatsData = await res.json();
                 
+                // Si el servidor despertó vacío pero el celular tiene meses guardados, auto-restaurar
+                if ((!globalStatsData.monthly_files || globalStatsData.monthly_files.length === 0) && cachedMonths.length > 0) {
+                    await autoSyncVaultToServer(email, cachedMonths);
+                    const refreshRes = await fetch(url);
+                    globalStatsData = await refreshRes.json();
+                }
+
                 updateSelectedMonthCard();
                 fetchExpensesData();
                 
                 const list = document.getElementById('monthly-list');
                 list.innerHTML = '';
                 
-                if (globalStatsData.monthly_files.length === 0) {
+                let filesList = (globalStatsData && globalStatsData.monthly_files && globalStatsData.monthly_files.length > 0) 
+                    ? globalStatsData.monthly_files 
+                    : [];
+
+                // Si aún no responde el servidor con la lista, mostrar los del Vault
+                if (filesList.length === 0 && cachedMonths.length > 0) {
+                    filesList = cachedMonths.map(m => ({
+                        filename: `Tickets_${m.monthKey}.pdf`,
+                        month_key: m.monthKey,
+                        pages: m.expensesData ? (m.expensesData.tickets_count || (m.expensesData.tickets ? m.expensesData.tickets.length : 0)) : 0,
+                        size_mb: 0.2,
+                        last_updated: 'Guardado en celular'
+                    }));
+                }
+
+                if (filesList.length === 0) {
                     list.innerHTML = `<p class="text-xs text-cb-muted italic">No hay PDFs generados aún. ¡Tomá tu primer ticket arriba!</p>`;
                     return;
                 }
                 
-                globalStatsData.monthly_files.forEach(item => {
+                filesList.forEach(item => {
                     const [itemY, itemM] = item.month_key.split('_');
                     const nameStr = `${MONTH_NAMES[parseInt(itemM, 10) - 1]} ${itemY}`;
                     const emailParam = email ? `&user_email=${encodeURIComponent(email)}` : '';
@@ -750,19 +958,41 @@
         async function fetchExpensesData() {
             const key = document.getElementById('month-selector').value;
             const email = getUserEmail();
+            
+            // 1. Mostrar de inmediato desde Vault local si existe
+            const localData = await getMonthFromVault(email, key);
+            if (localData && localData.expensesData) {
+                applyExpensesToUI(localData.expensesData);
+            }
+
             const url = email ? `/api/expenses/${key}?user_email=${encodeURIComponent(email)}` : `/api/expenses/${key}`;
             try {
                 const res = await fetch(url);
                 const data = await res.json();
                 
-                document.getElementById('stat-total-spent').textContent = `$${data.total_spent.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
-                document.getElementById('stat-total-iva').textContent = `$${data.total_iva.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
-                
-                lastVendorBreakdown = data.vendor_breakdown || [];
-                filterVendorBreakdown();
+                if (data && data.tickets && data.tickets.length > 0) {
+                    applyExpensesToUI(data);
+                    saveMonthToVault(email, key, data);
+                } else if (localData && localData.expensesData && localData.expensesData.tickets && localData.expensesData.tickets.length > 0) {
+                    const fd = new FormData();
+                    fd.append('month', key);
+                    fd.append('expenses_json', JSON.stringify(localData.expensesData.tickets));
+                    if (email) fd.append('user_email', email);
+                    await fetch('/api/sync-restore-expenses', { method: 'POST', body: fd });
+                    applyExpensesToUI(localData.expensesData);
+                } else {
+                    applyExpensesToUI(data);
+                }
             } catch (err) {
                 console.error("Error al cargar gastos:", err);
             }
+        }
+
+        function applyExpensesToUI(data) {
+            document.getElementById('stat-total-spent').textContent = `$${(data.total_spent || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+            document.getElementById('stat-total-iva').textContent = `$${(data.total_iva || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+            lastVendorBreakdown = data.vendor_breakdown || [];
+            filterVendorBreakdown();
         }
 
         async function undoLastTicket() {
@@ -803,6 +1033,15 @@
                 const res = await fetch('/api/delete-month-pdf', { method: 'POST', body: formData });
                 const data = await res.json();
                 if (data.success) {
+                    try {
+                        const db = await openVaultDB();
+                        if (db) {
+                            const tx = db.transaction('months', 'readwrite');
+                            const store = tx.objectStore('months');
+                            const vaultKey = `${(email || 'default').toLowerCase()}_${monthKey}`;
+                            store.delete(vaultKey);
+                        }
+                    } catch(e) {}
                     fetchStats();
                 } else {
                     alert('Error: ' + (data.error || 'No se pudo eliminar'));
@@ -1042,6 +1281,20 @@
                         document.getElementById('month-selector').value = targetMonth;
                         cancelSelection();
                         showSuccess(data.total_tickets, targetMonth);
+
+                        if (data.expenses_summary) {
+                            saveMonthToVault(email, targetMonth, data.expenses_summary);
+                            try {
+                                const emailParam = email ? `?user_email=${encodeURIComponent(email)}` : '';
+                                fetch(`/download/Tickets_${targetMonth}.pdf${emailParam}`)
+                                    .then(r => r.ok ? r.blob() : null)
+                                    .then(blob => {
+                                        if (blob) saveMonthToVault(email, targetMonth, data.expenses_summary, blob);
+                                    })
+                                    .catch(() => {});
+                            } catch(e) {}
+                        }
+
                         fetchStats();
                     } else {
                         alert('Error al guardar ticket: ' + (data.error || 'Error desconocido'));

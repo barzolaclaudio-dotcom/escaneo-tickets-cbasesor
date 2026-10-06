@@ -8,14 +8,14 @@ from openpyxl.utils import get_column_letter
 
 from ticket_ocr import load_monthly_expenses, get_monthly_summary
 
-def generate_excel_report(month_str: str) -> bytes:
+def generate_excel_report(month_str: str, user_email: str = None) -> bytes:
     """
     Genera un archivo Excel (.xlsx) profesional con formato institucional CB Asesor:
     - Hoja 1: Resumen Ejecutivo y Totales por Comercio.
     - Hoja 2: Libro IVA Compras (Formato para Contador).
     - Hoja 3: Detalle Ítem por Ítem de Productos Comprados.
     """
-    summary = get_monthly_summary(month_str)
+    summary = get_monthly_summary(month_str, user_email=user_email)
     tickets = summary.get("tickets", [])
     
     wb = openpyxl.Workbook()
@@ -126,9 +126,9 @@ def generate_excel_report(month_str: str) -> bytes:
     wb.save(output)
     return output.getvalue()
 
-def generate_csv_report(month_str: str) -> bytes:
+def generate_csv_report(month_str: str, user_email: str = None) -> bytes:
     """Genera archivo CSV de IVA Compras listo para enviar al contador."""
-    summary = get_monthly_summary(month_str)
+    summary = get_monthly_summary(month_str, user_email=user_email)
     tickets = summary.get("tickets", [])
     
     output = io.StringIO()
