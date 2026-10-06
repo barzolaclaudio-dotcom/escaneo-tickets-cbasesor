@@ -1052,6 +1052,7 @@
         }
 
         let ocrTimeout = null;
+        let isSubmittingTicket = false;
 
         function handleFileSelect(evt) {
             const file = evt.target.files[0];
@@ -1101,14 +1102,16 @@
         }
 
         function scheduleOCRScanPreview() {
+            if (isSubmittingTicket) return;
             if (ocrTimeout) clearTimeout(ocrTimeout);
             ocrTimeout = setTimeout(() => {
+                if (isSubmittingTicket) return;
                 triggerOCRScanPreviewFromCropper();
             }, 300);
         }
 
         async function triggerOCRScanPreviewFromCropper() {
-            if (!cropper) return;
+            if (!cropper || isSubmittingTicket) return;
             
             const badge = document.getElementById('ocr-status-badge');
             badge.textContent = "Leyendo recuadre...";
@@ -1204,6 +1207,8 @@
         }
 
         function cancelSelection() {
+            isSubmittingTicket = false;
+            if (ocrTimeout) clearTimeout(ocrTimeout);
             selectedFile = null;
             if (cropper) {
                 cropper.destroy();
@@ -1220,7 +1225,10 @@
         }
 
         async function submitTicket() {
-            if (!cropper) return;
+            if (!cropper || isSubmittingTicket) return;
+            isSubmittingTicket = true;
+            if (ocrTimeout) clearTimeout(ocrTimeout);
+            if (cropper) cropper.disable();
 
             const btn = document.getElementById('upload-btn');
             const btnText = document.getElementById('upload-btn-text');
@@ -1251,6 +1259,8 @@
                 if (!blob) {
                     alert('Error procesando la imagen');
                     btn.disabled = false;
+                    isSubmittingTicket = false;
+                    if (cropper) cropper.enable();
                     return;
                 }
 
@@ -1302,6 +1312,8 @@
                 } catch (err) {
                     alert('Error de conexión con el servidor: ' + err.message);
                 } finally {
+                    isSubmittingTicket = false;
+                    if (cropper) cropper.enable();
                     btn.disabled = false;
                     btnText.textContent = 'Confirmar y Guardar Ticket';
                     btnIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>`;
