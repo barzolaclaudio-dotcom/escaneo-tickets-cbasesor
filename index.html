@@ -394,6 +394,54 @@
     </main>
 
     <!-- QR Modal -->
+
+    <!-- PANTALLA DETALLE DE COMERCIO -->
+    <div id="vendor-detail-screen" class="hidden fixed inset-0 bg-[#0b0b0f] z-40 overflow-y-auto">
+        <div class="max-w-md mx-auto p-4 space-y-3">
+            <div class="flex items-center gap-3 sticky top-0 bg-[#0b0b0f] py-2 z-10">
+                <button onclick="closeVendorDetail()" class="px-3 py-1.5 bg-gold-500/10 border border-gold-500/40 text-gold-400 rounded-lg text-xs font-bold">← Volver</button>
+                <div class="min-w-0">
+                    <p id="vd-title" class="font-bold text-white text-sm truncate"></p>
+                    <p id="vd-subtitle" class="text-[11px] text-cb-muted"></p>
+                </div>
+            </div>
+            <div id="vd-list" class="space-y-2"></div>
+        </div>
+    </div>
+
+    <!-- VISOR DE IMAGEN DE TICKET -->
+    <div id="ticket-image-viewer" class="hidden fixed inset-0 bg-black/95 z-50 flex flex-col">
+        <div class="flex justify-between items-center p-3">
+            <p id="tiv-title" class="text-xs text-white font-semibold"></p>
+            <button onclick="closeTicketImage()" class="px-3 py-1.5 bg-white/10 text-white rounded-lg text-xs font-bold">Cerrar ✕</button>
+        </div>
+        <div class="flex-1 overflow-auto flex items-start justify-center p-2">
+            <img id="tiv-img" alt="Ticket" class="max-w-full h-auto rounded-lg">
+            <p id="tiv-msg" class="hidden text-cb-muted text-sm mt-10 text-center px-6"></p>
+        </div>
+    </div>
+
+    <!-- EDITAR TICKET -->
+    <div id="ticket-edit-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-cb-card gold-border rounded-2xl p-5 w-full max-w-sm space-y-3 max-h-[90vh] overflow-y-auto">
+            <h3 class="font-bold text-white text-sm">Editar ticket</h3>
+            <div class="grid grid-cols-2 gap-2 text-[11px] text-cb-muted">
+                <label class="col-span-2">Comercio<input id="te-vendor" type="text" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1.5 text-white text-xs"></label>
+                <label>Fecha (DD/MM/AAAA)<input id="te-date" type="text" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1.5 text-white text-xs"></label>
+                <label>CUIT<input id="te-cuit" type="text" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1.5 text-white text-xs"></label>
+                <label>Total<input id="te-total" type="number" step="0.01" inputmode="decimal" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1.5 text-white text-xs"></label>
+                <label>Subtotal<input id="te-subtotal" type="number" step="0.01" inputmode="decimal" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1.5 text-white text-xs"></label>
+                <label>IVA 21%<input id="te-iva21" type="number" step="0.01" inputmode="decimal" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1.5 text-white text-xs"></label>
+                <label>IVA 10,5%<input id="te-iva105" type="number" step="0.01" inputmode="decimal" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1.5 text-white text-xs"></label>
+                <label>IVA 27%<input id="te-iva27" type="number" step="0.01" inputmode="decimal" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1.5 text-white text-xs"></label>
+            </div>
+            <div class="flex gap-2 pt-1">
+                <button onclick="closeTicketEdit()" class="flex-1 py-2 bg-white/5 border border-white/10 text-white rounded-lg text-xs font-bold">Cancelar</button>
+                <button onclick="saveTicketEdit()" class="flex-1 py-2 bg-gold-500/20 border border-gold-500/50 text-gold-400 rounded-lg text-xs font-bold">Guardar</button>
+            </div>
+        </div>
+    </div>
+
     <div id="qr-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
         <div class="bg-[#121215] gold-border rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4">
             <div class="w-14 h-14 mx-auto rounded-2xl overflow-hidden border border-gold-500/40 shadow-lg shadow-gold-500/20 bg-black flex items-center justify-center p-1">
@@ -605,6 +653,20 @@
             }
         }
 
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const fr = new FileReader();
+                fr.onload = () => resolve(String(fr.result).split(',')[1] || '');
+                fr.onerror = reject;
+                fr.readAsDataURL(blob);
+            });
+        }
+
+        async function base64ToPdfBlob(b64) {
+            const r = await fetch(`data:application/pdf;base64,${b64}`);
+            return await r.blob();
+        }
+
         async function exportFullBackupJSON() {
             const email = getUserEmail();
             const months = await getAllMonthsFromVault(email);
@@ -612,12 +674,28 @@
                 alert("No hay tickets guardados localmente para exportar.");
                 return;
             }
-            const cleanData = months.map(m => ({
-                monthKey: m.monthKey,
-                expensesData: m.expensesData,
-                updatedAt: m.updatedAt
-            }));
-            const jsonStr = JSON.stringify({ email, exportedAt: new Date().toISOString(), months: cleanData }, null, 2);
+            const emailQ = email ? `?user_email=${encodeURIComponent(email)}` : '';
+            const cleanData = [];
+            for (const m of months) {
+                let pdfBase64 = null;
+                try {
+                    // Preferir el PDF del servidor (más actualizado); si no, el guardado en el celular
+                    let pdfBlob = null;
+                    try {
+                        const r = await fetch(`/download/Tickets_${m.monthKey}.pdf${emailQ}`);
+                        if (r.ok) pdfBlob = await r.blob();
+                    } catch (e) {}
+                    if (!pdfBlob && m.pdfBlob) pdfBlob = m.pdfBlob;
+                    if (pdfBlob) pdfBase64 = await blobToBase64(pdfBlob);
+                } catch (e) { console.warn('Backup PDF error', e); }
+                cleanData.push({
+                    monthKey: m.monthKey,
+                    expensesData: m.expensesData,
+                    updatedAt: m.updatedAt,
+                    pdfBase64
+                });
+            }
+            const jsonStr = JSON.stringify({ email, exportedAt: new Date().toISOString(), version: 2, months: cleanData });
             const blob = new Blob([jsonStr], { type: 'application/json' });
             const fname = `Backup_Tickets_${email ? email.replace(/[@.]/g, '_') : 'CB'}_${Date.now()}.json`;
             // Menu para elegir destino (Drive, WhatsApp, Archivos, etc.) si el dispositivo lo permite
@@ -651,12 +729,23 @@
                     const email = getUserEmail() || data.email;
                     for (const m of data.months) {
                         if (m.monthKey && m.expensesData) {
-                            await saveMonthToVault(email, m.monthKey, m.expensesData);
+                            let pdfBlob = null;
+                            if (m.pdfBase64) {
+                                try { pdfBlob = await base64ToPdfBlob(m.pdfBase64); } catch (e) {}
+                            }
+                            await saveMonthToVault(email, m.monthKey, m.expensesData, pdfBlob);
                             const fd = new FormData();
                             fd.append('month', m.monthKey);
                             fd.append('expenses_json', JSON.stringify(m.expensesData.tickets || []));
                             if (email) fd.append('user_email', email);
                             await fetch('/api/sync-restore-expenses', { method: 'POST', body: fd });
+                            if (pdfBlob) {
+                                const pdfFd = new FormData();
+                                pdfFd.append('month', m.monthKey);
+                                pdfFd.append('file', pdfBlob, `Tickets_${m.monthKey}.pdf`);
+                                if (email) pdfFd.append('user_email', email);
+                                await fetch('/api/sync-restore-pdf', { method: 'POST', body: pdfFd });
+                            }
                         }
                     }
                     alert("¡Copia de seguridad restaurada con éxito!");
@@ -953,10 +1042,12 @@
             
             breakdown.forEach(v => {
                 const row = document.createElement('div');
-                row.className = "space-y-1";
+                row.className = "space-y-1 cursor-pointer active:opacity-70 hover:bg-white/5 rounded-lg p-1 -m-1 transition";
+                row.dataset.vendor = v.vendor;
+                row.addEventListener('click', () => openVendorDetail(row.dataset.vendor));
                 row.innerHTML = `
                     <div class="flex justify-between items-center text-xs">
-                        <span class="font-semibold text-white">${v.vendor}</span>
+                        <span class="font-semibold text-white">${escapeHtml(v.vendor)} <span class="text-gold-400">›</span></span>
                         <span class="font-mono font-bold text-gold-400">$${v.total.toLocaleString('es-AR', {minimumFractionDigits: 2})} <span class="text-[10px] text-cb-muted">(${v.percentage}%)</span></span>
                     </div>
                     <div class="w-full bg-[#101014] rounded-full h-1.5 border border-gold-500/20 overflow-hidden">
@@ -1004,7 +1095,9 @@
             document.getElementById('stat-total-spent').textContent = `$${(data.total_spent || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
             document.getElementById('stat-total-iva').textContent = `$${(data.total_iva || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
             lastVendorBreakdown = data.vendor_breakdown || [];
+            lastTickets = data.tickets || [];
             filterVendorBreakdown();
+            if (vendorDetailOpen) renderVendorDetail();
         }
 
         async function undoLastTicket() {
@@ -1362,6 +1455,206 @@
             modal.classList.toggle('hidden');
         }
     
+
+        // ==========================================
+        // DETALLE POR COMERCIO: ver, editar y eliminar tickets
+        // ==========================================
+        let lastTickets = [];
+        let vendorDetailOpen = false;
+        let currentVendor = null;
+        let editingIndex = null;
+
+        function escapeHtml(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+        function fmtMoney(n) {
+            return '$' + (Number(n) || 0).toLocaleString('es-AR', {minimumFractionDigits: 2});
+        }
+        function vendorOf(t) { return t.vendor || 'Comercio General'; }
+        function dateSortKey(d) {
+            const p = String(d || '').split(/[\/.-]/);
+            if (p.length !== 3) return 0;
+            let y = parseInt(p[2], 10); if (y < 100) y += 2000;
+            return y * 10000 + parseInt(p[1], 10) * 100 + parseInt(p[0], 10);
+        }
+
+        function openVendorDetail(vendor) {
+            currentVendor = vendor;
+            vendorDetailOpen = true;
+            document.getElementById('vendor-detail-screen').classList.remove('hidden');
+            window.scrollTo(0, 0);
+            renderVendorDetail();
+        }
+
+        function closeVendorDetail() {
+            vendorDetailOpen = false;
+            document.getElementById('vendor-detail-screen').classList.add('hidden');
+        }
+
+        function renderVendorDetail() {
+            const monthKey = document.getElementById('month-selector').value;
+            const [y, m] = monthKey.split('_');
+            const items = [];
+            lastTickets.forEach((t, idx) => { if (vendorOf(t) === currentVendor) items.push({ t, idx }); });
+            items.sort((a, b) => dateSortKey(b.t.date) - dateSortKey(a.t.date));
+
+            const total = items.reduce((s, x) => s + (Number(x.t.total) || 0), 0);
+            document.getElementById('vd-title').textContent = currentVendor;
+            document.getElementById('vd-subtitle').textContent =
+                `${MONTH_NAMES[parseInt(m, 10) - 1]} ${y} • ${items.length} ticket${items.length === 1 ? '' : 's'} • ${fmtMoney(total)}`;
+
+            const list = document.getElementById('vd-list');
+            list.innerHTML = '';
+            if (items.length === 0) {
+                list.innerHTML = '<p class="text-cb-muted italic text-xs">No hay tickets de este comercio en el mes.</p>';
+                return;
+            }
+            items.forEach(({ t, idx }) => {
+                const div = document.createElement('div');
+                div.className = 'p-3 bg-[#18181d] rounded-xl border border-gold-500/15 space-y-2';
+                div.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-white font-semibold">${escapeHtml(t.date || 'Sin fecha')}</span>
+                        <span class="font-mono font-bold text-gold-400 text-sm">${fmtMoney(t.total)}</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button class="py-1.5 bg-gold-500/10 border border-gold-500/40 text-gold-400 rounded-lg text-[11px] font-bold">🖼 Ver imagen</button>
+                        <button class="py-1.5 bg-sky-500/10 border border-sky-500/40 text-sky-300 rounded-lg text-[11px] font-bold">✏️ Editar</button>
+                        <button class="py-1.5 bg-rose-500/10 border border-rose-500/40 text-rose-300 rounded-lg text-[11px] font-bold">🗑 Eliminar</button>
+                    </div>`;
+                const [bImg, bEdit, bDel] = div.querySelectorAll('button');
+                bImg.addEventListener('click', () => openTicketImage(idx));
+                bEdit.addEventListener('click', () => openTicketEdit(idx));
+                bDel.addEventListener('click', () => deleteTicketAt(idx));
+                list.appendChild(div);
+            });
+        }
+
+        function openTicketImage(idx) {
+            const monthKey = document.getElementById('month-selector').value;
+            const email = getUserEmail();
+            const t = lastTickets[idx] || {};
+            const img = document.getElementById('tiv-img');
+            const msg = document.getElementById('tiv-msg');
+            document.getElementById('tiv-title').textContent = `${vendorOf(t)} • ${t.date || ''} • ${fmtMoney(t.total)}`;
+            msg.classList.add('hidden');
+            img.classList.remove('hidden');
+            img.onerror = () => {
+                img.classList.add('hidden');
+                msg.textContent = 'No se pudo cargar la imagen de este ticket. Puede que el PDF del mes no esté disponible en el servidor todavía.';
+                msg.classList.remove('hidden');
+            };
+            const emailQ = email ? `&user_email=${encodeURIComponent(email)}` : '';
+            img.src = `/api/ticket-image/${monthKey}/${idx}?t=${Date.now()}${emailQ}`;
+            document.getElementById('ticket-image-viewer').classList.remove('hidden');
+        }
+
+        function closeTicketImage() {
+            document.getElementById('ticket-image-viewer').classList.add('hidden');
+            document.getElementById('tiv-img').removeAttribute('src');
+        }
+
+        function openTicketEdit(idx) {
+            const t = lastTickets[idx];
+            if (!t) return;
+            editingIndex = idx;
+            const set = (id, v) => { document.getElementById(id).value = (v === undefined || v === null) ? '' : v; };
+            set('te-vendor', t.vendor);
+            set('te-date', t.date);
+            set('te-cuit', t.cuit);
+            set('te-total', t.total);
+            set('te-subtotal', t.subtotal);
+            set('te-iva21', t.iva_21);
+            set('te-iva105', t.iva_10_5);
+            set('te-iva27', t.iva_27);
+            document.getElementById('ticket-edit-modal').classList.remove('hidden');
+        }
+
+        function closeTicketEdit() {
+            document.getElementById('ticket-edit-modal').classList.add('hidden');
+            editingIndex = null;
+        }
+
+        async function refreshVaultPdf(monthKey) {
+            // Mantener actualizado el PDF guardado en el celular (usado en backups y restauraciones)
+            const email = getUserEmail();
+            try {
+                const q = email ? `?user_email=${encodeURIComponent(email)}` : '';
+                const r = await fetch(`/download/Tickets_${monthKey}.pdf${q}`);
+                const mv = await getMonthFromVault(email, monthKey);
+                if (r.ok && mv && mv.expensesData) {
+                    await saveMonthToVault(email, monthKey, mv.expensesData, await r.blob());
+                }
+            } catch (e) {}
+        }
+
+        async function deleteVaultMonth(monthKey) {
+            try {
+                const db = await openVaultDB();
+                if (!db) return;
+                const store = db.transaction('months', 'readwrite').objectStore('months');
+                store.delete(`${(getUserEmail() || 'default').toLowerCase()}_${monthKey}`);
+            } catch (e) {}
+        }
+
+        async function afterTicketChange(monthKeys, emptied) {
+            if (emptied) {
+                for (const k of emptied) await deleteVaultMonth(k);
+            }
+            await fetchStats();
+            for (const k of monthKeys) await refreshVaultPdf(k);
+        }
+
+        async function saveTicketEdit() {
+            if (editingIndex === null) return;
+            const monthKey = document.getElementById('month-selector').value;
+            const email = getUserEmail();
+            const val = id => document.getElementById(id).value.trim();
+            const fd = new FormData();
+            fd.append('month', monthKey);
+            fd.append('index', editingIndex);
+            fd.append('vendor', val('te-vendor') || 'Comercio General');
+            fd.append('date', val('te-date'));
+            fd.append('cuit', val('te-cuit'));
+            const nums = { total: 'te-total', subtotal: 'te-subtotal', iva_21: 'te-iva21', iva_10_5: 'te-iva105', iva_27: 'te-iva27' };
+            for (const [k, id] of Object.entries(nums)) {
+                const v = val(id).replace(',', '.');
+                fd.append(k, v === '' ? '0' : v);
+            }
+            if (email) fd.append('user_email', email);
+            try {
+                const res = await fetch('/api/ticket-edit', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (!data.success) { alert('Error: ' + (data.error || 'No se pudo guardar')); return; }
+                closeTicketEdit();
+                const keys = [monthKey]; if (data.new_month) keys.push(data.new_month);
+                if (data.moved) alert(`El ticket se movió al mes ${data.new_month.replace('_', '/')} según su nueva fecha.`);
+                await afterTicketChange(keys);
+            } catch (err) {
+                alert('Error de conexión: ' + err.message);
+            }
+        }
+
+        async function deleteTicketAt(idx) {
+            const t = lastTickets[idx] || {};
+            if (!confirm(`¿Eliminar el ticket de ${vendorOf(t)} del ${t.date || 'sin fecha'} por ${fmtMoney(t.total)}?\nSe borrarán sus datos y su imagen.`)) return;
+            const monthKey = document.getElementById('month-selector').value;
+            const email = getUserEmail();
+            const fd = new FormData();
+            fd.append('month', monthKey);
+            fd.append('index', idx);
+            if (email) fd.append('user_email', email);
+            try {
+                const res = await fetch('/api/ticket-delete', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (!data.success) { alert('Error: ' + (data.error || 'No se pudo eliminar')); return; }
+                const emptied = data.remaining === 0 ? [monthKey] : null;
+                await afterTicketChange(emptied ? [] : [monthKey], emptied);
+            } catch (err) {
+                alert('Error de conexión: ' + err.message);
+            }
+        }
+
         // Descargas sin salir de la app: evita que la PWA navegue a la URL de descarga
         document.addEventListener('click', async (ev) => {
             const a = ev.target.closest('a[href^="/download/"]');

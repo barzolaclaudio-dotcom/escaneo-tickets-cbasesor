@@ -283,6 +283,67 @@ async def stats(background_tasks: BackgroundTasks, user_email: str = None):
         "monthly_files": monthly
     }
 
+@app.get("/api/ticket-image/{month}/{index}")
+async def ticket_image(month: str, index: int, user_email: str = None):
+    from ticket_manager import render_ticket_page_jpeg
+    try:
+        data = render_ticket_page_jpeg(month, index, user_email)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    if not data:
+        raise HTTPException(status_code=404, detail="Imagen del ticket no disponible")
+    return Response(
+        content=data,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
+    )
+
+@app.post("/api/ticket-delete")
+async def ticket_delete(
+    background_tasks: BackgroundTasks,
+    month: str = Form(...),
+    index: int = Form(...),
+    user_email: str = Form(None)
+):
+    from ticket_manager import delete_ticket
+    try:
+        res = delete_ticket(month, index, user_email)
+        if res.get("success") and res.get("remaining", 0) > 0:
+            background_tasks.add_task(sync_month_to_gdrive, res["month"], PDFS_DIR, DATA_DIR, user_email)
+        return JSONResponse(content=res)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+
+@app.post("/api/ticket-edit")
+async def ticket_edit(
+    background_tasks: BackgroundTasks,
+    month: str = Form(...),
+    index: int = Form(...),
+    vendor: str = Form(None),
+    date: str = Form(None),
+    cuit: str = Form(None),
+    total: float = Form(None),
+    subtotal: float = Form(None),
+    iva_21: float = Form(None),
+    iva_10_5: float = Form(None),
+    iva_27: float = Form(None),
+    user_email: str = Form(None)
+):
+    from ticket_manager import edit_ticket
+    try:
+        fields = {
+            "vendor": vendor, "date": date, "cuit": cuit, "total": total,
+            "subtotal": subtotal, "iva_21": iva_21, "iva_10_5": iva_10_5, "iva_27": iva_27
+        }
+        res = edit_ticket(month, index, fields, user_email)
+        if res.get("success"):
+            for m in {res.get("month"), res.get("new_month")}:
+                if m:
+                    background_tasks.add_task(sync_month_to_gdrive, m, PDFS_DIR, DATA_DIR, user_email)
+        return JSONResponse(content=res)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+
 @app.post("/api/sync-restore-expenses")
 async def sync_restore_expenses(
     month: str = Form(...),
