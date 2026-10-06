@@ -90,15 +90,40 @@
                 </div>
             </div>
             
-            <button onclick="toggleQRModal()" class="p-2 bg-gold-500/10 hover:bg-gold-500/20 border border-gold-500/30 rounded-xl text-gold-400 text-xs font-semibold flex items-center gap-1.5 transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
-                <span>Conectar</span>
-            </button>
+            <div class="flex items-center gap-2">
+                <button id="btn-install-app" onclick="triggerAppInstall()" class="p-2 bg-gradient-to-r from-gold-500 to-amber-600 hover:from-gold-400 hover:to-amber-500 text-black text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md shadow-gold-500/20 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    <span>Instalar App</span>
+                </button>
+                <button onclick="toggleQRModal()" class="p-2 bg-gold-500/10 hover:bg-gold-500/20 border border-gold-500/30 rounded-xl text-gold-400 text-xs font-semibold flex items-center gap-1.5 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                    <span>Conectar</span>
+                </button>
+            </div>
         </div>
     </header>
 
     <!-- Main Container -->
     <main class="max-w-md mx-auto px-4 mt-5 space-y-5">
+
+        <!-- Banner de Instalación PWA en Celular -->
+        <div id="pwa-install-banner" class="hidden bg-gradient-to-r from-[#1c1a14] via-[#241f12] to-[#1a1710] border border-gold-500/40 rounded-2xl p-3.5 shadow-lg flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center text-black font-black text-sm shadow">
+                    CB
+                </div>
+                <div>
+                    <h4 class="text-xs font-bold text-white leading-tight">Instalar en la pantalla de inicio</h4>
+                    <p class="text-[10px] text-gold-400/80">Accedé como app nativa a pantalla completa</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="triggerAppInstall()" class="px-3 py-1.5 bg-gold-500 hover:bg-gold-400 text-black text-xs font-extrabold rounded-lg shadow transition">
+                    Instalar
+                </button>
+                <button onclick="dismissInstallBanner()" class="text-cb-muted hover:text-white p-1 text-sm font-bold">✕</button>
+            </div>
+        </div>
 
         <!-- Email de Usuario / Cuenta Registrada -->
         <div class="bg-cb-card rounded-2xl p-4 gold-border shadow-lg space-y-2">
@@ -368,6 +393,45 @@
         </div>
     </div>
 
+    <!-- Install Modal -->
+    <div id="install-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-[#121215] gold-border rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4">
+            <div class="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center font-bold text-black text-xl">CB</div>
+            <div class="text-center">
+                <h3 class="font-bold text-white text-lg">Instalar en tu Celular</h3>
+                <p class="text-xs text-cb-muted mt-1">Usala a pantalla completa, más rápida y con acceso directo sin barra de navegador.</p>
+            </div>
+
+            <div class="space-y-3 text-xs bg-[#1a1a20] p-3.5 rounded-xl border border-gold-500/20 text-left">
+                <div class="space-y-1">
+                    <p class="font-bold text-gold-400 flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993s-.4483.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9994.4482.9994.9993s-.4483.9997-.9994.9997m11.4045-6.02l1.996-3.4572c.1011-.1756.0409-.4002-.1347-.5013-.1756-.1011-.4002-.0409-.5013.1347l-2.0227 3.5034c-1.5361-.7005-3.2625-1.101-5.1188-1.101s-3.5827.4005-5.1188 1.101L4.9592 5.5009c-.1011-.1756-.3257-.2358-.5013-.1347-.1756.1011-.2358.3257-.1347.5013l1.996 3.4572C2.6974 11.4429.5 15.3406.5 19.8242h23c0-4.4836-2.1974-8.3813-5.6185-10.5028"/></svg>
+                        En Android (Google Chrome):
+                    </p>
+                    <ol class="list-decimal list-inside text-cb-text space-y-1 pl-1">
+                        <li>Tocá los <b>tres puntitos (⋮)</b> arriba a la derecha.</li>
+                        <li>Seleccioná <b>"Instalar aplicación"</b> o <b>"Agregar a la pantalla principal"</b>.</li>
+                        <li>Confirmá <b>Instalar</b> y te aparecerá el ícono en tu pantalla.</li>
+                    </ol>
+                </div>
+                <hr class="border-gold-500/20 my-2">
+                <div class="space-y-1">
+                    <p class="font-bold text-gold-400 flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.88c.61-.74 1.02-1.77.91-2.8-.88.04-1.95.59-2.58 1.33-.56.64-1.05 1.69-.92 2.7.99.08 1.98-.49 2.59-1.23z"/></svg>
+                        En iPhone (Safari):
+                    </p>
+                    <ol class="list-decimal list-inside text-cb-text space-y-1 pl-1">
+                        <li>Tocá el botón <b>Compartir</b> (el cuadrito con flecha hacia arriba).</li>
+                        <li>Buscá y seleccioná <b>"Agregar a inicio"</b>.</li>
+                        <li>Tocá <b>Agregar</b> arriba a la derecha.</li>
+                    </ol>
+                </div>
+            </div>
+
+            <button onclick="toggleInstallModal()" class="w-full py-2.5 bg-gold-500 hover:bg-gold-400 text-black font-extrabold rounded-xl text-sm transition">Entendido</button>
+        </div>
+    </div>
+
     <!-- Script Application Logic -->
     <script>
         let selectedFile = null;
@@ -376,12 +440,68 @@
         let currentScannedItems = [];
         const MONTH_NAMES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
+        let deferredPrompt = null;
+
+        function checkStandalone() {
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+            if (isStandalone) {
+                const btn = document.getElementById('btn-install-app');
+                if (btn) btn.classList.add('hidden');
+                const banner = document.getElementById('pwa-install-banner');
+                if (banner) banner.classList.add('hidden');
+            } else {
+                if (!localStorage.getItem('pwa_banner_dismissed')) {
+                    const banner = document.getElementById('pwa-install-banner');
+                    if (banner) banner.classList.remove('hidden');
+                }
+            }
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const btn = document.getElementById('btn-install-app');
+            if (btn) btn.classList.remove('hidden');
+            const banner = document.getElementById('pwa-install-banner');
+            if (banner && !localStorage.getItem('pwa_banner_dismissed')) {
+                banner.classList.remove('hidden');
+            }
+        });
+
+        async function triggerAppInstall() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    const btn = document.getElementById('btn-install-app');
+                    if (btn) btn.classList.add('hidden');
+                    const banner = document.getElementById('pwa-install-banner');
+                    if (banner) banner.classList.add('hidden');
+                }
+                deferredPrompt = null;
+            } else {
+                toggleInstallModal();
+            }
+        }
+
+        function dismissInstallBanner() {
+            const banner = document.getElementById('pwa-install-banner');
+            if (banner) banner.classList.add('hidden');
+            localStorage.setItem('pwa_banner_dismissed', 'true');
+        }
+
+        function toggleInstallModal() {
+            const modal = document.getElementById('install-modal');
+            if (modal) modal.classList.toggle('hidden');
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             initEmail();
             populateMonthDropdown();
             updateSelectedMonthCard();
             fetchStats();
             setupQR();
+            checkStandalone();
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW reg error:', err));
             }
@@ -846,6 +966,7 @@
             });
             document.getElementById('camera-input').value = '';
             document.getElementById('gallery-input').value = '';
+            currentScannedItems = [];
             document.getElementById('preview-card').classList.add('hidden');
         }
 
