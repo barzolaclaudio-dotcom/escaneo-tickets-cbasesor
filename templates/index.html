@@ -619,10 +619,22 @@
             }));
             const jsonStr = JSON.stringify({ email, exportedAt: new Date().toISOString(), months: cleanData }, null, 2);
             const blob = new Blob([jsonStr], { type: 'application/json' });
+            const fname = `Backup_Tickets_${email ? email.replace(/[@.]/g, '_') : 'CB'}_${Date.now()}.json`;
+            // Menu para elegir destino (Drive, WhatsApp, Archivos, etc.) si el dispositivo lo permite
+            try {
+                const file = new File([blob], fname, { type: 'application/json' });
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({ files: [file], title: 'Copia de seguridad Tickets' });
+                    return;
+                }
+            } catch (err) {
+                if (err && err.name === 'AbortError') return;
+            }
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `Backup_Tickets_${email ? email.replace(/[@.]/g, '_') : 'CB'}_${Date.now()}.json`;
+            a.download = fname;
             a.click();
+            alert('Copia guardada en la carpeta Descargas de tu dispositivo:\n' + fname);
         }
 
         async function importFullBackupJSON(event) {
