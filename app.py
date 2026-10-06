@@ -137,7 +137,8 @@ async def scan_ocr_preview(file: UploadFile = File(...)):
             "iva_10_5": data.get("iva_10_5", 0.0),
             "iva_27": data.get("iva_27", 0.0),
             "cuit": data.get("cuit", ""),
-            "date": data.get("date", "")
+            "date": data.get("date", ""),
+            "items": data.get("items", [])
         })
     except Exception as e:
         return JSONResponse(content={"vendor": "", "total": 0.0, "error": str(e)})
