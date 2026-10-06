@@ -1349,6 +1349,36 @@
             const modal = document.getElementById('qr-modal');
             modal.classList.toggle('hidden');
         }
-    </script>
+    
+        // Descargas sin salir de la app: evita que la PWA navegue a la URL de descarga
+        document.addEventListener('click', async (ev) => {
+            const a = ev.target.closest('a[href^="/download/"]');
+            if (!a) return;
+            ev.preventDefault();
+            const url = a.getAttribute('href');
+            const original = a.innerHTML;
+            try {
+                a.style.opacity = '0.6';
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const blob = await res.blob();
+                let name = url.split('?')[0].split('/').pop();
+                const cd = res.headers.get('Content-Disposition') || '';
+                const m = cd.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+                if (m) name = decodeURIComponent(m[1]);
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = name;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setTimeout(() => URL.revokeObjectURL(link.href), 60000);
+            } catch (e) {
+                alert('No se pudo descargar el archivo: ' + e.message);
+            } finally {
+                a.style.opacity = '';
+                a.innerHTML = original;
+            }
+        });    </script>
 </body>
 </html>
