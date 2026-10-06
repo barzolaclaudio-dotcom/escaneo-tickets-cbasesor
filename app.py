@@ -58,17 +58,52 @@ async def manifest():
         "theme_color": "#D4AF37",
         "icons": [
             {
-                "src": "https://img.icons8.com/color/192/000000/receipt.png",
+                "src": "/icon-192.png",
                 "sizes": "192x192",
                 "type": "image/png"
             },
             {
-                "src": "https://img.icons8.com/color/512/000000/receipt.png",
+                "src": "/icon-512.png",
                 "sizes": "512x512",
                 "type": "image/png"
             }
         ]
     })
+
+@app.get("/favicon.ico")
+async def get_favicon_ico():
+    ico_path = BASE_DIR / "favicon.ico"
+    if ico_path.exists():
+        return FileResponse(ico_path, media_type="image/x-icon")
+    return Response(status_code=404)
+
+@app.get("/favicon.svg")
+async def get_favicon_svg():
+    svg_path = BASE_DIR / "favicon.svg"
+    if svg_path.exists():
+        return FileResponse(svg_path, media_type="image/svg+xml")
+    return Response(status_code=404)
+
+@app.get("/icon-192.png")
+async def get_icon_192():
+    p = BASE_DIR / "icon-192.png"
+    if p.exists():
+        return FileResponse(p, media_type="image/png")
+    return Response(status_code=404)
+
+@app.get("/icon-512.png")
+async def get_icon_512():
+    p = BASE_DIR / "icon-512.png"
+    if p.exists():
+        return FileResponse(p, media_type="image/png")
+    return Response(status_code=404)
+
+@app.get("/apple-touch-icon.png")
+async def get_apple_touch_icon():
+    p = BASE_DIR / "apple-touch-icon.png"
+    if p.exists():
+        return FileResponse(p, media_type="image/png")
+    return Response(status_code=404)
 
 @app.get("/sw.js")
 async def service_worker():
