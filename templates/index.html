@@ -373,6 +373,7 @@
         let selectedFile = null;
         let cropper = null;
         let globalStatsData = null;
+        let currentScannedItems = [];
         const MONTH_NAMES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -745,11 +746,11 @@
             badge.className = "text-[10px] text-amber-400 animate-pulse font-semibold";
 
             cropper.getCroppedCanvas({
-                maxWidth: 1400,
-                maxHeight: 2000,
+                maxWidth: 1100,
+                maxHeight: 1600,
                 fillColor: '#FFFFFF',
                 imageSmoothingEnabled: true,
-                imageSmoothingQuality: 'high',
+                imageSmoothingQuality: 'medium',
             }).toBlob(async (blob) => {
                 if (!blob) return;
 
@@ -759,6 +760,7 @@
                 try {
                     const res = await fetch('/api/scan-ocr-preview', { method: 'POST', body: formData });
                     const data = await res.json();
+                    currentScannedItems = data.items || [];
 
                     if (data.vendor && data.vendor !== 'Comercio General') {
                         document.getElementById('input-vendor').value = data.vendor;
@@ -808,7 +810,7 @@
                     badge.textContent = "Completar si es necesario";
                     badge.className = "text-[10px] text-cb-muted";
                 }
-            }, 'image/jpeg', 0.90);
+            }, 'image/jpeg', 0.80);
         }
 
         function rotateImage(deg) {
@@ -870,11 +872,11 @@
             btnIcon.innerHTML = `<svg class="animate-spin w-5 h-5 text-black" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
 
             cropper.getCroppedCanvas({
-                maxWidth: 1400,
-                maxHeight: 2000,
+                maxWidth: 1100,
+                maxHeight: 1600,
                 fillColor: '#FFFFFF',
                 imageSmoothingEnabled: true,
-                imageSmoothingQuality: 'high',
+                imageSmoothingQuality: 'medium',
             }).toBlob(async (blob) => {
                 if (!blob) {
                     alert('Error procesando la imagen');
@@ -894,6 +896,7 @@
                 if (!isNaN(userIva105) && userIva105 > 0) formData.append('iva_10_5', userIva105);
                 if (userCuit && !userCuit.includes('X')) formData.append('cuit', userCuit);
                 if (userDate && !userDate.includes('D')) formData.append('date', userDate);
+                if (currentScannedItems && currentScannedItems.length > 0) formData.append('items_json', JSON.stringify(currentScannedItems));
 
                 try {
                     const res = await fetch('/api/upload', {

@@ -41,6 +41,13 @@ def enhance_thermal_ticket(img: Image.Image) -> Image.Image:
     return img
 
 def image_to_a4_pdf(img: Image.Image) -> bytes:
+    # Redimensionar si excede 1200px para mantener uso de RAM mínimo (< 50MB)
+    max_dim = 1200
+    w, h = img.size
+    if max(w, h) > max_dim:
+        scale_factor = max_dim / float(max(w, h))
+        img = img.resize((int(w * scale_factor), int(h * scale_factor)), Image.Resampling.LANCZOS)
+        
     a4_w, a4_h = 595.27, 841.89  # A4 a 72 dpi
     margin = 36.0
     max_w = a4_w - (margin * 2)
@@ -55,7 +62,8 @@ def image_to_a4_pdf(img: Image.Image) -> bytes:
     page = doc.new_page(width=a4_w, height=a4_h)
     
     img_byte_arr = io.BytesIO()
-    img.save(img_byte_arr, format='PNG')
+    # Guardar en JPEG optimizado (calidad 80) para reducir el PDF de 7.5 MB a ~250 KB
+    img.save(img_byte_arr, format='JPEG', quality=80, optimize=True)
     img_bytes = img_byte_arr.getvalue()
     
     x0 = (a4_w - new_w) / 2
@@ -63,7 +71,7 @@ def image_to_a4_pdf(img: Image.Image) -> bytes:
     rect = fitz.Rect(x0, y0, x0 + new_w, y0 + new_h)
     
     page.insert_image(rect, stream=img_bytes)
-    pdf_bytes = doc.tobytes()
+    pdf_bytes = doc.tobytes(garbage=4, deflate=True)
     doc.close()
     return pdf_bytes
 
@@ -80,7 +88,8 @@ def append_ticket_to_month_pdf(
     user_iva_21: float = None,
     user_iva_10_5: float = None,
     user_iva_27: float = None,
-    user_email: str = None
+    user_email: str = None,
+    user_items: list = None
 ) -> dict:
     now = datetime.now()
     
@@ -98,7 +107,8 @@ def append_ticket_to_month_pdf(
         user_subtotal=user_subtotal,
         user_iva_21=user_iva_21,
         user_iva_10_5=user_iva_10_5,
-        user_iva_27=user_iva_27
+        user_iva_27=user_iva_27,
+        user_items=user_items
     )
     
     # 2. Ruteo automático del mes según la FECHA REAL del ticket
@@ -150,6 +160,9 @@ def append_ticket_to_month_pdf(
     total_pages = len(pypdf.PdfReader(str(target_pdf_path)).pages)
     
     add_ticket_expense(target_month, extracted_data, user_email)
+    
+    import gc
+    gc.collect()
     
     return {
         "success": True,

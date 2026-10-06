@@ -171,17 +171,16 @@ Reglas estrictas:
         }
         
         models_to_try = [
-            "gemini-3.1-flash-lite",
-            "gemini-flash-lite-latest",
-            "gemini-3.5-flash-lite",
-            "gemini-3.5-flash",
-            "gemini-3.8-flash"
+            "gemini-1.5-flash",
+            "gemini-1.5-flash-8b",
+            "gemini-2.0-flash-exp",
+            "gemini-1.5-pro"
         ]
         
         for model_name in models_to_try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
             try:
-                resp = requests.post(url, json=payload, timeout=12)
+                resp = requests.post(url, json=payload, timeout=8)
                 if resp.status_code == 200:
                     res_json = resp.json()
                     candidates = res_json.get('candidates', [])
@@ -214,18 +213,29 @@ def extract_data_from_image(
     user_subtotal: float = None,
     user_iva_21: float = None,
     user_iva_10_5: float = None,
-    user_iva_27: float = None
+    user_iva_27: float = None,
+    user_items: list = None
 ) -> dict:
     """
-    Analiza la foto del ticket mediante IA Visión de Google Gemini o OCR Tesseract:
-    - Razón Social / Comercio
-    - CUIT
-    - Tipo de Comprobante
-    - Fecha
-    - Lectura directa de IVA 21%, IVA 10.5% e IVA 27% impresos
-    - Monto Total
-    - Detalle de ítems comprados
+    Analiza la foto del ticket mediante IA Visión de Google Gemini o usa datos confirmados por el usuario.
     """
+    # Si los datos principales ya vienen confirmados desde el paso de pre-lectura, retornar al instante
+    if user_total is not None and user_total > 0 and user_vendor and user_vendor.strip() and user_vendor != "Comercio General":
+        return {
+            "id": datetime.now().strftime("%Y%m%d%H%M%S%f"),
+            "vendor": user_vendor.strip(),
+            "cuit": (user_cuit or "").strip(),
+            "invoice_type": "Factura A",
+            "date": (user_date or "").strip() or datetime.now().strftime("%d/%m/%Y"),
+            "subtotal": user_subtotal if (user_subtotal is not None and user_subtotal > 0) else user_total,
+            "iva_21": user_iva_21 if (user_iva_21 is not None and user_iva_21 >= 0) else 0.0,
+            "iva_10_5": user_iva_10_5 if (user_iva_10_5 is not None and user_iva_10_5 >= 0) else 0.0,
+            "iva_27": user_iva_27 if (user_iva_27 is not None and user_iva_27 >= 0) else 0.0,
+            "total": user_total,
+            "items": user_items or [],
+            "filename": filename_hint
+        }
+
     # 1. Intentar primero con Visión por IA (Google Gemini 1.5 Flash) si la API Key está presente
     ai_data = extract_data_with_gemini_vision(image_bytes)
     if ai_data:
@@ -238,7 +248,7 @@ def extract_data_from_image(
         iva_10_5 = user_iva_10_5 if (user_iva_10_5 is not None and user_iva_10_5 >= 0) else parse_amount(str(ai_data.get("iva_10_5", 0.0)))
         iva_27 = user_iva_27 if (user_iva_27 is not None and user_iva_27 >= 0) else parse_amount(str(ai_data.get("iva_27", 0.0)))
         raw_items = ai_data.get("items", [])
-        items = raw_items if isinstance(raw_items, list) else []
+        items = user_items if (user_items and len(user_items) > 0) else (raw_items if isinstance(raw_items, list) else [])
         
         return {
             "id": datetime.now().strftime("%Y%m%d%H%M%S%f"),

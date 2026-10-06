@@ -121,7 +121,8 @@ async def upload_ticket(
     iva_21: float = Form(None),
     iva_10_5: float = Form(None),
     iva_27: float = Form(None),
-    user_email: str = Form(None)
+    user_email: str = Form(None),
+    items_json: str = Form(None)
 ):
     try:
         content = await file.read()
@@ -130,6 +131,14 @@ async def upload_ticket(
             
         filename_hint = file.filename or "ticket.jpg"
         
+        parsed_items = None
+        if items_json:
+            try:
+                import json
+                parsed_items = json.loads(items_json)
+            except Exception:
+                pass
+
         result = append_ticket_to_month_pdf(
             image_bytes=content,
             filename_hint=filename_hint,
@@ -143,7 +152,8 @@ async def upload_ticket(
             user_iva_21=iva_21,
             user_iva_10_5=iva_10_5,
             user_iva_27=iva_27,
-            user_email=user_email
+            user_email=user_email,
+            user_items=parsed_items
         )
         
         month_key = result.get("month")
