@@ -76,6 +76,34 @@ def image_to_a4_pdf(img: Image.Image) -> bytes:
     doc.close()
     return pdf_bytes
 
+def _norm_text(s) -> str:
+    return " ".join(str(s or "").lower().split())
+
+def find_duplicate_ticket(month_key: str, data: dict, user_email: str = None):
+    """Busca en el mes un ticket con misma fecha y total y mismo comercio (o CUIT)."""
+    try:
+        total = float(data.get("total") or 0)
+    except Exception:
+        total = 0.0
+    date = _norm_text(data.get("date"))
+    if total <= 0 or not date:
+        return None
+    vendor = _norm_text(data.get("vendor"))
+    cuit = "".join(ch for ch in str(data.get("cuit") or "") if ch.isdigit())
+    for t in get_monthly_summary(month_key, user_email).get("tickets", []):
+        try:
+            t_total = float(t.get("total") or 0)
+        except Exception:
+            continue
+        if abs(t_total - total) >= 0.01 or _norm_text(t.get("date")) != date:
+            continue
+        t_cuit = "".join(ch for ch in str(t.get("cuit") or "") if ch.isdigit())
+        same_vendor = vendor and _norm_text(t.get("vendor")) == vendor
+        same_cuit = len(cuit) >= 8 and cuit == t_cuit
+        if same_vendor or same_cuit:
+            return {"vendor": t.get("vendor"), "date": t.get("date"), "total": t_total}
+    return None
+
 def append_ticket_to_month_pdf(
     image_bytes: bytes,
     filename_hint: str,
@@ -90,7 +118,8 @@ def append_ticket_to_month_pdf(
     user_iva_10_5: float = None,
     user_iva_27: float = None,
     user_email: str = None,
-    user_items: list = None
+    user_items: list = None,
+    force: bool = False
 ) -> dict:
     now = datetime.now()
     
@@ -123,6 +152,19 @@ def append_ticket_to_month_pdf(
     else:
         target_month = now.strftime("%Y_%m")
         
+    # Detección de ticket duplicado (mismo comercio/CUIT, fecha y total ya cargados)
+    if not force:
+        dup = find_duplicate_ticket(target_month, extracted_data, user_email)
+        if dup is not None:
+            return {
+                "success": False,
+                "duplicate": True,
+                "month": target_month,
+                "extracted_data": extracted_data,
+                "existing": dup,
+                "error": "Este ticket ya parece estar cargado"
+            }
+
     month_img_dir = IMAGES_DIR / target_month
     month_img_dir.mkdir(parents=True, exist_ok=True)
     

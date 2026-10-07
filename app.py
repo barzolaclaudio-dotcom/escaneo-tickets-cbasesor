@@ -163,7 +163,8 @@ async def upload_ticket(
     iva_10_5: float = Form(None),
     iva_27: float = Form(None),
     user_email: str = Form(None),
-    items_json: str = Form(None)
+    items_json: str = Form(None),
+    force: bool = Form(False)
 ):
     try:
         content = await file.read()
@@ -194,11 +195,12 @@ async def upload_ticket(
             user_iva_10_5=iva_10_5,
             user_iva_27=iva_27,
             user_email=user_email,
-            user_items=parsed_items
+            user_items=parsed_items,
+            force=force
         )
         
         month_key = result.get("month")
-        if month_key:
+        if month_key and result.get("success"):
             background_tasks.add_task(sync_month_to_gdrive, month_key, PDFS_DIR, DATA_DIR, user_email)
             
         return JSONResponse(content=result)

@@ -1074,7 +1074,10 @@
                 if (data && data.tickets && data.tickets.length > 0) {
                     applyExpensesToUI(data);
                     saveMonthToVault(email, key, data);
-                } else if (localData && localData.expensesData && localData.expensesData.tickets && localData.expensesData.tickets.length > 0) {
+                } else if (localData && localData.expensesData && localData.expensesData.tickets && localData.expensesData.tickets.length > 0 &&
+                           !(globalStatsData && globalStatsData.monthly_files && globalStatsData.monthly_files.length > 0)) {
+                    // Solo se restaura desde el celular si el servidor quedó totalmente vacío.
+                    // Si el servidor tiene otros meses, este mes fue borrado a propósito (p. ej. desde otro celular).
                     const fd = new FormData();
                     fd.append('month', key);
                     fd.append('expenses_json', JSON.stringify(localData.expensesData.tickets));
@@ -1382,11 +1385,26 @@
                 if (currentScannedItems && currentScannedItems.length > 0) formData.append('items_json', JSON.stringify(currentScannedItems));
 
                 try {
-                    const res = await fetch('/api/upload', {
+                    let res = await fetch('/api/upload', {
                         method: 'POST',
                         body: formData
                     });
-                    const data = await res.json();
+                    let data = await res.json();
+
+                    if (data && data.duplicate) {
+                        const ex = data.existing || {};
+                        const seguir = confirm(
+                            `⚠️ Este ticket parece ya estar cargado:\n\n` +
+                            `${ex.vendor || 'Comercio'} • ${ex.date || ''} • $${(ex.total || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}\n\n` +
+                            `¿Querés cargarlo igual?`);
+                        if (!seguir) {
+                            cancelSelection();
+                            return;
+                        }
+                        formData.set('force', 'true');
+                        res = await fetch('/api/upload', { method: 'POST', body: formData });
+                        data = await res.json();
+                    }
 
                     if (data.success) {
                         const targetMonth = data.month || month;
