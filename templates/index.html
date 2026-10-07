@@ -1478,15 +1478,36 @@
             return y * 10000 + parseInt(p[1], 10) * 100 + parseInt(p[0], 10);
         }
 
+        // Botón "atrás" del celular: cierra la pantalla superior en vez de salir de la app
+        const layerStack = [];
+        function pushLayer(name) {
+            layerStack.push(name);
+            history.pushState({ layer: name }, '');
+        }
+        function closeLayer(name) {
+            if (layerStack[layerStack.length - 1] === name) history.back();
+            else hideLayerUI(name);
+        }
+        function hideLayerUI(name) {
+            if (name === 'vendor') hideVendorDetail();
+            else if (name === 'image') hideTicketImage();
+            else if (name === 'edit') hideTicketEdit();
+        }
+        window.addEventListener('popstate', () => {
+            if (layerStack.length > 0) hideLayerUI(layerStack.pop());
+        });
+
         function openVendorDetail(vendor) {
             currentVendor = vendor;
             vendorDetailOpen = true;
             document.getElementById('vendor-detail-screen').classList.remove('hidden');
+            pushLayer('vendor');
             window.scrollTo(0, 0);
             renderVendorDetail();
         }
 
-        function closeVendorDetail() {
+        function closeVendorDetail() { closeLayer('vendor'); }
+        function hideVendorDetail() {
             vendorDetailOpen = false;
             document.getElementById('vendor-detail-screen').classList.add('hidden');
         }
@@ -1547,9 +1568,11 @@
             const emailQ = email ? `&user_email=${encodeURIComponent(email)}` : '';
             img.src = `/api/ticket-image/${monthKey}/${idx}?t=${Date.now()}${emailQ}`;
             document.getElementById('ticket-image-viewer').classList.remove('hidden');
+            pushLayer('image');
         }
 
-        function closeTicketImage() {
+        function closeTicketImage() { closeLayer('image'); }
+        function hideTicketImage() {
             document.getElementById('ticket-image-viewer').classList.add('hidden');
             document.getElementById('tiv-img').removeAttribute('src');
         }
@@ -1568,9 +1591,11 @@
             set('te-iva105', t.iva_10_5);
             set('te-iva27', t.iva_27);
             document.getElementById('ticket-edit-modal').classList.remove('hidden');
+            pushLayer('edit');
         }
 
-        function closeTicketEdit() {
+        function closeTicketEdit() { closeLayer('edit'); }
+        function hideTicketEdit() {
             document.getElementById('ticket-edit-modal').classList.add('hidden');
             editingIndex = null;
         }
