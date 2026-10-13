@@ -113,7 +113,7 @@ import os
 import base64
 import requests
 
-_KEY_B64 = "QVEuQWI4Uk42TG90RjVLSFpSeURkbTRhNXVxVDlydDRTTVNqckR2Yk15Mm1uSkJqWHRmMnc="
+_KEY_B64 = "QVEuQWI4Uk42TFhGOVhzQUxENGo5RDhzcmhPTlNId2JhaDVDa3gzdXo4SGlFRHI3dHVCYWc="
 
 def extract_data_with_gemini_vision(image_bytes: bytes) -> dict:
     """Extrae datos de tickets usando IA Visión de Google Gemini."""
@@ -186,15 +186,21 @@ Reglas estrictas:
         }
         
         models_to_try = [
-            "gemini-flash-lite-latest",
+            "gemini-3-flash-preview",
+            "gemini-3.1-flash-lite-preview",
             "gemini-flash-latest",
-            "gemini-3.8-flash"
+            "gemini-flash-lite-latest"
         ]
+        
+        headers = {
+            "x-goog-api-key": api_key,
+            "Content-Type": "application/json"
+        }
         
         for model_name in models_to_try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
             try:
-                resp = requests.post(url, json=payload, timeout=12)
+                resp = requests.post(url, headers=headers, json=payload, timeout=18)
                 if resp.status_code == 200:
                     res_json = resp.json()
                     candidates = res_json.get('candidates', [])

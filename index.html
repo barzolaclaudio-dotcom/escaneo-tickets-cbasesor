@@ -1705,7 +1705,9 @@
             const original = a.innerHTML;
             try {
                 a.style.opacity = '0.6';
-                const res = await fetch(url);
+                // Siempre pedir la versión más reciente (nunca la guardada en caché)
+                const freshUrl = url + (url.includes('?') ? '&' : '?') + '_=' + Date.now();
+                const res = await fetch(freshUrl, { cache: 'no-store' });
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 const blob = await res.blob();
                 let name = url.split('?')[0].split('/').pop();
@@ -1714,7 +1716,11 @@
                 if (m) name = decodeURIComponent(m[1]);
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = name;
+                // Nombre único (con fecha y hora) para no confundirse con descargas anteriores
+                const d = new Date();
+                const pad = n => String(n).padStart(2, '0');
+                const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+                link.download = name.replace(/(\.[^.]+)$/, `_${stamp}$1`);
                 document.body.appendChild(link);
                 link.click();
                 link.remove();
