@@ -253,7 +253,7 @@
 
     <!-- Navbar -->
     <header class="bg-[#0c0c0e] border-b border-gold-500/20 sticky top-0 z-30 backdrop-blur-md bg-opacity-90">
-        <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
             <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 rounded-xl overflow-hidden border border-gold-500/40 shadow-md shadow-gold-500/20 bg-black flex items-center justify-center p-0.5 flex-shrink-0">
                     <img src="/icon-192.png" alt="CB Asesor" class="w-full h-full object-contain rounded-lg">
@@ -261,32 +261,32 @@
                 <div class="flex flex-col items-start gap-0.5 min-w-0">
                     <span class="text-[9px] leading-none uppercase tracking-[0.18em] px-1.5 py-[3px] bg-gold-500/10 text-gold-400 border border-gold-500/30 rounded whitespace-nowrap">Tickets & Gastos</span>
                     <h1 class="font-bold text-lg leading-tight tracking-tight text-white">CB Asesor</h1>
-                    <p class="text-[11px] leading-none text-cb-muted whitespace-nowrap">Consolidador & Analytics</p>
+                    <p class="text-[11px] leading-none text-cb-muted whitespace-nowrap hidden sm:block">Control Inteligente de Comprobantes & Gastos</p>
                 </div>
             </div>
             
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 sm:gap-3">
                 <div id="nav-user-badge" class="hidden items-center gap-2 bg-[#1c1c21] border border-gold-500/30 rounded-xl px-2.5 py-1.5">
                     <div id="nav-user-avatar" class="w-6 h-6 rounded-full bg-gold-500 text-black font-extrabold text-xs flex items-center justify-center">C</div>
-                    <span id="nav-user-name" class="text-xs font-semibold text-white max-w-[90px] truncate">Usuario</span>
+                    <span id="nav-user-name" class="text-xs font-semibold text-white max-w-[90px] sm:max-w-[160px] truncate">Usuario</span>
                     <button onclick="doLogout()" title="Cerrar Sesión" class="text-cb-muted hover:text-red-400 p-0.5 ml-1 transition">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                     </button>
                 </div>
-                <button id="btn-install-app" onclick="triggerAppInstall()" class="p-2 bg-gradient-to-r from-gold-500 to-amber-600 hover:from-gold-400 hover:to-amber-500 text-black text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md shadow-gold-500/20 transition">
+                <button id="btn-install-app" onclick="triggerAppInstall()" class="p-2 sm:px-3 sm:py-2 bg-gradient-to-r from-gold-500 to-amber-600 hover:from-gold-400 hover:to-amber-500 text-black text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md shadow-gold-500/20 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                    <span>Instalar App</span>
+                    <span class="hidden sm:inline">Instalar App</span>
                 </button>
-                <button onclick="toggleQRModal()" class="p-2 bg-gold-500/10 hover:bg-gold-500/20 border border-gold-500/30 rounded-xl text-gold-400 text-xs font-semibold flex items-center gap-1.5 transition">
+                <button onclick="toggleQRModal()" class="p-2 sm:px-3 sm:py-2 bg-gold-500/10 hover:bg-gold-500/20 border border-gold-500/30 rounded-xl text-gold-400 text-xs font-semibold flex items-center gap-1.5 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
-                    <span>Conectar</span>
+                    <span class="hidden sm:inline">Conectar Celular</span>
                 </button>
             </div>
         </div>
     </header>
 
     <!-- Main Container -->
-    <main class="max-w-md mx-auto px-4 mt-5 space-y-5">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-5 pb-16 space-y-6">
 
         <!-- Banner de Instalación PWA en Celular -->
         <div id="pwa-install-banner" class="hidden bg-gradient-to-r from-[#1c1a14] via-[#241f12] to-[#1a1710] border border-gold-500/40 rounded-2xl p-3.5 shadow-lg flex items-center justify-between gap-3">
@@ -307,323 +307,361 @@
             </div>
         </div>
 
-        <!-- Perfil de Usuario Autenticado / Sesión Activa -->
-        <div class="bg-cb-card rounded-2xl p-4 gold-border shadow-lg space-y-3">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div id="profile-avatar" class="w-10 h-10 rounded-full bg-gradient-to-tr from-gold-600 to-amber-400 text-black font-extrabold text-base flex items-center justify-center shadow-md shadow-gold-500/20">
-                        C
+        <!-- REJILLA RESPONSIVA: 1 Columna en Celular, 2 Columnas en Desktop & Tablet -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+            <!-- ======================================================== -->
+            <!-- COLUMNA IZQUIERDA: Carga, Recorte y Detección OCR (lg:col-span-5) -->
+            <!-- ======================================================== -->
+            <div class="lg:col-span-5 space-y-6">
+
+                <!-- Captura de Ticket / Factura / Remito -->
+                <div class="bg-cb-card rounded-2xl p-5 gold-border shadow-md space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-white text-base flex items-center gap-2">
+                            <svg class="w-5 h-5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h0.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            <span>Cargar Comprobante</span>
+                        </h3>
+                        <span class="text-[10px] font-semibold text-gold-400 bg-gold-500/10 px-2 py-0.5 rounded border border-gold-500/30">
+                            Facturas, Tickets, Remitos
+                        </span>
                     </div>
-                    <div>
-                        <div class="flex items-center gap-1.5">
-                            <h3 id="profile-name" class="font-bold text-sm text-white leading-tight">Usuario</h3>
-                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+
+                    <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden" onchange="handleFileSelect(event)">
+                    <input type="file" id="gallery-input" accept="image/*,application/pdf" class="hidden" onchange="handleFileSelect(event)">
+
+                    <!-- Zona Drag & Drop para PC / Clic para explorar -->
+                    <div id="drop-zone" class="border-2 border-dashed border-gold-500/30 hover:border-gold-400 rounded-2xl p-5 sm:p-7 text-center transition cursor-pointer bg-[#141418] hover:bg-[#181820]" onclick="document.getElementById('gallery-input').click()">
+                        <div class="mx-auto w-12 h-12 rounded-xl bg-gold-500/10 border border-gold-500/30 text-gold-400 flex items-center justify-center mb-2.5">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
                         </div>
-                        <p id="profile-email" class="text-xs text-cb-muted leading-tight">cargando...</p>
-                    </div>
-                </div>
-                <span class="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                    Cuenta Activa
-                </span>
-            </div>
-            
-            <input type="hidden" id="user-email-input">
-
-            <div class="flex items-center justify-between gap-2 pt-2 text-[11px] text-cb-muted border-t border-gold-500/15">
-                <button onclick="exportFullBackupJSON()" class="hover:text-gold-400 flex items-center gap-1 transition" title="Descargar copia de seguridad de tus tickets">
-                    <svg class="w-3.5 h-3.5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                    <span>Copia de Seguridad</span>
-                </button>
-                <label class="hover:text-gold-400 flex items-center gap-1 cursor-pointer transition" title="Restaurar copia de seguridad">
-                    <svg class="w-3.5 h-3.5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                    <span>Restaurar Datos</span>
-                    <input type="file" id="import-backup-input" accept=".json" class="hidden" onchange="importFullBackupJSON(event)">
-                </label>
-            </div>
-        </div>
-
-        <!-- Selector de Mes de Destino -->
-        <div class="bg-cb-card rounded-2xl p-4 gold-border shadow-lg space-y-2">
-            <div class="flex items-center justify-between">
-                <label for="month-selector" class="text-xs font-bold uppercase tracking-wider text-gold-400 flex items-center gap-1.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    Mes al que pertenece el ticket:
-                </label>
-                <span id="badge-month-status" class="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Vigente</span>
-            </div>
-            
-            <div class="relative">
-                <select id="month-selector" onchange="onMonthChange()" class="w-full bg-[#1c1c21] text-white border border-gold-500/40 rounded-xl px-3.5 py-3 font-semibold text-sm appearance-none focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition">
-                </select>
-                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gold-400">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                </div>
-            </div>
-        </div>
-
-        <!-- Target Month Info & Actions Card -->
-        <div id="status-card" class="bg-gradient-to-r from-[#141419] to-[#1a1a20] rounded-2xl p-4 gold-border shadow-md space-y-3">
-            <div class="flex items-center justify-between">
-                <div>
-                    <span class="text-[11px] font-medium uppercase tracking-wider text-cb-muted">PDF Seleccionado</span>
-                    <h2 id="selected-month-title" class="text-lg font-bold text-white leading-snug">Cargando...</h2>
-                    <p id="selected-count-text" class="text-xs font-semibold text-gold-400 mt-0.5">0 tickets guardados en este mes</p>
-                </div>
-                <div id="download-btn-container">
-                    <a id="selected-pdf-link" href="#" target="_blank" class="hidden inline-flex items-center gap-1.5 px-3 py-2 bg-gold-500/15 hover:bg-gold-500/25 text-gold-400 text-xs font-bold rounded-xl border border-gold-500/40 transition">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V7.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 1H7a2 2 0 00-2 2v14a2 2 0 002 2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9d0 012 0v6m0 0l-2-2m2 2l2-2"/></svg>
-                        <span>Ver PDF</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- Botones de Gestión -->
-            <div id="pdf-manage-actions" class="hidden pt-2 border-t border-slate-800 flex items-center justify-between gap-2 text-xs">
-                <button onclick="undoLastTicket()" class="flex-1 py-2 px-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-medium rounded-lg border border-amber-500/30 transition flex items-center justify-center gap-1">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
-                    <span>Borrar último ticket</span>
-                </button>
-                <button onclick="deleteCurrentMonthPDF()" class="py-2 px-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 font-medium rounded-lg border border-rose-500/30 transition flex items-center justify-center gap-1">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                    <span>Resetear mes</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- DASHBOARD DE GASTOS EN TIEMPO REAL -->
-        <div id="expenses-analytics-card" class="bg-cb-card rounded-2xl p-5 gold-border shadow-lg space-y-4">
-            <div class="flex items-center justify-between">
-                <h3 class="font-bold text-white text-sm flex items-center gap-2">
-                    <svg class="w-5 h-5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                    Control de Gastos en Tiempo Real
-                </h3>
-                <span id="expense-month-badge" class="text-[10px] font-semibold text-gold-400 bg-gold-500/10 px-2 py-0.5 rounded border border-gold-500/30">Octubre</span>
-            </div>
-
-            <!-- Métricas Principales (Grid de 4) -->
-            <div class="grid grid-cols-2 gap-2.5">
-                <div class="bg-[#18181f] p-3 rounded-xl border border-gold-500/20">
-                    <span class="text-[10px] font-semibold uppercase text-cb-muted">Total Gastado</span>
-                    <p id="stat-total-spent" class="text-base font-extrabold text-white mt-0.5">$0.00</p>
-                </div>
-                <div class="bg-[#18181f] p-3 rounded-xl border border-emerald-500/20">
-                    <span class="text-[10px] font-semibold uppercase text-emerald-400">IVA Crédito Fiscal</span>
-                    <p id="stat-total-iva" class="text-base font-extrabold text-emerald-400 mt-0.5">$0.00</p>
-                </div>
-                <div class="bg-[#18181f] p-3 rounded-xl border border-amber-500/20">
-                    <span class="text-[10px] font-semibold uppercase text-amber-400">Percep. IIBB</span>
-                    <p id="stat-total-iibb" class="text-base font-extrabold text-amber-400 mt-0.5">$0.00</p>
-                </div>
-                <div class="bg-[#18181f] p-3 rounded-xl border border-blue-500/20">
-                    <span class="text-[10px] font-semibold uppercase text-blue-400">Subtotal Neto</span>
-                    <p id="stat-total-subtotal" class="text-base font-extrabold text-blue-400 mt-0.5">$0.00</p>
-                </div>
-            </div>
-
-            <!-- Desglose por Comercios con Búsqueda -->
-            <div class="space-y-2 pt-2 border-t border-slate-800">
-                <div class="flex items-center justify-between">
-                    <p class="text-xs font-bold text-slate-300">Gastos por Comercio:</p>
-                    <input type="text" id="vendor-search-input" oninput="filterVendorBreakdown()" placeholder="🔍 Buscar comercio..." class="bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-500 focus:outline-none focus:border-gold-400 w-36">
-                </div>
-                <div id="vendor-breakdown-list" class="space-y-2 text-xs">
-                    <p class="text-cb-muted italic text-[11px]">Cargando estadísticas...</p>
-                </div>
-            </div>
-
-            <!-- Descargas Excel, CSV & Fotos ZIP -->
-            <div class="grid grid-cols-3 gap-2 pt-2">
-                <a id="download-excel-btn" href="#" target="_blank" class="py-2.5 px-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 font-bold rounded-xl border border-emerald-500/40 text-[11px] flex items-center justify-center gap-1 transition">
-                    <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    <span>Excel</span>
-                </a>
-                <a id="download-csv-btn" href="#" target="_blank" class="py-2.5 px-2 bg-gold-500/15 hover:bg-gold-500/25 text-gold-400 font-bold rounded-xl border border-gold-500/40 text-[11px] flex items-center justify-center gap-1 transition">
-                    <svg class="w-3.5 h-3.5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 01-2-2h5.586a1 1 0 01.707.293l5.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    <span>CSV</span>
-                </a>
-                <a id="download-zip-btn" href="#" target="_blank" class="py-2.5 px-2 bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 font-bold rounded-xl border border-purple-500/40 text-[11px] flex items-center justify-center gap-1 transition">
-                    <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    <span>Fotos ZIP</span>
-                </a>
-            </div>
-        </div>
-
-        <!-- Captura de Ticket -->
-        <div class="bg-cb-card rounded-2xl p-5 gold-border shadow-md space-y-4">
-            <h3 class="font-bold text-white text-base flex items-center gap-2">
-                <svg class="w-5 h-5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h0.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                Capturar Ticket
-            </h3>
-
-            <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden" onchange="handleFileSelect(event)">
-            <input type="file" id="gallery-input" accept="image/*,application/pdf" class="hidden" onchange="handleFileSelect(event)">
-
-            <div class="grid grid-cols-1 gap-3">
-                <button onclick="document.getElementById('camera-input').click()" class="w-full py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 active:scale-[0.99] text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-3 transition">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h0.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    <span class="text-base">Tomar Foto con Cámara</span>
-                </button>
-
-                <button onclick="document.getElementById('gallery-input').click()" class="w-full py-3 bg-[#1c1c22] hover:bg-[#25252b] active:scale-[0.99] text-cb-text font-semibold rounded-xl border border-slate-800 flex items-center justify-center gap-2 transition text-sm">
-                    <svg class="w-5 h-5 text-cb-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    <span>Seleccionar de Galería</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- Preview & Interactive Crop Card -->
-        <div id="preview-card" class="hidden bg-cb-card rounded-2xl p-5 gold-border-glow space-y-4">
-            <div class="flex items-center justify-between">
-                <h4 class="font-bold text-white text-sm flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-                    Recortar y Ajustar Ticket
-                </h4>
-                <button onclick="cancelSelection()" class="text-xs font-semibold text-cb-muted hover:text-white">Cancelar</button>
-            </div>
-
-            <div class="relative bg-black rounded-xl overflow-hidden border border-gold-500/30 min-h-[260px] flex items-center justify-center">
-                <img id="image-preview" src="" alt="Vista Previa" class="max-w-full block">
-            </div>
-
-            <div class="grid grid-cols-2 gap-2 text-xs">
-                <button onclick="rotateImage(90)" class="py-2.5 px-3 bg-[#181820] hover:bg-[#22222b] text-gold-400 font-semibold rounded-xl border border-gold-500/30 flex items-center justify-center gap-1.5 transition">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                    <span>Rotar 90°</span>
-                </button>
-                <button onclick="resetCrop()" class="py-2.5 px-3 bg-[#181820] hover:bg-[#22222b] text-cb-text font-semibold rounded-xl border border-slate-700 flex items-center justify-center gap-1.5 transition">
-                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-2V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-                    <span>Ajustar Todo</span>
-                </button>
-            </div>
-
-            <!-- Campos con Auto-Completado por OCR -->
-            <div class="bg-[#181820] p-3.5 rounded-xl border border-gold-500/25 space-y-3">
-                <div class="flex items-center justify-between">
-                    <p class="text-xs font-bold text-gold-400 flex items-center gap-1">
-                        <svg class="w-4 h-4 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                        Datos Detectados Automáticamente:
-                    </p>
-                    <span id="ocr-status-badge" class="text-[10px] text-cb-muted animate-pulse">Escaneando...</span>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                    <div class="space-y-1">
-                        <label for="input-invoice-type" class="text-[11px] font-semibold text-slate-300">Tipo de Comprobante:</label>
-                        <select id="input-invoice-type" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-2 text-xs text-gold-400 font-bold focus:outline-none focus:border-gold-400">
-                            <option value="Factura A">Factura A</option>
-                            <option value="Factura B">Factura B</option>
-                            <option value="Factura C">Factura C</option>
-                            <option value="Factura M">Factura M</option>
-                            <option value="Remito">Remito (R/X)</option>
-                            <option value="Ticket / Comprobante">Ticket Fiscal</option>
-                            <option value="Nota de Crédito">Nota de Crédito</option>
-                            <option value="Recibo">Recibo</option>
-                        </select>
+                        <p class="text-xs sm:text-sm font-bold text-white">Arrastrá y soltá tu comprobante aquí</p>
+                        <p class="text-[11px] text-cb-muted mt-0.5">o hacé clic para explorar tus archivos (JPG, PNG, PDF o pegar Ctrl+V)</p>
                     </div>
 
-                    <div class="space-y-1">
-                        <label for="input-invoice-number" class="text-[11px] font-semibold text-slate-300">Punto Vta - N°:</label>
-                        <input type="text" id="input-invoice-number" placeholder="00001-00000001" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-400">
-                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button onclick="document.getElementById('camera-input').click()" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 active:scale-[0.99] text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2.5 transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h0.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            <span class="text-sm">Tomar Foto con Cámara</span>
+                        </button>
 
-                    <div class="col-span-2 space-y-1">
-                        <label for="input-vendor" class="text-[11px] font-semibold text-slate-300">Comercio / Proveedor:</label>
-                        <input type="text" id="input-vendor" placeholder="Buscando..." class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-400">
+                        <button onclick="document.getElementById('gallery-input').click()" class="w-full py-3.5 bg-[#1c1c22] hover:bg-[#25252b] active:scale-[0.99] text-cb-text font-semibold rounded-xl border border-slate-800 flex items-center justify-center gap-2 transition text-sm">
+                            <svg class="w-5 h-5 text-cb-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            <span>Elegir Archivo / Galería</span>
+                        </button>
                     </div>
-
-                    <div class="space-y-1">
-                        <label for="input-total" class="text-[11px] font-semibold text-slate-300">Total ($):</label>
-                        <input type="number" step="0.01" id="input-total" placeholder="0.00" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs font-bold text-emerald-400 placeholder-slate-500 focus:outline-none focus:border-gold-400">
-                    </div>
-
-                    <div class="space-y-1">
-                        <label for="input-subtotal" class="text-[11px] font-semibold text-slate-300">Subtotal Neto ($):</label>
-                        <input type="number" step="0.01" id="input-subtotal" placeholder="0.00" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-400">
-                    </div>
-
-                    <div class="space-y-1">
-                        <label for="input-iva-21" class="text-[11px] font-semibold text-slate-300">IVA 21% ($):</label>
-                        <input type="number" step="0.01" id="input-iva-21" placeholder="0.00" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-gold-400 placeholder-slate-500 focus:outline-none focus:border-gold-400">
-                    </div>
-
-                    <div class="space-y-1">
-                        <label for="input-iva-10-5" class="text-[11px] font-semibold text-slate-300">IVA 10.5% ($):</label>
-                        <input type="number" step="0.01" id="input-iva-10-5" placeholder="0.00" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-gold-400 placeholder-slate-500 focus:outline-none focus:border-gold-400">
-                    </div>
-
-                    <div class="space-y-1">
-                        <label for="input-percep-iibb" class="text-[11px] font-semibold text-amber-400">Percep. IIBB ($):</label>
-                        <input type="number" step="0.01" id="input-percep-iibb" placeholder="0.00" class="w-full bg-[#121216] border border-amber-500/40 rounded-lg px-3 py-2 text-xs text-amber-300 placeholder-slate-500 focus:outline-none focus:border-amber-400">
-                    </div>
-
-                    <div class="space-y-1">
-                        <label for="input-percep-jurisdiccion" class="text-[11px] font-semibold text-amber-400">Jurisdicción IIBB:</label>
-                        <input type="text" id="input-percep-jurisdiccion" placeholder="Ej: ARBA, AGIP..." class="w-full bg-[#121216] border border-amber-500/40 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400">
-                    </div>
-
-                    <div class="space-y-1">
-                        <label for="input-percep-iva" class="text-[11px] font-semibold text-slate-300">Percep. IVA ($):</label>
-                        <input type="number" step="0.01" id="input-percep-iva" placeholder="0.00" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-400">
-                    </div>
-
-                    <div class="space-y-1">
-                        <label for="input-imp-internos" class="text-[11px] font-semibold text-slate-300">Imp. Internos ($):</label>
-                        <input type="number" step="0.01" id="input-imp-internos" placeholder="0.00" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-400">
-                    </div>
-
-                    <div class="space-y-1">
-                        <label for="input-cuit" class="text-[11px] font-semibold text-slate-300">CUIT:</label>
-                        <input type="text" id="input-cuit" placeholder="XX-XXXXXXXX-X" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-400">
-                    </div>
-
-                    <div class="space-y-1">
-                        <label for="input-date" class="text-[11px] font-semibold text-slate-300">Fecha:</label>
-                        <input type="text" id="input-date" placeholder="DD/MM/YYYY" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-400">
-                    </div>
-
-                    <input type="hidden" id="input-cae">
                 </div>
-            </div>
 
-            <div class="bg-[#18181f] p-3 rounded-xl border border-gold-500/20 flex items-center justify-between">
-                <label for="enhance-toggle" class="flex items-center gap-2 text-xs font-medium text-gold-400 cursor-pointer">
-                    <svg class="w-4 h-4 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                    Filtro térmico (Mejorar texto gastado)
-                </label>
-                <input type="checkbox" id="enhance-toggle" checked class="w-5 h-5 accent-gold-500 rounded cursor-pointer">
-            </div>
+                <!-- Preview & Interactive Crop Card -->
+                <div id="preview-card" class="hidden bg-cb-card rounded-2xl p-5 gold-border-glow space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h4 class="font-bold text-white text-sm flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                            Recortar y Ajustar Comprobante
+                        </h4>
+                        <button onclick="cancelSelection()" class="text-xs font-semibold text-cb-muted hover:text-white">Cancelar</button>
+                    </div>
 
-            <button id="upload-btn" onclick="submitTicket()" class="w-full py-4 bg-gradient-to-r from-gold-400 via-gold-500 to-gold-600 hover:from-gold-300 hover:to-gold-500 active:scale-[0.99] text-black font-extrabold text-base rounded-xl shadow-lg flex items-center justify-center gap-2 transition">
-                <svg id="upload-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                <span id="upload-btn-text">Confirmar y Guardar Ticket</span>
-            </button>
-        </div>
+                    <div class="relative bg-black rounded-xl overflow-hidden border border-gold-500/30 min-h-[260px] flex items-center justify-center">
+                        <img id="image-preview" src="" alt="Vista Previa" class="max-w-full block">
+                    </div>
 
-        <!-- Success Toast -->
-        <div id="success-alert" class="hidden bg-emerald-950/90 border border-emerald-500/50 text-white rounded-2xl p-4 shadow-xl flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-emerald-600 rounded-xl text-white">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <button onclick="rotateImage(90)" class="py-2.5 px-3 bg-[#181820] hover:bg-[#22222b] text-gold-400 font-semibold rounded-xl border border-gold-500/30 flex items-center justify-center gap-1.5 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            <span>Rotar 90°</span>
+                        </button>
+                        <button onclick="resetCrop()" class="py-2.5 px-3 bg-[#181820] hover:bg-[#22222b] text-cb-text font-semibold rounded-xl border border-slate-700 flex items-center justify-center gap-1.5 transition">
+                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-2V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                            <span>Ajustar Todo</span>
+                        </button>
+                    </div>
+
+                    <!-- Campos con Auto-Completado por OCR -->
+                    <div class="bg-[#181820] p-3.5 rounded-xl border border-gold-500/25 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <p class="text-xs font-bold text-gold-400 flex items-center gap-1">
+                                <svg class="w-4 h-4 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                Datos Detectados Automáticamente:
+                            </p>
+                            <span id="ocr-status-badge" class="text-[10px] text-cb-muted animate-pulse">Escaneando...</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div class="space-y-1">
+                                <label for="input-invoice-type" class="text-[11px] font-semibold text-slate-300">Tipo Comprobante:</label>
+                                <select id="input-invoice-type" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-2 text-xs text-gold-400 font-bold focus:outline-none focus:border-gold-400">
+                                    <option value="Factura A">Factura A</option>
+                                    <option value="Factura B">Factura B</option>
+                                    <option value="Factura C">Factura C</option>
+                                    <option value="Factura M">Factura M</option>
+                                    <option value="Remito">Remito (R/X)</option>
+                                    <option value="Ticket / Comprobante">Ticket Fiscal</option>
+                                    <option value="Nota de Crédito">Nota de Crédito</option>
+                                    <option value="Recibo">Recibo</option>
+                                </select>
+                            </div>
+
+                            <div class="space-y-1">
+                                <label for="input-invoice-number" class="text-[11px] font-semibold text-slate-300">Punto Vta - N°:</label>
+                                <input type="text" id="input-invoice-number" placeholder="00001-00000001" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-400">
+                            </div>
+
+                            <div class="col-span-2 space-y-1">
+                                <label for="input-vendor" class="text-[11px] font-semibold text-slate-300">Comercio / Proveedor:</label>
+                                <input type="text" id="input-vendor" placeholder="Buscando..." class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-400">
+                            </div>
+
+                            <div class="space-y-1">
+                                <label for="input-total" class="text-[11px] font-semibold text-slate-300">Total ($):</label>
+                                <input type="number" step="0.01" id="input-total" placeholder="0.00" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs font-bold text-emerald-400 placeholder-slate-500 focus:outline-none focus:border-gold-400">
+                            </div>
+
+                            <div class="space-y-1">
+                                <label for="input-subtotal" class="text-[11px] font-semibold text-slate-300">Subtotal Neto ($):</label>
+                                <input type="number" step="0.01" id="input-subtotal" placeholder="0.00" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-400">
+                            </div>
+
+                            <div class="space-y-1">
+                                <label for="input-iva-21" class="text-[11px] font-semibold text-slate-300">IVA 21% ($):</label>
+                                <input type="number" step="0.01" id="input-iva-21" placeholder="0.00" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-gold-400 placeholder-slate-500 focus:outline-none focus:border-gold-400">
+                            </div>
+
+                            <div class="space-y-1">
+                                <label for="input-iva-10-5" class="text-[11px] font-semibold text-slate-300">IVA 10.5% ($):</label>
+                                <input type="number" step="0.01" id="input-iva-10-5" placeholder="0.00" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-gold-400 placeholder-slate-500 focus:outline-none focus:border-gold-400">
+                            </div>
+
+                            <div class="space-y-1">
+                                <label for="input-percep-iibb" class="text-[11px] font-semibold text-amber-400">Percep. IIBB ($):</label>
+                                <input type="number" step="0.01" id="input-percep-iibb" placeholder="0.00" class="w-full bg-[#121216] border border-amber-500/40 rounded-lg px-3 py-2 text-xs text-amber-300 placeholder-slate-500 focus:outline-none focus:border-amber-400">
+                            </div>
+
+                            <div class="space-y-1">
+                                <label for="input-percep-jurisdiccion" class="text-[11px] font-semibold text-amber-400">Jurisdicción IIBB:</label>
+                                <input type="text" id="input-percep-jurisdiccion" placeholder="Ej: ARBA, AGIP..." class="w-full bg-[#121216] border border-amber-500/40 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400">
+                            </div>
+
+                            <div class="space-y-1">
+                                <label for="input-percep-iva" class="text-[11px] font-semibold text-slate-300">Percep. IVA ($):</label>
+                                <input type="number" step="0.01" id="input-percep-iva" placeholder="0.00" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-400">
+                            </div>
+
+                            <div class="space-y-1">
+                                <label for="input-imp-internos" class="text-[11px] font-semibold text-slate-300">Imp. Internos ($):</label>
+                                <input type="number" step="0.01" id="input-imp-internos" placeholder="0.00" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-400">
+                            </div>
+
+                            <div class="space-y-1">
+                                <label for="input-cuit" class="text-[11px] font-semibold text-slate-300">CUIT:</label>
+                                <input type="text" id="input-cuit" placeholder="XX-XXXXXXXX-X" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-400">
+                            </div>
+
+                            <div class="space-y-1">
+                                <label for="input-date" class="text-[11px] font-semibold text-slate-300">Fecha:</label>
+                                <input type="text" id="input-date" placeholder="DD/MM/YYYY" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-400">
+                            </div>
+
+                            <input type="hidden" id="input-cae">
+                        </div>
+                    </div>
+
+                    <div class="bg-[#18181f] p-3 rounded-xl border border-gold-500/20 flex items-center justify-between">
+                        <label for="enhance-toggle" class="flex items-center gap-2 text-xs font-medium text-gold-400 cursor-pointer">
+                            <svg class="w-4 h-4 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            Filtro térmico (Mejorar texto gastado)
+                        </label>
+                        <input type="checkbox" id="enhance-toggle" checked class="w-5 h-5 accent-gold-500 rounded cursor-pointer">
+                    </div>
+
+                    <button id="upload-btn" onclick="submitTicket()" class="w-full py-4 bg-gradient-to-r from-gold-400 via-gold-500 to-gold-600 hover:from-gold-300 hover:to-gold-500 active:scale-[0.99] text-black font-extrabold text-base rounded-xl shadow-lg flex items-center justify-center gap-2 transition">
+                        <svg id="upload-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                        <span id="upload-btn-text">Confirmar y Guardar Comprobante</span>
+                    </button>
                 </div>
-                <div>
-                    <p class="font-bold text-sm text-emerald-200" id="success-title">¡Ticket guardado!</p>
-                    <p class="text-xs text-emerald-300" id="success-subtitle">Total acumulado: 1</p>
-                </div>
-            </div>
-            <button onclick="dismissSuccess()" class="text-xs bg-emerald-800 hover:bg-emerald-700 px-3 py-1.5 rounded-lg font-bold">OK</button>
-        </div>
 
-        <!-- Monthly History List -->
-        <div class="bg-cb-card rounded-2xl p-5 gold-border space-y-3">
-            <h3 class="font-bold text-white text-sm flex items-center justify-between">
-                <span class="flex items-center gap-2">
-                    <svg class="w-4 h-4 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
-                    Historial de PDFs Mensuales
-                </span>
-            </h3>
-            <div id="monthly-list" class="space-y-2">
-                <p class="text-xs text-cb-muted italic">Cargando PDFs...</p>
+                <!-- Toast de Éxito -->
+                <div id="success-alert" class="hidden bg-emerald-950/90 border border-emerald-500/50 text-white rounded-2xl p-4 shadow-xl flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-emerald-600 rounded-xl text-white">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                        <div>
+                            <p class="font-bold text-sm text-emerald-200" id="success-title">¡Comprobante guardado!</p>
+                            <p class="text-xs text-emerald-300" id="success-subtitle">Total acumulado: 1</p>
+                        </div>
+                    </div>
+                    <button onclick="dismissSuccess()" class="text-xs bg-emerald-800 hover:bg-emerald-700 px-3 py-1.5 rounded-lg font-bold">OK</button>
+                </div>
+
             </div>
+
+            <!-- ======================================================== -->
+            <!-- COLUMNA DERECHA: Sesión, Selector de Mes, Dashboard y Reportes (lg:col-span-7) -->
+            <!-- ======================================================== -->
+            <div class="lg:col-span-7 space-y-6">
+
+                <!-- Fila Superior: Perfil + Selector de Mes en Tablet/PC -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                    <!-- Perfil de Usuario Autenticado / Sesión Activa -->
+                    <div class="bg-cb-card rounded-2xl p-4 gold-border shadow-lg flex flex-col justify-between space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div id="profile-avatar" class="w-10 h-10 rounded-full bg-gradient-to-tr from-gold-600 to-amber-400 text-black font-extrabold text-base flex items-center justify-center shadow-md shadow-gold-500/20 flex-shrink-0">
+                                    C
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-1.5">
+                                        <h3 id="profile-name" class="font-bold text-sm text-white leading-tight truncate">Usuario</h3>
+                                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0"></span>
+                                    </div>
+                                    <p id="profile-email" class="text-xs text-cb-muted leading-tight truncate">cargando...</p>
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 flex-shrink-0">
+                                Activa
+                            </span>
+                        </div>
+                        
+                        <input type="hidden" id="user-email-input">
+
+                        <div class="flex items-center justify-between gap-2 pt-2 text-[11px] text-cb-muted border-t border-gold-500/15">
+                            <button onclick="exportFullBackupJSON()" class="hover:text-gold-400 flex items-center gap-1 transition" title="Descargar copia de seguridad de tus tickets">
+                                <svg class="w-3.5 h-3.5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                <span>Copia Seguridad</span>
+                            </button>
+                            <label class="hover:text-gold-400 flex items-center gap-1 cursor-pointer transition" title="Restaurar copia de seguridad">
+                                <svg class="w-3.5 h-3.5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                <span>Restaurar</span>
+                                <input type="file" id="import-backup-input" accept=".json" class="hidden" onchange="importFullBackupJSON(event)">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Selector de Mes de Destino -->
+                    <div class="bg-cb-card rounded-2xl p-4 gold-border shadow-lg flex flex-col justify-between space-y-2">
+                        <div class="flex items-center justify-between">
+                            <label for="month-selector" class="text-xs font-bold uppercase tracking-wider text-gold-400 flex items-center gap-1.5 truncate">
+                                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                <span>Mes Contable:</span>
+                            </label>
+                            <span id="badge-month-status" class="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Vigente</span>
+                        </div>
+                        
+                        <div class="relative">
+                            <select id="month-selector" onchange="onMonthChange()" class="w-full bg-[#1c1c21] text-white border border-gold-500/40 rounded-xl px-3.5 py-2.5 font-semibold text-sm appearance-none focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition">
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gold-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Target Month Info & Actions Card -->
+                <div id="status-card" class="bg-gradient-to-r from-[#141419] to-[#1a1a20] rounded-2xl p-4 gold-border shadow-md space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-[11px] font-medium uppercase tracking-wider text-cb-muted">PDF Consolidado del Mes</span>
+                            <h2 id="selected-month-title" class="text-lg font-bold text-white leading-snug">Cargando...</h2>
+                            <p id="selected-count-text" class="text-xs font-semibold text-gold-400 mt-0.5">0 tickets guardados en este mes</p>
+                        </div>
+                        <div id="download-btn-container">
+                            <a id="selected-pdf-link" href="#" target="_blank" class="hidden inline-flex items-center gap-1.5 px-3 py-2 bg-gold-500/15 hover:bg-gold-500/25 text-gold-400 text-xs font-bold rounded-xl border border-gold-500/40 transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V7.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 1H7a2 2 0 00-2 2v14a2 2 0 002 2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9d0 012 0v6m0 0l-2-2m2 2l2-2"/></svg>
+                                <span>Ver PDF</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Botones de Gestión -->
+                    <div id="pdf-manage-actions" class="hidden pt-2 border-t border-slate-800 flex items-center justify-between gap-2 text-xs">
+                        <button onclick="undoLastTicket()" class="flex-1 py-2 px-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-medium rounded-lg border border-amber-500/30 transition flex items-center justify-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                            <span>Borrar último comprobante</span>
+                        </button>
+                        <button onclick="deleteCurrentMonthPDF()" class="py-2 px-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 font-medium rounded-lg border border-rose-500/30 transition flex items-center justify-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            <span>Resetear mes</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- DASHBOARD DE GASTOS EN TIEMPO REAL -->
+                <div id="expenses-analytics-card" class="bg-cb-card rounded-2xl p-5 gold-border shadow-lg space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-white text-sm sm:text-base flex items-center gap-2">
+                            <svg class="w-5 h-5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                            Control de Gastos & Régimen Impositivo
+                        </h3>
+                        <span id="expense-month-badge" class="text-[10px] font-semibold text-gold-400 bg-gold-500/10 px-2 py-0.5 rounded border border-gold-500/30">Octubre</span>
+                    </div>
+
+                    <!-- Métricas Principales (Grid de 4: 2x2 en celular, 4 en una fila en tablet/PC) -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <div class="bg-[#18181f] p-3 rounded-xl border border-gold-500/20">
+                            <span class="text-[10px] font-semibold uppercase text-cb-muted">Total Gastado</span>
+                            <p id="stat-total-spent" class="text-base sm:text-lg font-extrabold text-white mt-0.5">$0.00</p>
+                        </div>
+                        <div class="bg-[#18181f] p-3 rounded-xl border border-emerald-500/20">
+                            <span class="text-[10px] font-semibold uppercase text-emerald-400">IVA Crédito Fiscal</span>
+                            <p id="stat-total-iva" class="text-base sm:text-lg font-extrabold text-emerald-400 mt-0.5">$0.00</p>
+                        </div>
+                        <div class="bg-[#18181f] p-3 rounded-xl border border-amber-500/20">
+                            <span class="text-[10px] font-semibold uppercase text-amber-400">Percep. IIBB</span>
+                            <p id="stat-total-iibb" class="text-base sm:text-lg font-extrabold text-amber-400 mt-0.5">$0.00</p>
+                        </div>
+                        <div class="bg-[#18181f] p-3 rounded-xl border border-blue-500/20">
+                            <span class="text-[10px] font-semibold uppercase text-blue-400">Subtotal Neto</span>
+                            <p id="stat-total-subtotal" class="text-base sm:text-lg font-extrabold text-blue-400 mt-0.5">$0.00</p>
+                        </div>
+                    </div>
+
+                    <!-- Desglose por Comercios con Búsqueda -->
+                    <div class="space-y-2 pt-2 border-t border-slate-800">
+                        <div class="flex items-center justify-between">
+                            <p class="text-xs font-bold text-slate-300">Gastos por Comercio / Proveedor:</p>
+                            <input type="text" id="vendor-search-input" oninput="filterVendorBreakdown()" placeholder="🔍 Buscar comercio..." class="bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-500 focus:outline-none focus:border-gold-400 w-40">
+                        </div>
+                        <div id="vendor-breakdown-list" class="space-y-2 text-xs max-h-60 overflow-y-auto pr-1">
+                            <p class="text-cb-muted italic text-[11px]">Cargando estadísticas...</p>
+                        </div>
+                    </div>
+
+                    <!-- Descargas Excel, CSV & Fotos ZIP -->
+                    <div class="grid grid-cols-3 gap-2 pt-2">
+                        <a id="download-excel-btn" href="#" target="_blank" class="py-2.5 px-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 font-bold rounded-xl border border-emerald-500/40 text-[11px] sm:text-xs flex items-center justify-center gap-1.5 transition">
+                            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            <span>Descargar Excel</span>
+                        </a>
+                        <a id="download-csv-btn" href="#" target="_blank" class="py-2.5 px-2 bg-gold-500/15 hover:bg-gold-500/25 text-gold-400 font-bold rounded-xl border border-gold-500/40 text-[11px] sm:text-xs flex items-center justify-center gap-1.5 transition">
+                            <svg class="w-4 h-4 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 01-2-2h5.586a1 1 0 01.707.293l5.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            <span>Exportar CSV</span>
+                        </a>
+                        <a id="download-zip-btn" href="#" target="_blank" class="py-2.5 px-2 bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 font-bold rounded-xl border border-purple-500/40 text-[11px] sm:text-xs flex items-center justify-center gap-1.5 transition">
+                            <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            <span>Fotos ZIP</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Historial de PDFs Mensuales -->
+                <div class="bg-cb-card rounded-2xl p-5 gold-border space-y-3">
+                    <h3 class="font-bold text-white text-sm flex items-center justify-between">
+                        <span class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
+                            Historial de Comprobantes Mensuales
+                        </span>
+                    </h3>
+                    <div id="monthly-list" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+                        <p class="text-xs text-cb-muted italic">Cargando PDFs...</p>
+                    </div>
+                </div>
+
+            </div>
+
         </div>
 
     </main>
@@ -631,16 +669,21 @@
     <!-- QR Modal -->
 
     <!-- PANTALLA DETALLE DE COMERCIO -->
-    <div id="vendor-detail-screen" class="hidden fixed inset-0 bg-[#0b0b0f] z-40 overflow-y-auto">
-        <div class="max-w-md mx-auto p-4 space-y-3">
-            <div class="flex items-center gap-3 sticky top-0 bg-[#0b0b0f] py-2 z-10">
-                <button onclick="closeVendorDetail()" class="px-3 py-1.5 bg-gold-500/10 border border-gold-500/40 text-gold-400 rounded-lg text-xs font-bold">← Volver</button>
-                <div class="min-w-0">
-                    <p id="vd-title" class="font-bold text-white text-sm truncate"></p>
-                    <p id="vd-subtitle" class="text-[11px] text-cb-muted"></p>
+    <div id="vendor-detail-screen" class="hidden fixed inset-0 bg-[#0b0b0f]/95 backdrop-blur-md z-40 overflow-y-auto">
+        <div class="max-w-4xl mx-auto p-4 sm:p-6 space-y-4">
+            <div class="flex items-center justify-between sticky top-0 bg-[#0b0b0f]/95 backdrop-blur-md py-3 z-10 border-b border-gold-500/20">
+                <div class="flex items-center gap-3 min-w-0">
+                    <button onclick="closeVendorDetail()" class="px-3.5 py-2 bg-gold-500/10 hover:bg-gold-500/20 border border-gold-500/40 text-gold-400 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                        <span>Volver</span>
+                    </button>
+                    <div class="min-w-0">
+                        <p id="vd-title" class="font-bold text-white text-base truncate"></p>
+                        <p id="vd-subtitle" class="text-xs text-cb-muted"></p>
+                    </div>
                 </div>
             </div>
-            <div id="vd-list" class="space-y-2"></div>
+            <div id="vd-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
         </div>
     </div>
 
@@ -658,7 +701,7 @@
 
     <!-- EDITAR TICKET -->
     <div id="ticket-edit-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-        <div class="bg-cb-card gold-border rounded-2xl p-5 w-full max-w-sm space-y-3 max-h-[90vh] overflow-y-auto">
+        <div class="bg-cb-card gold-border rounded-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
             <h3 class="font-bold text-white text-sm">Editar ticket</h3>
             <div class="grid grid-cols-2 gap-2 text-[11px] text-cb-muted">
                 <div>
@@ -1053,8 +1096,23 @@
             checkAuthAndInit();
             setupQR();
             checkStandalone();
+            setupDragAndDrop();
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW reg error:', err));
+            }
+        });
+
+        window.addEventListener('paste', (e) => {
+            const items = (e.clipboardData || window.clipboardData)?.items;
+            if (!items) return;
+            for (const item of items) {
+                if (item.kind === 'file' && item.type.startsWith('image/')) {
+                    const blob = item.getAsFile();
+                    if (blob) {
+                        processFile(blob);
+                        break;
+                    }
+                }
             }
         });
 
@@ -1660,8 +1718,40 @@
         let ocrTimeout = null;
         let isSubmittingTicket = false;
 
+        function setupDragAndDrop() {
+            const dropZone = document.getElementById('drop-zone');
+            if (!dropZone) return;
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.classList.add('border-gold-400', 'bg-gold-500/15');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.classList.remove('border-gold-400', 'bg-gold-500/15');
+                }, false);
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                if (dt && dt.files && dt.files.length > 0) {
+                    processFile(dt.files[0]);
+                }
+            }, false);
+        }
+
         function handleFileSelect(evt) {
-            const file = evt.target.files[0];
+            const file = evt.target.files && evt.target.files[0];
+            if (file) processFile(file);
+        }
+
+        function processFile(file) {
             if (!file) return;
             selectedFile = file;
 
