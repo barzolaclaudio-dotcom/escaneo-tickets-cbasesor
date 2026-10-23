@@ -2,9 +2,23 @@
 
 Registro de lo aprendido y decidido. Actualizar cada vez que aprendamos algo nuevo.
 
+## Infraestructura y Producción Oficial
+- **Servidor Activo (Producción):** **Google Cloud Platform (GCP)** (Instancia en Frankfurt `europe-west3-c`, IP `34.159.160.162`).
+- **Dominio Institucional y SSL:** **`https://tickets.cbasesor.com`** con certificado SSL Let's Encrypt (renovación automática) y reverse proxy Nginx redirigiendo a `127.0.0.1:8000`.
+- **Servicio en Segundo Plano:** `tickets.service` administrado por `systemd` con reinicio automático.
+- **Ventajas frente a Render:**
+  - Sin límite de 750 horas mensuales (corre 24/7 de forma permanente).
+  - No se duerme por inactividad.
+  - Almacenamiento persistente en disco en `/var/www/tickets/`.
+  - Costo marginal: $0,00 (aprovecha la misma instancia VM de GCP del bot financiero).
+- **Subir cambios a producción:**
+  - Al hacer `git push origin main` a GitHub, para actualizar en el servidor de GCP se ejecuta:
+    ```bash
+    cd /var/www/tickets && git pull && sudo systemctl restart tickets
+    ```
+
 ## Cómo funciona la app
-- App web (FastAPI) instalada como PWA en el celular, alojada en Render. Repo: `barzolaclaudio-dotcom/escaneo-tickets-cbasesor` (rama `main`).
-- **Subir cambios:** al hacer `git push origin main`, Render redespliega solo (`autoDeploy: true`). Tarda unos minutos.
+- App web (FastAPI) instalada como PWA en el celular.
 - `app.py` sirve primero `index.html` de la raíz y, si no existe, `templates/index.html`. **Los dos archivos deben mantenerse idénticos.**
 - Datos de cada mes:
   - `Gastos_YYYY_MM.json`: datos extraídos de cada ticket.
@@ -33,11 +47,15 @@ Registro de lo aprendido y decidido. Actualizar cada vez que aprendamos algo nue
 - **Backup con imágenes:** el JSON incluye el PDF de cada mes en base64.
 - Código: `ticket_manager.py` y endpoints `/api/ticket-image`, `/api/ticket-edit` y `/api/ticket-delete` en `app.py`.
 
-## Mantener Render despierto
-- Monitor en UptimeRobot (HTTP, cada 5 min) hacia `https://tickets-cbasesor.onrender.com`. Conviene usar la ruta `/health`, que es más liviana.
-- **Error cometido:** el monitor se creó primero con la URL de ejemplo `TU-APP.onrender.com`, que no existe, y mostraba "Down". Siempre usar la URL real.
-- El plan gratis da ~750 h/mes, y un servicio activo 24/7 consume ~744 h. Alcanza solo si es el único servicio activo en la cuenta.
-- Alternativa sin monitor externo: plan pago de Render (~USD 7/mes).
+## Mantener Render despierto y límites de horas
+- Monitor en UptimeRobot (HTTP, cada 10 min) hacia `https://tickets-cbasesor.onrender.com/health`.
+- **Causa de suspensiones pasadas resuelta:** Render otorga 750 h/mes gratis por cuenta. Había 3 proyectos en la misma cuenta (`tickets-cbasesor`, `Whatsapp-bots` y `binance-quant-bot`), lo que consumía las horas hacia el día 10 de cada mes.
+- **Solución implementada (Octubre 2026):**
+  - `Whatsapp-bots` se migró a su propia cuenta de Render (`claudioabarzola@gmail.com`) con sus 750 h exclusivas.
+  - `binance-quant-bot` se ejecuta localmente en la PC.
+  - `tickets-cbasesor` queda como **único servicio** en la cuenta `barzolaclaudio@gmail.com`.
+  - En meses de 31 días (744 h), las 750 h alcanzan para operar 24/7 sin suspensiones.
+  - UptimeRobot configurado cada 10 min (menor a los 15 min de inactividad de Render para evitar que se duerma).
 
 ## Lecciones y precauciones
 - Antes de desinstalar la app, hacer un backup nuevo y guardarlo fuera del celular.
