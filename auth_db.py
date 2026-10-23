@@ -22,6 +22,8 @@ def init_db():
                 name TEXT NOT NULL,
                 email TEXT UNIQUE NOT NULL,
                 password_hash TEXT NOT NULL,
+                accountant_email TEXT DEFAULT '',
+                accountant_name TEXT DEFAULT '',
                 is_active INTEGER DEFAULT 1,
                 created_at TEXT NOT NULL
             )
@@ -48,6 +50,15 @@ def init_db():
                 FOREIGN KEY (user_id) REFERENCES users (id)
             )
         """)
+        # Migraciones automáticas seguras para instalaciones existentes
+        try:
+            conn.execute("ALTER TABLE users ADD COLUMN accountant_email TEXT DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute("ALTER TABLE users ADD COLUMN accountant_name TEXT DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass
     conn.close()
 
 def hash_password(password: str) -> str:
@@ -141,7 +152,7 @@ def authenticate_user(email: str, password: str) -> Optional[Dict[str, Any]]:
     email = email.strip().lower()
     conn = get_connection()
     row = conn.execute(
-        "SELECT id, name, email, password_hash, is_active FROM users WHERE email = ?",
+        "SELECT id, name, email, password_hash, accountant_email, accountant_name, is_active FROM users WHERE email = ?",
         (email,)
     ).fetchone()
     conn.close()
@@ -151,7 +162,14 @@ def authenticate_user(email: str, password: str) -> Optional[Dict[str, Any]]:
 
     if verify_password(password, row["password_hash"]):
         token = create_session(row["id"], row["email"], row["name"])
-        return {"user_id": row["id"], "name": row["name"], "email": row["email"], "token": token}
+        return {
+            "user_id": row["id"],
+            "name": row["name"],
+            "email": row["email"],
+            "accountant_email": row["accountant_email"] or "",
+            "accountant_name": row["accountant_name"] or "",
+            "token": token
+        }
     return None
 
 def create_session_for_user(user_id: int, email: str, name: str, conn: sqlite3.Connection) -> str:
@@ -176,14 +194,60 @@ def validate_session(token: str) -> Optional[Dict[str, Any]]:
         return None
     now_str = datetime.utcnow().isoformat()
     conn = get_connection()
+    row = conn.execute("""
+        SELECT s.user_id, u.email, u.name, u.accountant_email, u.accountant_name 
+        FROM sessions s
+        JOIN users u ON s.user_id = u.id
+        WHERE s.token = ? AND s.expires_at > ?
+    """, (token, now_str)).fetchone()
+    conn.close()
+    if row:
+        return {
+            "user_id": row["user_id"],
+            "email": row["email"],
+            "name": row["name"],
+            "accountant_email": row["accountant_email"] or "",
+            "accountant_name": row["accountant_name"] or ""
+        }
+    return None
+
+def get_user_profile(user_id: int) -> Optional[Dict[str, Any]]:
+    conn = get_connection()
     row = conn.execute(
-        "SELECT user_id, email, name FROM sessions WHERE token = ? AND expires_at > ?",
-        (token, now_str)
+        "SELECT id, name, email, accountant_email, accountant_name, created_at FROM users WHERE id = ?",
+        (user_id,)
     ).fetchone()
     conn.close()
     if row:
-        return {"user_id": row["user_id"], "email": row["email"], "name": row["name"]}
+        return {
+            "id": row["id"],
+            "name": row["name"],
+            "email": row["email"],
+            "accountant_email": row["accountant_email"] or "",
+            "accountant_name": row["accountant_name"] or "",
+            "created_at": row["created_at"]
+        }
     return None
+
+def update_user_profile(user_id: int, name: str, accountant_email: str = "", accountant_name: str = "") -> bool:
+    name = name.strip()
+    accountant_email = accountant_email.strip().lower()
+    accountant_name = accountant_name.strip()
+    if not name:
+        return False
+
+    conn = get_connection()
+    with conn:
+        conn.execute(
+            "UPDATE users SET name = ?, accountant_email = ?, accountant_name = ? WHERE id = ?",
+            (name, accountant_email, accountant_name, user_id)
+        )
+        conn.execute(
+            "UPDATE sessions SET name = ? WHERE user_id = ?",
+            (name, user_id)
+        )
+    conn.close()
+    return True
 
 def delete_session(token: str):
     conn = get_connection()

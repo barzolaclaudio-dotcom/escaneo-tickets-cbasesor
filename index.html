@@ -269,7 +269,10 @@
                 <div id="nav-user-badge" class="hidden items-center gap-2 bg-[#1c1c21] border border-gold-500/30 rounded-xl px-2.5 py-1.5">
                     <div id="nav-user-avatar" class="w-6 h-6 rounded-full bg-gold-500 text-black font-extrabold text-xs flex items-center justify-center">C</div>
                     <span id="nav-user-name" class="text-xs font-semibold text-white max-w-[90px] sm:max-w-[160px] truncate">Usuario</span>
-                    <button onclick="doLogout()" title="Cerrar Sesión" class="text-cb-muted hover:text-red-400 p-0.5 ml-1 transition">
+                    <button onclick="openSettingsModal()" title="Configuración de Cuenta & Contador" class="text-cb-muted hover:text-gold-400 p-0.5 ml-0.5 transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    </button>
+                    <button onclick="doLogout()" title="Cerrar Sesión" class="text-cb-muted hover:text-red-400 p-0.5 ml-0.5 transition">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                     </button>
                 </div>
@@ -529,13 +532,17 @@
                         <div class="flex items-center justify-between gap-2 pt-2 text-[11px] text-cb-muted border-t border-gold-500/15">
                             <button onclick="exportFullBackupJSON()" class="hover:text-gold-400 flex items-center gap-1 transition" title="Descargar copia de seguridad de tus tickets">
                                 <svg class="w-3.5 h-3.5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                                <span>Copia Seguridad</span>
+                                <span>Copia</span>
                             </button>
                             <label class="hover:text-gold-400 flex items-center gap-1 cursor-pointer transition" title="Restaurar copia de seguridad">
                                 <svg class="w-3.5 h-3.5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                                 <span>Restaurar</span>
                                 <input type="file" id="import-backup-input" accept=".json" class="hidden" onchange="importFullBackupJSON(event)">
                             </label>
+                            <button onclick="openSettingsModal()" class="hover:text-gold-400 flex items-center gap-1 transition" title="Configurar tu nombre y datos de tu contador">
+                                <svg class="w-3.5 h-3.5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                <span>Ajustes</span>
+                            </button>
                         </div>
                     </div>
 
@@ -630,8 +637,8 @@
                         </div>
                     </div>
 
-                    <!-- Descargas Excel, CSV & Fotos ZIP -->
-                    <div class="grid grid-cols-3 gap-2 pt-2">
+                    <!-- Descargas Excel, CSV, Fotos ZIP & Envío al Contador -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
                         <a id="download-excel-btn" href="#" target="_blank" class="py-2.5 px-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 font-bold rounded-xl border border-emerald-500/40 text-[11px] sm:text-xs flex items-center justify-center gap-1.5 transition">
                             <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                             <span>Descargar Excel</span>
@@ -644,6 +651,10 @@
                             <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                             <span>Fotos ZIP</span>
                         </a>
+                        <button id="btn-send-accountant" onclick="triggerSendToAccountant()" class="py-2.5 px-2 bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 font-bold rounded-xl border border-blue-500/40 text-[11px] sm:text-xs flex items-center justify-center gap-1.5 transition">
+                            <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                            <span>A mi Contador</span>
+                        </button>
                     </div>
                 </div>
 
@@ -740,6 +751,66 @@
             <div class="flex gap-2 pt-1">
                 <button onclick="closeTicketEdit()" class="flex-1 py-2 bg-white/5 border border-white/10 text-white rounded-lg text-xs font-bold">Cancelar</button>
                 <button onclick="saveTicketEdit()" class="flex-1 py-2 bg-gold-500/20 border border-gold-500/50 text-gold-400 rounded-lg text-xs font-bold">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFIGURACIÓN DE CUENTA & CONTADOR -->
+    <div id="settings-modal" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-[#121215] gold-border rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5 relative">
+            <div class="flex items-center justify-between pb-3 border-b border-gold-500/20">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-gold-500/15 text-gold-400 flex items-center justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white text-base leading-tight">Configuración</h3>
+                        <p class="text-xs text-cb-muted leading-tight">Tu perfil y contacto de tu contador</p>
+                    </div>
+                </div>
+                <button onclick="closeSettingsModal()" class="text-cb-muted hover:text-white p-1 text-lg font-bold">✕</button>
+            </div>
+
+            <!-- Datos de Usuario -->
+            <div class="space-y-3">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-gold-400">Tus Datos de Titular</span>
+                <div>
+                    <label class="block text-xs font-semibold text-zinc-300 mb-1">Nombre o Razón Social</label>
+                    <input type="text" id="setting-user-name" placeholder="Ej: Claudio Barzola" class="w-full bg-[#1c1c21] text-white border border-gold-500/40 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gold-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-zinc-300 mb-1">Correo Electrónico</label>
+                    <input type="email" id="setting-user-email" disabled class="w-full bg-[#141417] text-zinc-400 border border-zinc-700/60 rounded-xl px-3.5 py-2.5 text-sm cursor-not-allowed">
+                    <p class="text-[10px] text-zinc-500 mt-1">El correo está vinculado a tu cuenta para ingreso seguro.</p>
+                </div>
+            </div>
+
+            <!-- Datos del Contador -->
+            <div class="space-y-3 pt-2 border-t border-slate-800">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400">Datos de tu Contador</span>
+                    <span class="text-[10px] text-cb-muted">Para envío de informes</span>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-zinc-300 mb-1">Nombre del Contador / Estudio Contable</label>
+                    <input type="text" id="setting-accountant-name" placeholder="Ej: Estudio Contable Martínez" class="w-full bg-[#1c1c21] text-white border border-gold-500/40 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gold-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-zinc-300 mb-1">Correo Electrónico del Contador</label>
+                    <input type="email" id="setting-accountant-email" placeholder="contador@estudiocontable.com" class="w-full bg-[#1c1c21] text-white border border-gold-500/40 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gold-400">
+                    <p class="text-[10px] text-zinc-400 mt-1">A esta casilla se enviarán tus planillas Excel de Libro IVA Compras y reportes mensuales.</p>
+                </div>
+            </div>
+
+            <div id="settings-msg" class="hidden p-3 rounded-xl text-xs font-medium"></div>
+
+            <div class="flex items-center gap-3 pt-2">
+                <button onclick="closeSettingsModal()" class="flex-1 py-3 px-4 bg-transparent hover:bg-white/5 border border-zinc-700 text-zinc-300 font-bold text-xs rounded-xl transition">
+                    Cancelar
+                </button>
+                <button id="btn-save-settings" onclick="saveSettings()" class="flex-1 py-3 px-4 bg-gradient-to-r from-gold-500 to-amber-600 hover:from-gold-400 hover:to-amber-500 text-black font-extrabold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-1.5">
+                    <span>Guardar Cambios</span>
+                </button>
             </div>
         </div>
     </div>
@@ -1179,6 +1250,157 @@
             if (navBadge) navBadge.classList.add('flex');
             if (navName) navName.textContent = (user.name || user.email || '').split(' ')[0];
             if (navAvatar) navAvatar.textContent = initial;
+        }
+
+        function openSettingsModal() {
+            if (!currentAuthUser) {
+                showAuthModal('welcome');
+                return;
+            }
+            document.getElementById('setting-user-name').value = currentAuthUser.name || '';
+            document.getElementById('setting-user-email').value = currentAuthUser.email || '';
+            document.getElementById('setting-accountant-name').value = currentAuthUser.accountant_name || '';
+            document.getElementById('setting-accountant-email').value = currentAuthUser.accountant_email || '';
+            
+            const msg = document.getElementById('settings-msg');
+            if (msg) {
+                msg.className = 'hidden';
+                msg.textContent = '';
+            }
+            
+            const modal = document.getElementById('settings-modal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+            const modal = document.getElementById('settings-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function saveSettings() {
+            const name = document.getElementById('setting-user-name').value.trim();
+            const accountantName = document.getElementById('setting-accountant-name').value.trim();
+            const accountantEmail = document.getElementById('setting-accountant-email').value.trim().toLowerCase();
+            const msg = document.getElementById('settings-msg');
+            const btn = document.getElementById('btn-save-settings');
+
+            if (!name) {
+                if (msg) {
+                    msg.className = 'p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-medium';
+                    msg.textContent = 'El nombre de usuario es requerido.';
+                }
+                return;
+            }
+
+            if (accountantEmail && !accountantEmail.includes('@')) {
+                if (msg) {
+                    msg.className = 'p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-medium';
+                    msg.textContent = 'El correo del contador no parece ser válido.';
+                }
+                return;
+            }
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span>Guardando...</span>';
+            }
+
+            try {
+                const token = getAuthToken();
+                const res = await fetch('/api/user/profile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        accountant_name: accountantName,
+                        accountant_email: accountantEmail
+                    })
+                });
+                const data = await res.json();
+                if (data.success && data.user) {
+                    currentAuthUser = data.user;
+                    localStorage.setItem('user_email', data.user.email);
+                    renderUserProfile(data.user);
+                    if (msg) {
+                        msg.className = 'p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs font-medium';
+                        msg.textContent = '¡Configuración guardada correctamente!';
+                    }
+                    setTimeout(() => {
+                        closeSettingsModal();
+                    }, 1000);
+                } else {
+                    if (msg) {
+                        msg.className = 'p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-medium';
+                        msg.textContent = data.error || 'Error al guardar configuración.';
+                    }
+                }
+            } catch (err) {
+                if (msg) {
+                    msg.className = 'p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-medium';
+                    msg.textContent = 'Error de conexión: ' + err.message;
+                }
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>Guardar Cambios</span>';
+                }
+            }
+        }
+
+        async function triggerSendToAccountant() {
+            if (!currentAuthUser) {
+                showAuthModal('welcome');
+                return;
+            }
+            const accEmail = (currentAuthUser.accountant_email || '').trim();
+            if (!accEmail || !accEmail.includes('@')) {
+                if (confirm("Aún no tienes configurado el correo de tu contador.\n\n¿Deseas configurarlo ahora en Ajustes?")) {
+                    openSettingsModal();
+                }
+                return;
+            }
+
+            const month = (typeof getSelectedMonth === 'function') ? getSelectedMonth() : (document.getElementById('month-selector')?.value || '');
+            const monthTitle = document.getElementById('selected-month-title')?.textContent || month;
+
+            if (!confirm(`¿Deseas enviar el informe contable mensual (${monthTitle}) con la planilla Excel adjunta a tu contador (${accEmail})?`)) {
+                return;
+            }
+
+            const btn = document.getElementById('btn-send-accountant');
+            const originalHTML = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span>Enviando...</span>';
+            }
+
+            try {
+                const token = getAuthToken();
+                const res = await fetch('/api/user/send-accountant-report', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ month: month })
+                });
+                const data = await res.json();
+                if (data.sent || data.dev_mode) {
+                    alert(`✅ ${data.message || 'Reporte contable enviado con éxito al contador.'}`);
+                } else {
+                    alert(`❌ Error al enviar reporte: ${data.error || 'Verifica la configuración del servidor.'}`);
+                }
+            } catch (err) {
+                alert(`❌ Error de conexión: ${err.message}`);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                }
+            }
         }
 
         async function checkAuthAndInit() {

@@ -3,6 +3,7 @@ import smtplib
 import logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
 
 logger = logging.getLogger("email_sender")
 
@@ -92,3 +93,123 @@ def send_verification_email(to_email: str, name: str, code: str) -> dict:
             "code": code,
             "message": f"Fallo envío SMTP ({str(e)}). Código disponible en log para pruebas."
         }
+
+def send_accountant_report_email(
+    to_email: str,
+    user_name: str,
+    user_email: str,
+    month: str,
+    stats: dict,
+    excel_bytes: bytes,
+    filename: str = "reporte_comprobantes.xlsx"
+) -> dict:
+    """
+    Envía por correo el reporte contable mensual e impositivo con el archivo Excel adjunto al contador.
+    """
+    smtp_host = os.environ.get("SMTP_HOST")
+    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_user = os.environ.get("SMTP_USER")
+    smtp_pass = os.environ.get("SMTP_PASS")
+    smtp_from = os.environ.get("SMTP_FROM", f"CB Asesor <{smtp_user}>" if smtp_user else "CB Asesor <noreply@cbasesor.com>")
+
+    total_spent = stats.get("total_spent", 0.0)
+    total_subtotal = stats.get("total_subtotal", 0.0)
+    total_iva = stats.get("total_iva", 0.0)
+    total_iibb = stats.get("total_iibb", 0.0)
+    total_tickets = stats.get("total_tickets", 0)
+
+    if not smtp_host or not smtp_user or not smtp_pass:
+        logger.info(f"[MODO DEV / PRUEBAS] Envío a contador {to_email} de {user_name} ({user_email}) para mes {month}: ${total_spent:.2f}")
+        return {
+            "sent": False,
+            "dev_mode": True,
+            "message": f"Servidor SMTP no configurado. Reporte simulado con éxito hacia {to_email}."
+        }
+
+    try:
+        msg = MIMEMultipart()
+        msg["Subject"] = f"Reporte Contable e Impositivo {month} | {user_name}"
+        msg["From"] = smtp_from
+        msg["To"] = to_email
+        msg["Reply-To"] = user_email
+
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #09090b; color: #f4f4f5; margin: 0; padding: 20px; }}
+            .card {{ max-width: 560px; margin: 0 auto; background-color: #18181b; border: 1px solid #d4af37; border-radius: 12px; padding: 28px; }}
+            .logo {{ color: #d4af37; font-size: 20px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 20px; text-align: center; }}
+            .title {{ font-size: 16px; font-weight: 700; color: #fafafa; margin-bottom: 12px; }}
+            .table {{ width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #121215; border-radius: 8px; overflow: hidden; }}
+            .table td {{ padding: 10px 14px; border-bottom: 1px solid #27272a; font-size: 13px; }}
+            .table td.val {{ text-align: right; font-weight: bold; color: #d4af37; font-family: monospace; font-size: 14px; }}
+            .footer {{ font-size: 12px; color: #71717a; text-align: center; margin-top: 24px; border-top: 1px solid #27272a; padding-top: 14px; }}
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <div class="logo">CB Asesor • Control Contable</div>
+            <div class="title">Comprobantes & Gastos del Período: {month}</div>
+            <p>Estimado/a Contador/a,</p>
+            <p>Le compartimos el consolidado de comprobantes, facturas y gastos generado por <strong>{user_name}</strong> ({user_email}):</p>
+            
+            <table class="table">
+              <tr>
+                <td><strong>Total Facturado / Gastado</strong></td>
+                <td class="val">${total_spent:,.2f}</td>
+              </tr>
+              <tr>
+                <td>Subtotal Neto Gravado</td>
+                <td class="val">${total_subtotal:,.2f}</td>
+              </tr>
+              <tr>
+                <td>IVA Crédito Fiscal (21% / 10.5%)</td>
+                <td class="val" style="color: #34d399;">${total_iva:,.2f}</td>
+              </tr>
+              <tr>
+                <td>Percepciones IIBB (ARBA / AGIP / Otras)</td>
+                <td class="val" style="color: #fbbf24;">${total_iibb:,.2f}</td>
+              </tr>
+              <tr>
+                <td>Cantidad de Comprobantes</td>
+                <td class="val" style="color: #f4f4f5;">{total_tickets}</td>
+              </tr>
+            </table>
+
+            <p style="font-size: 13px; color: #a1a1aa;">
+              📎 Se adjunta a este mensaje el archivo Excel (<strong>{filename}</strong>) que contiene el Libro IVA Compras detallado y el resumen de gastos para su liquidación contable.
+            </p>
+
+            <div class="footer">
+              Generado automáticamente por <strong>CB Asesor</strong> • Sistema Inteligente de Control de Comprobantes
+            </div>
+          </div>
+        </body>
+        </html>
+        """
+
+        msg.attach(MIMEText(html_content, "html", "utf-8"))
+
+        if excel_bytes:
+            part = MIMEApplication(excel_bytes, Name=filename)
+            part['Content-Disposition'] = f'attachment; filename="{filename}"'
+            msg.attach(part)
+
+        if smtp_port == 465:
+            with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=15) as server:
+                server.login(smtp_user, smtp_pass)
+                server.sendmail(smtp_from, [to_email], msg.as_string())
+        else:
+            with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
+                server.starttls()
+                server.login(smtp_user, smtp_pass)
+                server.sendmail(smtp_from, [to_email], msg.as_string())
+
+        return {"sent": True, "dev_mode": False, "message": f"Reporte enviado con éxito a {to_email}."}
+
+    except Exception as e:
+        logger.error(f"Error enviando reporte al contador {to_email}: {e}")
+        return {"sent": False, "dev_mode": False, "error": str(e)}

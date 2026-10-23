@@ -41,6 +41,14 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+class UpdateProfileRequest(BaseModel):
+    name: str
+    accountant_email: Optional[str] = ""
+    accountant_name: Optional[str] = ""
+
+class SendAccountantReportRequest(BaseModel):
+    month: str
+
 def get_auth_user(authorization: Optional[str] = Header(None)) -> Optional[dict]:
     if not authorization:
         return None
@@ -132,6 +140,70 @@ async def auth_logout(authorization: Optional[str] = Header(None)):
         token = authorization.replace("Bearer ", "").strip()
         auth_db.delete_session(token)
     return {"success": True}
+
+@app.get("/api/user/profile")
+async def get_profile(authorization: Optional[str] = Header(None)):
+    user = get_auth_user(authorization)
+    if not user:
+        return JSONResponse(status_code=401, content={"success": False, "error": "Sesión inválida o expirada"})
+    return {"success": True, "profile": user}
+
+@app.post("/api/user/profile")
+async def update_profile(req: UpdateProfileRequest, authorization: Optional[str] = Header(None)):
+    user = get_auth_user(authorization)
+    if not user:
+        return JSONResponse(status_code=401, content={"success": False, "error": "Sesión inválida o expirada"})
+    
+    name = req.name.strip()
+    if not name:
+        return JSONResponse(status_code=400, content={"success": False, "error": "El nombre no puede estar vacío"})
+    
+    ok = auth_db.update_user_profile(
+        user_id=user["user_id"],
+        name=name,
+        accountant_email=req.accountant_email or "",
+        accountant_name=req.accountant_name or ""
+    )
+    if not ok:
+        return JSONResponse(status_code=400, content={"success": False, "error": "No se pudo actualizar el perfil"})
+    
+    updated_user = auth_db.validate_session(authorization.replace("Bearer ", "").strip())
+    return {"success": True, "user": updated_user}
+
+@app.post("/api/user/send-accountant-report")
+async def send_accountant_report(req: SendAccountantReportRequest, authorization: Optional[str] = Header(None)):
+    user = get_auth_user(authorization)
+    if not user:
+        return JSONResponse(status_code=401, content={"success": False, "error": "Sesión inválida o expirada"})
+    
+    accountant_email = (user.get("accountant_email") or "").strip()
+    if not accountant_email or "@" not in accountant_email:
+        return JSONResponse(status_code=400, content={
+            "success": False, 
+            "error": "No tienes configurado el correo de tu contador. Por favor agrégalo en Configuración."
+        })
+    
+    month = req.month.strip()
+    summary = get_monthly_summary(month, user_email=user["email"])
+    excel_bytes = generate_excel_report(month, user_email=user["email"])
+    filename = f"reporte_comprobantes_{month}_{user['name'].replace(' ', '_')}.xlsx"
+    
+    res = email_sender.send_accountant_report_email(
+        to_email=accountant_email,
+        user_name=user["name"],
+        user_email=user["email"],
+        month=month,
+        stats={
+            "total_spent": summary.get("total_spent", 0.0),
+            "total_subtotal": summary.get("total_subtotal", 0.0),
+            "total_iva": summary.get("total_iva", 0.0),
+            "total_iibb": summary.get("total_iibb", 0.0),
+            "total_tickets": len(summary.get("tickets", []))
+        },
+        excel_bytes=excel_bytes,
+        filename=filename
+    )
+    return res
 
 
 @app.on_event("startup")
