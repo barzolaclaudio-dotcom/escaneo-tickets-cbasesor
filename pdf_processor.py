@@ -119,7 +119,8 @@ def append_ticket_to_month_pdf(
     user_iva_27: float = None,
     user_email: str = None,
     user_items: list = None,
-    force: bool = False
+    force: bool = False,
+    save_pdf: bool = False
 ) -> dict:
     now = datetime.now()
     
@@ -164,6 +165,21 @@ def append_ticket_to_month_pdf(
                 "existing": dup,
                 "error": "Este ticket ya parece estar cargado"
             }
+
+    # Si save_pdf es False (arquitectura de privacidad y cero almacenamiento de fotos en servidor):
+    if not save_pdf:
+        add_ticket_expense(target_month, extracted_data, user_email)
+        summary = get_monthly_summary(target_month, user_email)
+        total_tickets = len(summary.get("tickets", []))
+        return {
+            "success": True,
+            "month": target_month,
+            "pdf_filename": None,
+            "total_tickets": total_tickets,
+            "image_saved": None,
+            "extracted_data": extracted_data,
+            "expenses_summary": summary
+        }
 
     month_img_dir = IMAGES_DIR / target_month
     month_img_dir.mkdir(parents=True, exist_ok=True)

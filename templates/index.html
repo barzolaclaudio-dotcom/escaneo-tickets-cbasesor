@@ -80,6 +80,177 @@
 </head>
 <body class="min-h-screen pb-14 font-sans selection:bg-gold-500 selection:text-black">
 
+    <!-- Pantalla de Bienvenida y Autenticación Obligatoria -->
+    <div id="auth-overlay" class="fixed inset-0 z-50 bg-[#09090b] flex items-center justify-center p-4 overflow-y-auto">
+        <div class="w-full max-w-md bg-[#121215] border border-gold-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl relative">
+            
+            <!-- VISTA 1: BIENVENIDA -->
+            <div id="auth-view-welcome" class="space-y-6 text-center">
+                <div class="mx-auto w-16 h-16 rounded-2xl overflow-hidden border-2 border-gold-500/50 shadow-lg shadow-gold-500/20 bg-black flex items-center justify-center p-1">
+                    <img src="/icon-192.png" alt="CB Asesor" class="w-full h-full object-contain rounded-xl">
+                </div>
+                <div>
+                    <span class="text-[10px] uppercase tracking-[0.2em] px-2.5 py-1 bg-gold-500/10 text-gold-400 border border-gold-500/30 rounded-full font-bold">
+                        Acceso Exclusivo
+                    </span>
+                    <h2 class="text-2xl font-bold text-white mt-3 tracking-tight">Bienvenido a CB Asesor</h2>
+                    <p class="text-xs text-cb-muted mt-1 leading-relaxed">
+                        Control inteligente de tickets, comprobantes y gastos profesionales.
+                    </p>
+                </div>
+
+                <div class="bg-[#18181c] border border-gold-500/15 rounded-2xl p-4 text-left space-y-3">
+                    <div class="flex items-center gap-3 text-xs text-zinc-300">
+                        <span class="w-6 h-6 rounded-lg bg-gold-500/10 text-gold-400 flex items-center justify-center font-bold">⚡</span>
+                        <span>Lectura automática de tickets con OCR</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs text-zinc-300">
+                        <span class="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold">🔒</span>
+                        <span>Privacidad total: fotos guardadas solo en tu equipo</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs text-zinc-300">
+                        <span class="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold">📊</span>
+                        <span>Reportes mensuales y exportación a Excel</span>
+                    </div>
+                </div>
+
+                <div class="space-y-3 pt-2">
+                    <button onclick="switchAuthView('register')" class="w-full py-3.5 px-4 bg-gradient-to-r from-gold-500 to-amber-600 hover:from-gold-400 hover:to-amber-500 text-black font-extrabold text-sm rounded-xl shadow-lg shadow-gold-500/20 transition flex items-center justify-center gap-2">
+                        <span>Crear mi Cuenta</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </button>
+                    <button onclick="switchAuthView('login')" class="w-full py-3 px-4 bg-transparent hover:bg-gold-500/10 border border-gold-500/40 text-gold-400 font-bold text-sm rounded-xl transition">
+                        Ya tengo cuenta • Iniciar Sesión
+                    </button>
+                </div>
+            </div>
+
+            <!-- VISTA 2: REGISTRO PASO 1 (DATOS) -->
+            <div id="auth-view-register" class="hidden space-y-5">
+                <div class="flex items-center justify-between">
+                    <button onclick="switchAuthView('welcome')" class="text-cb-muted hover:text-white flex items-center gap-1 text-xs font-semibold">
+                        ← Volver
+                    </button>
+                    <span class="text-[10px] text-gold-400 font-bold uppercase tracking-wider">Paso 1 de 3</span>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-white tracking-tight">Crear Cuenta</h3>
+                    <p class="text-xs text-cb-muted mt-0.5">Ingresa tus datos para registrarte</p>
+                </div>
+                <div class="space-y-3.5">
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-300 mb-1">Nombre completo o identificación</label>
+                        <input type="text" id="reg-name" placeholder="Ej: Claudio Barzola" class="w-full bg-[#1c1c21] text-white border border-gold-500/40 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-300 mb-1">Correo Electrónico</label>
+                        <input type="email" id="reg-email" placeholder="tu@email.com" class="w-full bg-[#1c1c21] text-white border border-gold-500/40 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400">
+                    </div>
+                </div>
+                <div id="reg-error" class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-medium"></div>
+                <button id="btn-reg-send" onclick="submitRegisterRequest()" class="w-full py-3 px-4 bg-gradient-to-r from-gold-500 to-amber-600 hover:from-gold-400 hover:to-amber-500 text-black font-extrabold text-sm rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+                    <span>Enviar Código de Verificación</span>
+                </button>
+                <div class="text-center pt-2">
+                    <button onclick="switchAuthView('login')" class="text-xs text-cb-muted hover:text-gold-400 transition">
+                        ¿Ya tienes cuenta? <strong class="text-gold-400">Inicia sesión</strong>
+                    </button>
+                </div>
+            </div>
+
+            <!-- VISTA 3: REGISTRO PASO 2 (CÓDIGO) -->
+            <div id="auth-view-verify" class="hidden space-y-5">
+                <div class="flex items-center justify-between">
+                    <button onclick="switchAuthView('register')" class="text-cb-muted hover:text-white flex items-center gap-1 text-xs font-semibold">
+                        ← Corregir datos
+                    </button>
+                    <span class="text-[10px] text-gold-400 font-bold uppercase tracking-wider">Paso 2 de 3</span>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-white tracking-tight">Verifica tu Correo</h3>
+                    <p class="text-xs text-cb-muted mt-1 leading-relaxed">
+                        Enviamos un código de 6 dígitos a: <br>
+                        <strong id="verify-target-email" class="text-gold-400 font-bold"></strong>
+                    </p>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-zinc-300 mb-1.5 text-center">Código de Verificación (6 dígitos)</label>
+                    <input type="text" id="reg-code" maxlength="6" inputmode="numeric" placeholder="------" class="w-full bg-[#1c1c21] text-gold-400 border-2 border-gold-500/50 rounded-xl px-3 py-3 text-2xl font-black tracking-[0.4em] text-center focus:outline-none focus:border-gold-400">
+                </div>
+                <div id="dev-code-banner" class="hidden p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-xs">
+                    <span class="font-bold">ℹ️ Modo Pruebas:</span> Tu código es: <strong id="dev-code-val" class="text-gold-400 tracking-widest text-sm"></strong>
+                </div>
+                <div id="verify-error" class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-medium"></div>
+                <button id="btn-verify-code" onclick="submitVerifyCode()" class="w-full py-3 px-4 bg-gradient-to-r from-gold-500 to-amber-600 hover:from-gold-400 hover:to-amber-500 text-black font-extrabold text-sm rounded-xl shadow-lg transition">
+                    Validar Código
+                </button>
+                <div class="text-center">
+                    <button onclick="submitRegisterRequest(true)" class="text-xs text-gold-400/80 hover:text-gold-400 underline">
+                        ¿No te llegó? Reenviar código
+                    </button>
+                </div>
+            </div>
+
+            <!-- VISTA 4: REGISTRO PASO 3 (CONTRASEÑA) -->
+            <div id="auth-view-password" class="hidden space-y-5">
+                <span class="text-[10px] text-gold-400 font-bold uppercase tracking-wider">Paso 3 de 3</span>
+                <div>
+                    <h3 class="text-xl font-bold text-white tracking-tight">Crea tu Contraseña</h3>
+                    <p class="text-xs text-cb-muted mt-0.5">Establece tu clave para ingresar en tu celular y compu</p>
+                </div>
+                <div class="space-y-3.5">
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-300 mb-1">Contraseña segura (mínimo 4 caracteres)</label>
+                        <input type="password" id="reg-password" placeholder="••••••••" class="w-full bg-[#1c1c21] text-white border border-gold-500/40 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gold-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-300 mb-1">Confirmar Contraseña</label>
+                        <input type="password" id="reg-password-confirm" placeholder="••••••••" class="w-full bg-[#1c1c21] text-white border border-gold-500/40 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gold-400">
+                    </div>
+                </div>
+                <div id="password-error" class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-medium"></div>
+                <button id="btn-save-password" onclick="submitSetPassword()" class="w-full py-3 px-4 bg-gradient-to-r from-gold-500 to-amber-600 hover:from-gold-400 hover:to-amber-500 text-black font-extrabold text-sm rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+                    <span>Crear Cuenta y Comenzar</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                </button>
+            </div>
+
+            <!-- VISTA 5: INICIAR SESIÓN -->
+            <div id="auth-view-login" class="hidden space-y-5">
+                <div class="flex items-center justify-between">
+                    <button onclick="switchAuthView('welcome')" class="text-cb-muted hover:text-white flex items-center gap-1 text-xs font-semibold">
+                        ← Volver
+                    </button>
+                    <span class="text-[10px] text-gold-400 font-bold uppercase tracking-wider">Ingreso Seguro</span>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-white tracking-tight">Iniciar Sesión</h3>
+                    <p class="text-xs text-cb-muted mt-0.5">Ingresa tus credenciales registradas</p>
+                </div>
+                <div class="space-y-3.5">
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-300 mb-1">Correo Electrónico</label>
+                        <input type="email" id="login-email" placeholder="tu@email.com" class="w-full bg-[#1c1c21] text-white border border-gold-500/40 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gold-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-300 mb-1">Contraseña</label>
+                        <input type="password" id="login-password" placeholder="••••••••" class="w-full bg-[#1c1c21] text-white border border-gold-500/40 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-gold-400">
+                    </div>
+                </div>
+                <div id="login-error" class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-medium"></div>
+                <button id="btn-login" onclick="submitLogin()" class="w-full py-3 px-4 bg-gradient-to-r from-gold-500 to-amber-600 hover:from-gold-400 hover:to-amber-500 text-black font-extrabold text-sm rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+                    <span>Ingresar a mi Cuenta</span>
+                </button>
+                <div class="text-center pt-2">
+                    <button onclick="switchAuthView('register')" class="text-xs text-cb-muted hover:text-gold-400 transition">
+                        ¿No tienes cuenta aún? <strong class="text-gold-400">Crear cuenta</strong>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
     <!-- Navbar -->
     <header class="bg-[#0c0c0e] border-b border-gold-500/20 sticky top-0 z-30 backdrop-blur-md bg-opacity-90">
         <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
@@ -95,6 +266,13 @@
             </div>
             
             <div class="flex items-center gap-2">
+                <div id="nav-user-badge" class="hidden items-center gap-2 bg-[#1c1c21] border border-gold-500/30 rounded-xl px-2.5 py-1.5">
+                    <div id="nav-user-avatar" class="w-6 h-6 rounded-full bg-gold-500 text-black font-extrabold text-xs flex items-center justify-center">C</div>
+                    <span id="nav-user-name" class="text-xs font-semibold text-white max-w-[90px] truncate">Usuario</span>
+                    <button onclick="doLogout()" title="Cerrar Sesión" class="text-cb-muted hover:text-red-400 p-0.5 ml-1 transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                    </button>
+                </div>
                 <button id="btn-install-app" onclick="triggerAppInstall()" class="p-2 bg-gradient-to-r from-gold-500 to-amber-600 hover:from-gold-400 hover:to-amber-500 text-black text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md shadow-gold-500/20 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                     <span>Instalar App</span>
@@ -129,19 +307,29 @@
             </div>
         </div>
 
-        <!-- Email de Usuario / Cuenta Registrada -->
-        <div class="bg-cb-card rounded-2xl p-4 gold-border shadow-lg space-y-2">
+        <!-- Perfil de Usuario Autenticado / Sesión Activa -->
+        <div class="bg-cb-card rounded-2xl p-4 gold-border shadow-lg space-y-3">
             <div class="flex items-center justify-between">
-                <label for="user-email-input" class="text-xs font-bold uppercase tracking-wider text-gold-400 flex items-center gap-1.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"/></svg>
-                    Tu Email / Registro de Cuenta:
-                </label>
-                <span id="email-status-badge" class="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Vinculado</span>
+                <div class="flex items-center gap-3">
+                    <div id="profile-avatar" class="w-10 h-10 rounded-full bg-gradient-to-tr from-gold-600 to-amber-400 text-black font-extrabold text-base flex items-center justify-center shadow-md shadow-gold-500/20">
+                        C
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <h3 id="profile-name" class="font-bold text-sm text-white leading-tight">Usuario</h3>
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        </div>
+                        <p id="profile-email" class="text-xs text-cb-muted leading-tight">cargando...</p>
+                    </div>
+                </div>
+                <span class="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                    Cuenta Activa
+                </span>
             </div>
-            <div class="relative">
-                <input type="email" id="user-email-input" placeholder="ejemplo@cbasesor.com" oninput="onEmailChange()" onblur="onEmailChange()" class="w-full bg-[#1c1c21] text-white border border-gold-500/40 rounded-xl px-3.5 py-2.5 font-semibold text-sm focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition">
-            </div>
-            <div class="flex items-center justify-between gap-2 pt-1 text-[11px] text-cb-muted border-t border-gold-500/15">
+            
+            <input type="hidden" id="user-email-input">
+
+            <div class="flex items-center justify-between gap-2 pt-2 text-[11px] text-cb-muted border-t border-gold-500/15">
                 <button onclick="exportFullBackupJSON()" class="hover:text-gold-400 flex items-center gap-1 transition" title="Descargar copia de seguridad de tus tickets">
                     <svg class="w-3.5 h-3.5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                     <span>Copia de Seguridad</span>
@@ -789,10 +977,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            initEmail();
-            populateMonthDropdown();
-            updateSelectedMonthCard();
-            fetchStats();
+            checkAuthAndInit();
             setupQR();
             checkStandalone();
             if ('serviceWorker' in navigator) {
@@ -800,48 +985,286 @@
             }
         });
 
-        function getUserEmail() {
-            const el = document.getElementById('user-email-input');
-            return el ? el.value.trim() : '';
+        // ==========================================
+        // GESTIÓN DE AUTENTICACIÓN Y ONBOARDING
+        // ==========================================
+        let currentAuthUser = null;
+        let pendingRegisterData = { name: '', email: '', code: '' };
+
+        function getAuthToken() {
+            return localStorage.getItem('cb_auth_token') || '';
         }
 
-        function updateEmailStatusBadge() {
-            const email = getUserEmail();
-            const badge = document.getElementById('email-status-badge');
-            if (badge) {
-                if (email) {
-                    badge.textContent = "Vinculado";
-                    badge.className = "text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20";
-                } else {
-                    badge.textContent = "Sin vincular";
-                    badge.className = "text-[10px] font-semibold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20";
+        function getUserEmail() {
+            if (currentAuthUser && currentAuthUser.email) return currentAuthUser.email;
+            const el = document.getElementById('user-email-input');
+            return el ? el.value.trim() : (localStorage.getItem('user_email') || '');
+        }
+
+        function switchAuthView(viewName) {
+            const views = ['welcome', 'register', 'verify', 'password', 'login'];
+            views.forEach(v => {
+                const el = document.getElementById(`auth-view-${v}`);
+                if (el) el.classList.add('hidden');
+            });
+            const target = document.getElementById(`auth-view-${viewName}`);
+            if (target) target.classList.remove('hidden');
+
+            ['reg-error', 'verify-error', 'password-error', 'login-error'].forEach(id => {
+                const errEl = document.getElementById(id);
+                if (errEl) { errEl.textContent = ''; errEl.classList.add('hidden'); }
+            });
+        }
+
+        function showAuthModal(defaultView = 'welcome') {
+            const modal = document.getElementById('auth-overlay');
+            if (modal) modal.classList.remove('hidden');
+            switchAuthView(defaultView);
+        }
+
+        function hideAuthModal() {
+            const modal = document.getElementById('auth-overlay');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function renderUserProfile(user) {
+            if (!user) return;
+            const nameEl = document.getElementById('profile-name');
+            const emailEl = document.getElementById('profile-email');
+            const avatarEl = document.getElementById('profile-avatar');
+            const hiddenInput = document.getElementById('user-email-input');
+            const navBadge = document.getElementById('nav-user-badge');
+            const navName = document.getElementById('nav-user-name');
+            const navAvatar = document.getElementById('nav-user-avatar');
+
+            const initial = (user.name || user.email || 'U').charAt(0).toUpperCase();
+
+            if (nameEl) nameEl.textContent = user.name || 'Usuario';
+            if (emailEl) emailEl.textContent = user.email || '';
+            if (avatarEl) avatarEl.textContent = initial;
+            if (hiddenInput) hiddenInput.value = user.email || '';
+
+            if (navBadge) navBadge.classList.remove('hidden');
+            if (navBadge) navBadge.classList.add('flex');
+            if (navName) navName.textContent = (user.name || user.email || '').split(' ')[0];
+            if (navAvatar) navAvatar.textContent = initial;
+        }
+
+        async function checkAuthAndInit() {
+            const token = getAuthToken();
+            if (token) {
+                try {
+                    const res = await fetch('/api/auth/me', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.success && data.user) {
+                            currentAuthUser = data.user;
+                            localStorage.setItem('user_email', data.user.email);
+                            renderUserProfile(data.user);
+                            hideAuthModal();
+                            populateMonthDropdown();
+                            updateSelectedMonthCard();
+                            fetchStats();
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Auth check failed:", e);
                 }
             }
+            showAuthModal('welcome');
         }
 
-        function initEmail() {
-            const saved = localStorage.getItem('user_email');
-            if (saved) {
-                const input = document.getElementById('user-email-input');
-                if (input) input.value = saved;
+        async function submitRegisterRequest(isResend = false) {
+            const name = isResend ? pendingRegisterData.name : (document.getElementById('reg-name').value.trim());
+            const email = isResend ? pendingRegisterData.email : (document.getElementById('reg-email').value.trim().toLowerCase());
+            const errEl = document.getElementById('reg-error');
+            const btn = document.getElementById('btn-reg-send');
+
+            if (!name || !email || !email.includes('@')) {
+                if (errEl) {
+                    errEl.textContent = "Por favor ingresa tu nombre y un correo electrónico válido.";
+                    errEl.classList.remove('hidden');
+                }
+                return;
             }
-            updateEmailStatusBadge();
+
+            if (btn) { btn.disabled = true; btn.textContent = "Enviando código..."; }
+
+            try {
+                const res = await fetch('/api/auth/register-request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email })
+                });
+                const data = await res.json();
+                if (!data.success) {
+                    if (errEl) { errEl.textContent = data.error || "Error al enviar código"; errEl.classList.remove('hidden'); }
+                    return;
+                }
+
+                pendingRegisterData = { name, email, code: '' };
+                document.getElementById('verify-target-email').textContent = email;
+
+                const devBanner = document.getElementById('dev-code-banner');
+                const devVal = document.getElementById('dev-code-val');
+                if (data.dev_mode && data.dev_code) {
+                    if (devVal) devVal.textContent = data.dev_code;
+                    if (devBanner) devBanner.classList.remove('hidden');
+                } else if (devBanner) {
+                    devBanner.classList.add('hidden');
+                }
+
+                switchAuthView('verify');
+            } catch (err) {
+                if (errEl) { errEl.textContent = "Error de conexión: " + err.message; errEl.classList.remove('hidden'); }
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = "Enviar Código de Verificación"; }
+            }
         }
 
-        let emailDebounceTimer = null;
-        function onEmailChange() {
-            const email = getUserEmail();
-            if (email) {
-                localStorage.setItem('user_email', email);
-            } else {
-                localStorage.removeItem('user_email');
+        async function submitVerifyCode() {
+            const code = document.getElementById('reg-code').value.trim();
+            const errEl = document.getElementById('verify-error');
+            const btn = document.getElementById('btn-verify-code');
+
+            if (code.length !== 6) {
+                if (errEl) { errEl.textContent = "Ingresa los 6 dígitos del código."; errEl.classList.remove('hidden'); }
+                return;
             }
-            updateEmailStatusBadge();
-            
-            if (emailDebounceTimer) clearTimeout(emailDebounceTimer);
-            emailDebounceTimer = setTimeout(() => {
+
+            if (btn) { btn.disabled = true; btn.textContent = "Verificando..."; }
+
+            try {
+                const res = await fetch('/api/auth/verify-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: pendingRegisterData.email, code })
+                });
+                const data = await res.json();
+                if (!data.success) {
+                    if (errEl) { errEl.textContent = data.error || "Código incorrecto o vencido"; errEl.classList.remove('hidden'); }
+                    return;
+                }
+
+                pendingRegisterData.code = code;
+                switchAuthView('password');
+            } catch (err) {
+                if (errEl) { errEl.textContent = "Error de conexión: " + err.message; errEl.classList.remove('hidden'); }
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = "Validar Código"; }
+            }
+        }
+
+        async function submitSetPassword() {
+            const pwd = document.getElementById('reg-password').value;
+            const confirm = document.getElementById('reg-password-confirm').value;
+            const errEl = document.getElementById('password-error');
+            const btn = document.getElementById('btn-save-password');
+
+            if (!pwd || pwd.length < 4) {
+                if (errEl) { errEl.textContent = "La contraseña debe tener al menos 4 caracteres."; errEl.classList.remove('hidden'); }
+                return;
+            }
+
+            if (pwd !== confirm) {
+                if (errEl) { errEl.textContent = "Las contraseñas no coinciden."; errEl.classList.remove('hidden'); }
+                return;
+            }
+
+            if (btn) { btn.disabled = true; btn.textContent = "Creando cuenta..."; }
+
+            try {
+                const res = await fetch('/api/auth/set-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: pendingRegisterData.name,
+                        email: pendingRegisterData.email,
+                        code: pendingRegisterData.code,
+                        password: pwd
+                    })
+                });
+                const data = await res.json();
+                if (!data.success) {
+                    if (errEl) { errEl.textContent = data.error || "No se pudo crear la cuenta"; errEl.classList.remove('hidden'); }
+                    return;
+                }
+
+                localStorage.setItem('cb_auth_token', data.token);
+                localStorage.setItem('user_email', data.user.email);
+                currentAuthUser = data.user;
+                renderUserProfile(data.user);
+                hideAuthModal();
+                populateMonthDropdown();
+                updateSelectedMonthCard();
                 fetchStats();
-            }, 350);
+            } catch (err) {
+                if (errEl) { errEl.textContent = "Error de conexión: " + err.message; errEl.classList.remove('hidden'); }
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = "Crear Cuenta y Comenzar"; }
+            }
+        }
+
+        async function submitLogin() {
+            const email = document.getElementById('login-email').value.trim().toLowerCase();
+            const password = document.getElementById('login-password').value;
+            const errEl = document.getElementById('login-error');
+            const btn = document.getElementById('btn-login');
+
+            if (!email || !password) {
+                if (errEl) { errEl.textContent = "Ingresa tu correo y contraseña."; errEl.classList.remove('hidden'); }
+                return;
+            }
+
+            if (btn) { btn.disabled = true; btn.textContent = "Ingresando..."; }
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (!data.success) {
+                    if (errEl) { errEl.textContent = data.error || "Credenciales incorrectas"; errEl.classList.remove('hidden'); }
+                    return;
+                }
+
+                localStorage.setItem('cb_auth_token', data.token);
+                localStorage.setItem('user_email', data.user.email);
+                currentAuthUser = data.user;
+                renderUserProfile(data.user);
+                hideAuthModal();
+                populateMonthDropdown();
+                updateSelectedMonthCard();
+                fetchStats();
+            } catch (err) {
+                if (errEl) { errEl.textContent = "Error de conexión: " + err.message; errEl.classList.remove('hidden'); }
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = "Ingresar a mi Cuenta"; }
+            }
+        }
+
+        async function doLogout() {
+            if (!confirm("¿Deseas cerrar tu sesión?")) return;
+            const token = getAuthToken();
+            try {
+                if (token) {
+                    await fetch('/api/auth/logout', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                }
+            } catch (e) {}
+
+            localStorage.removeItem('cb_auth_token');
+            currentAuthUser = null;
+            document.getElementById('nav-user-badge').classList.add('hidden');
+            document.getElementById('nav-user-badge').classList.remove('flex');
+            showAuthModal('welcome');
         }
 
         function ensureMonthInDropdown(monthKey) {

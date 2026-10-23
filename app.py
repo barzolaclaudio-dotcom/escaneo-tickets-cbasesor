@@ -14,8 +14,125 @@ from pdf_processor import (
 from ticket_ocr import extract_data_from_image, get_monthly_summary, DATA_DIR
 from excel_exporter import generate_excel_report, generate_csv_report
 from gdrive_sync import restore_all_from_gdrive, sync_month_to_gdrive
+from pydantic import BaseModel
+from typing import Optional
+from fastapi import Request, Header
+
+import auth_db
+import email_sender
 
 app = FastAPI(title="Escáner de Tickets Factura A")
+
+class RegisterRequest(BaseModel):
+    name: str
+    email: str
+
+class VerifyCodeRequest(BaseModel):
+    email: str
+    code: str
+
+class SetPasswordRequest(BaseModel):
+    name: str
+    email: str
+    code: str
+    password: str
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+def get_auth_user(authorization: Optional[str] = Header(None)) -> Optional[dict]:
+    if not authorization:
+        return None
+    token = authorization.replace("Bearer ", "").strip()
+    return auth_db.validate_session(token)
+
+@app.post("/api/auth/register-request")
+async def auth_register_request(req: RegisterRequest):
+    name = req.name.strip()
+    email = req.email.strip().lower()
+    if not name or not email or "@" not in email:
+        return JSONResponse(status_code=400, content={"success": False, "error": "Nombre y correo válido requeridos"})
+    
+    if auth_db.user_exists(email):
+        return JSONResponse(status_code=400, content={
+            "success": False, 
+            "error": "Este correo ya está registrado. Por favor selecciona Iniciar Sesión."
+        })
+    
+    code = auth_db.create_verification_code(email, name)
+    email_res = email_sender.send_verification_email(email, name, code)
+    
+    return {
+        "success": True,
+        "email": email,
+        "name": name,
+        "dev_mode": email_res.get("dev_mode", False),
+        "dev_code": email_res.get("code") if email_res.get("dev_mode") else None,
+        "message": "Código de verificación enviado."
+    }
+
+@app.post("/api/auth/verify-code")
+async def auth_verify_code(req: VerifyCodeRequest):
+    email = req.email.strip().lower()
+    code = req.code.strip()
+    if not auth_db.verify_code(email, code):
+        return JSONResponse(status_code=400, content={"success": False, "error": "Código incorrecto o vencido (validez: 15 min)"})
+    return {"success": True, "message": "Código validado correctamente."}
+
+@app.post("/api/auth/set-password")
+async def auth_set_password(req: SetPasswordRequest):
+    name = req.name.strip()
+    email = req.email.strip().lower()
+    code = req.code.strip()
+    password = req.password.strip()
+    
+    if len(password) < 4:
+        return JSONResponse(status_code=400, content={"success": False, "error": "La contraseña debe tener al menos 4 caracteres"})
+        
+    result = auth_db.register_user(name, email, password, code)
+    if not result:
+        return JSONResponse(status_code=400, content={"success": False, "error": "No se pudo registrar el usuario. Código inválido o correo en uso."})
+        
+    return {
+        "success": True,
+        "token": result["token"],
+        "user": {
+            "name": result["name"],
+            "email": result["email"]
+        }
+    }
+
+@app.post("/api/auth/login")
+async def auth_login(req: LoginRequest):
+    email = req.email.strip().lower()
+    password = req.password.strip()
+    result = auth_db.authenticate_user(email, password)
+    if not result:
+        return JSONResponse(status_code=401, content={"success": False, "error": "Correo o contraseña incorrectos"})
+    return {
+        "success": True,
+        "token": result["token"],
+        "user": {
+            "name": result["name"],
+            "email": result["email"]
+        }
+    }
+
+@app.get("/api/auth/me")
+async def auth_me(authorization: Optional[str] = Header(None)):
+    user = get_auth_user(authorization)
+    if not user:
+        return JSONResponse(status_code=401, content={"success": False, "error": "Sesión inválida o expirada"})
+    return {"success": True, "user": user}
+
+@app.post("/api/auth/logout")
+async def auth_logout(authorization: Optional[str] = Header(None)):
+    if authorization:
+        token = authorization.replace("Bearer ", "").strip()
+        auth_db.delete_session(token)
+    return {"success": True}
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -196,7 +313,8 @@ async def upload_ticket(
             user_iva_27=iva_27,
             user_email=user_email,
             user_items=parsed_items,
-            force=force
+            force=force,
+            save_pdf=False
         )
         
         month_key = result.get("month")
