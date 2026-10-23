@@ -1,22 +1,45 @@
 import os
 import smtplib
 import logging
+from pathlib import Path
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 
 logger = logging.getLogger("email_sender")
 
-def send_verification_email(to_email: str, name: str, code: str) -> dict:
-    """
-    Envía un correo con el código de verificación de 6 dígitos.
-    Si no hay variables SMTP configuradas, opera en modo desarrollo para pruebas inmediatas.
-    """
+def load_env_file():
+    env_path = Path(__file__).resolve().parent / ".env"
+    if env_path.exists():
+        try:
+            with open(env_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        k = k.strip()
+                        v = v.strip().strip("'\"")
+                        os.environ[k] = v
+        except Exception as e:
+            logger.warning(f"Error leyendo .env: {e}")
+
+load_env_file()
+
+def get_smtp_config():
+    load_env_file()
     smtp_host = os.environ.get("SMTP_HOST")
     smtp_port = int(os.environ.get("SMTP_PORT", "587"))
     smtp_user = os.environ.get("SMTP_USER")
     smtp_pass = os.environ.get("SMTP_PASS")
     smtp_from = os.environ.get("SMTP_FROM", f"CB Asesor <{smtp_user}>" if smtp_user else "CB Asesor <noreply@cbasesor.com>")
+    return smtp_host, smtp_port, smtp_user, smtp_pass, smtp_from
+
+def send_verification_email(to_email: str, name: str, code: str) -> dict:
+    """
+    Envía un correo con el código de verificación de 6 dígitos.
+    Si no hay variables SMTP configuradas, opera en modo desarrollo para pruebas inmediatas.
+    """
+    smtp_host, smtp_port, smtp_user, smtp_pass, smtp_from = get_smtp_config()
 
     # Si falta configuración de servidor SMTP, retornamos modo desarrollo para no bloquear el flujo
     if not smtp_host or not smtp_user or not smtp_pass:
@@ -106,11 +129,7 @@ def send_accountant_report_email(
     """
     Envía por correo el reporte contable mensual e impositivo con el archivo Excel adjunto al contador.
     """
-    smtp_host = os.environ.get("SMTP_HOST")
-    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
-    smtp_user = os.environ.get("SMTP_USER")
-    smtp_pass = os.environ.get("SMTP_PASS")
-    smtp_from = os.environ.get("SMTP_FROM", f"CB Asesor <{smtp_user}>" if smtp_user else "CB Asesor <noreply@cbasesor.com>")
+    smtp_host, smtp_port, smtp_user, smtp_pass, smtp_from = get_smtp_config()
 
     total_spent = stats.get("total_spent", 0.0)
     total_subtotal = stats.get("total_subtotal", 0.0)
