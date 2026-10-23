@@ -72,3 +72,15 @@ Registro de lo aprendido y decidido. Actualizar cada vez que aprendamos algo nue
 - **Duplicados:** al guardar, el servidor compara con los tickets del mes (misma fecha y total, y mismo comercio o CUIT). Si coincide, la app avisa y pregunta si se quiere cargar igual (parametro `force` en `/api/upload`).
 - **Borrados entre celulares:** el celular solo restaura un mes desde su copia local si el servidor quedo totalmente vacio. Si el servidor tiene otros meses, se respeta el borrado hecho desde otro celular.
 - Las cargas simultaneas no se pisan: el servidor atiende las subidas de a una (un solo proceso).
+
+## Aspectos Legales, Marcas y Términos de Uso (Pendiente para Lanzamiento Comercial / Google Play)
+- **Registro de Marca:**
+  - Registrar la denominación y logotipo **"CB Asesor"** ante el INPI (Instituto Nacional de la Propiedad Industrial en Argentina) en las clases pertinentes (servicios financieros/asesoría contable y software/tecnología).
+- **Términos y Condiciones del Servicio (T&C):**
+  - **Delimitación de responsabilidad fiscal:** Establecer expresamente que la aplicación es una herramienta tecnológica de asistencia, digitalización y organización documental; no sustituye el juicio ni la labor de un profesional en ciencias económicas matriculado, ni asume responsabilidad por liquidaciones o declaraciones juradas presentadas ante AFIP/ARCA u organismos provinciales (ARBA, AGIP, etc.).
+  - **Responsabilidad del usuario:** El usuario es el único responsable de la fidelidad, autenticidad y carga de sus comprobantes físicos o electrónicos.
+  - **Prohibición de mal uso y fraude:** Cláusula estricta que prohíbe el uso de la aplicación para falsificación, adulteración de importes, CAE apócrifo o evasión fiscal.
+- **Política de Privacidad y Tratamiento de Datos (Google Play Policy):**
+  - Obligatorio para publicación en Google Play Store.
+  - Documentar que la app opera bajo la premisa de **privacidad absoluta ("Zero-Cloud Image Storage")**: las fotos y documentos se procesan en memoria volátil en el servidor exclusivamente para extracción OCR y residen de forma privada en el almacenamiento local del dispositivo del usuario (IndexedDB Vault).
+  - Especificar el uso del correo electrónico únicamente para autenticación segura (PIN/OTP) y remisión autorizada de reportes al contador.

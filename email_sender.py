@@ -28,11 +28,34 @@ load_env_file()
 def get_smtp_config():
     load_env_file()
     smtp_host = os.environ.get("SMTP_HOST")
-    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_port = int(os.environ.get("SMTP_PORT", "465"))
     smtp_user = os.environ.get("SMTP_USER")
     smtp_pass = os.environ.get("SMTP_PASS")
-    smtp_from = os.environ.get("SMTP_FROM", f"CB Asesor <{smtp_user}>" if smtp_user else "CB Asesor <noreply@cbasesor.com>")
+    smtp_from = os.environ.get("SMTP_FROM", f"CB Asesor <{smtp_user}>" if smtp_user else "CB Asesor <notificaciones@cbasesor.com>")
     return smtp_host, smtp_port, smtp_user, smtp_pass, smtp_from
+
+def get_email_footer_html() -> str:
+    return """
+    <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #27272a; text-align: center; color: #a1a1aa; font-size: 12px; line-height: 1.6;">
+        <div style="margin-bottom: 16px;">
+            <a href="https://cbasesor.com" target="_blank" style="display: inline-block; padding: 8px 16px; margin: 4px; background-color: #1f1f23; border: 1px solid #d4af37; border-radius: 8px; color: #d4af37; text-decoration: none; font-weight: 600; font-size: 12px;">
+                🌐 Visitar Sitio Web: cbasesor.com
+            </a>
+            <a href="https://tickets.cbasesor.com" target="_blank" style="display: inline-block; padding: 8px 16px; margin: 4px; background-color: #d4af37; border: 1px solid #d4af37; border-radius: 8px; color: #000000; text-decoration: none; font-weight: 700; font-size: 12px;">
+                📲 Descargar / Abrir App en tu Móvil
+            </a>
+        </div>
+        <p style="margin: 4px 0; color: #fafafa; font-weight: 600;">
+            CB Asesor • Asesoría, Finanzas & Tecnología
+        </p>
+        <p style="margin: 4px 0; font-size: 11px; color: #71717a;">
+            Contacto y Soporte: <a href="mailto:contacto@cbasesor.com" style="color: #d4af37; text-decoration: none;">contacto@cbasesor.com</a>
+        </p>
+        <div style="margin-top: 16px; font-size: 10px; color: #52525b; line-height: 1.4; text-align: justify; padding: 10px; background-color: #0d0d10; border-radius: 6px;">
+            <strong>Aviso Legal y de Confidencialidad:</strong> La información contenida en este correo y sus archivos adjuntos es de carácter confidencial y para uso exclusivo del destinatario. CB Asesor es una plataforma de digitalización documental y consolidación contable. Los cálculos y lecturas automáticas constituyen herramientas de asistencia y deben ser validados conforme a las normativas de AFIP/ARCA vigentes por el contribuyente y su profesional matriculado.
+        </div>
+    </div>
+    """
 
 def send_verification_email(to_email: str, name: str, code: str) -> dict:
     """
@@ -62,6 +85,7 @@ def send_verification_email(to_email: str, name: str, code: str) -> dict:
         msg["To"] = to_email
 
         text_content = f"Hola {name},\n\nTu código de verificación para CB Asesor es: {code}\n\nEste código vencerá en 15 minutos.\n\nEquipo CB Asesor."
+        footer_html = get_email_footer_html()
         html_content = f"""
         <!DOCTYPE html>
         <html>
@@ -69,11 +93,10 @@ def send_verification_email(to_email: str, name: str, code: str) -> dict:
           <meta charset="utf-8">
           <style>
             body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #09090b; color: #f4f4f5; margin: 0; padding: 20px; }}
-            .card {{ max-width: 480px; margin: 0 auto; background-color: #18181b; border: 1px solid #27272a; border-radius: 12px; padding: 32px; }}
-            .logo {{ color: #d4af37; font-size: 22px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 24px; text-align: center; }}
-            .title {{ font-size: 18px; font-weight: 600; color: #fafafa; margin-bottom: 12px; }}
-            .code-box {{ background-color: #09090b; border: 2px dashed #d4af37; border-radius: 8px; padding: 18px; text-align: center; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #f59e0b; margin: 24px 0; }}
-            .footer {{ font-size: 12px; color: #71717a; text-align: center; margin-top: 24px; border-top: 1px solid #27272a; padding-top: 16px; }}
+            .card {{ max-width: 520px; margin: 0 auto; background-color: #18181b; border: 1px solid #d4af37; border-radius: 16px; padding: 32px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }}
+            .logo {{ color: #d4af37; font-size: 22px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 24px; text-align: center; }}
+            .title {{ font-size: 18px; font-weight: 700; color: #fafafa; margin-bottom: 12px; }}
+            .code-box {{ background-color: #09090b; border: 2px dashed #d4af37; border-radius: 12px; padding: 20px; text-align: center; font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #f59e0b; margin: 24px 0; font-family: monospace; }}
           </style>
         </head>
         <body>
@@ -81,12 +104,10 @@ def send_verification_email(to_email: str, name: str, code: str) -> dict:
             <div class="logo">CB Asesor</div>
             <div class="title">Verificación de tu cuenta</div>
             <p>Hola <strong>{name}</strong>,</p>
-            <p>Usa el siguiente código de 6 dígitos para verificar tu dirección de correo y crear tu clave de acceso:</p>
+            <p>Usa el siguiente código de 6 dígitos para verificar tu dirección de correo y activar tu cuenta:</p>
             <div class="code-box">{code}</div>
-            <p style="font-size: 13px; color: #a1a1aa;">Este código es de uso único y vence en 15 minutos. Si no solicitaste este registro, puedes desestimar este mensaje.</p>
-            <div class="footer">
-              CB Asesor Profesional • Gestión de Tickets y Gastos
-            </div>
+            <p style="font-size: 13px; color: #a1a1aa;">Este código es de uso único y vence en 15 minutos. Si no solicitaste este registro, podés desestimar este mensaje.</p>
+            {footer_html}
           </div>
         </body>
         </html>
@@ -152,6 +173,7 @@ def send_accountant_report_email(
         msg["To"] = to_email
         msg["Reply-To"] = user_email
 
+        footer_html = get_email_footer_html()
         html_content = f"""
         <!DOCTYPE html>
         <html>
@@ -199,12 +221,10 @@ def send_accountant_report_email(
             </table>
 
             <p style="font-size: 13px; color: #a1a1aa;">
-              📎 Se adjunta a este mensaje el archivo Excel (<strong>{filename}</strong>) que contiene el Libro IVA Compras detallado y el resumen de gastos para su liquidación contable.
+              📎 Se adjunta a este mensaje el archivo Excel (<strong>{filename}</strong>) que contiene el Libro IVA Compras detallado y el resumen de comprobantes para su liquidación contable.
             </p>
 
-            <div class="footer">
-              Generado automáticamente por <strong>CB Asesor</strong> • Sistema Inteligente de Control de Comprobantes
-            </div>
+            {footer_html}
           </div>
         </body>
         </html>
