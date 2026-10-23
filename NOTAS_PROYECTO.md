@@ -73,6 +73,18 @@ Registro de lo aprendido y decidido. Actualizar cada vez que aprendamos algo nue
 - **Borrados entre celulares:** el celular solo restaura un mes desde su copia local si el servidor quedo totalmente vacio. Si el servidor tiene otros meses, se respeta el borrado hecho desde otro celular.
 - Las cargas simultaneas no se pisan: el servidor atiende las subidas de a una (un solo proceso).
 
+## Infraestructura de Correos Institucionales (Pendiente de Creación en DonWeb)
+- **1. Casilla de Envío Automático / Servidor (`notificaciones@cbasesor.com`):**
+  - Casilla técnica tipo robot para envíos desatendidos desde Google Cloud VM.
+  - Envía códigos OTP de registro y validación a usuarios nuevos.
+  - Envía reportes mensuales con planillas Excel adjuntas a los contadores de cada usuario.
+  - Remitente configurado: `CB Asesor <notificaciones@cbasesor.com>`.
+  - Configuración pendiente: Cargar contraseña en `/var/www/tickets/.env` con `SMTP_HOST=mail.cbasesor.com` y `SMTP_PORT=465`.
+- **2. Casilla de Atención Humana / Soporte (`soporte@cbasesor.com`):**
+  - Casilla oficial de contacto que figurará en la ficha pública de **Google Play Store**.
+  - Visible en el pie de página de la web y en todos los correos automáticos.
+  - Recomendación: Configurar regla de reenvío automático en el panel de DonWeb para que los mensajes entrantes se repliquen en `barzolaclaudio@gmail.com`.
+
 ## Aspectos Legales, Marcas y Términos de Uso (Pendiente para Lanzamiento Comercial / Google Play)
 - **Registro de Marca:**
   - Registrar la denominación y logotipo **"CB Asesor"** ante el INPI (Instituto Nacional de la Propiedad Industrial en Argentina) en las clases pertinentes (servicios financieros/asesoría contable y software/tecnología).

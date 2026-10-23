@@ -49,7 +49,7 @@ def get_email_footer_html() -> str:
             CB Asesor • Asesoría, Finanzas & Tecnología
         </p>
         <p style="margin: 4px 0; font-size: 11px; color: #71717a;">
-            Contacto y Soporte: <a href="mailto:contacto@cbasesor.com" style="color: #d4af37; text-decoration: none;">contacto@cbasesor.com</a>
+            Contacto y Soporte: <a href="mailto:soporte@cbasesor.com" style="color: #d4af37; text-decoration: none;">soporte@cbasesor.com</a>
         </p>
         <div style="margin-top: 16px; font-size: 10px; color: #52525b; line-height: 1.4; text-align: justify; padding: 10px; background-color: #0d0d10; border-radius: 6px;">
             <strong>Aviso Legal y de Confidencialidad:</strong> La información contenida en este correo y sus archivos adjuntos es de carácter confidencial y para uso exclusivo del destinatario. CB Asesor es una plataforma de digitalización documental y consolidación contable. Los cálculos y lecturas automáticas constituyen herramientas de asistencia y deben ser validados conforme a las normativas de AFIP/ARCA vigentes por el contribuyente y su profesional matriculado.
