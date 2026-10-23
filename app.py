@@ -258,6 +258,13 @@ async def scan_ocr_preview(file: UploadFile = File(...)):
             "iva_21": data.get("iva_21", 0.0),
             "iva_10_5": data.get("iva_10_5", 0.0),
             "iva_27": data.get("iva_27", 0.0),
+            "percepcion_iibb": data.get("percepcion_iibb", 0.0),
+            "percepcion_iibb_jurisdiccion": data.get("percepcion_iibb_jurisdiccion", ""),
+            "percepcion_iva": data.get("percepcion_iva", 0.0),
+            "impuestos_internos": data.get("impuestos_internos", 0.0),
+            "invoice_number": data.get("invoice_number", ""),
+            "invoice_type": data.get("invoice_type", "Factura A"),
+            "cae": data.get("cae", ""),
             "cuit": data.get("cuit", ""),
             "date": data.get("date", ""),
             "items": data.get("items", [])
@@ -279,6 +286,13 @@ async def upload_ticket(
     iva_21: float = Form(None),
     iva_10_5: float = Form(None),
     iva_27: float = Form(None),
+    percepcion_iibb: float = Form(None),
+    percepcion_iibb_jurisdiccion: str = Form(None),
+    percepcion_iva: float = Form(None),
+    impuestos_internos: float = Form(None),
+    invoice_number: str = Form(None),
+    invoice_type: str = Form(None),
+    cae: str = Form(None),
     user_email: str = Form(None),
     items_json: str = Form(None),
     force: bool = Form(False)
@@ -314,7 +328,14 @@ async def upload_ticket(
             user_email=user_email,
             user_items=parsed_items,
             force=force,
-            save_pdf=False
+            save_pdf=False,
+            user_percepcion_iibb=percepcion_iibb,
+            user_percepcion_iibb_jurisdiccion=percepcion_iibb_jurisdiccion,
+            user_percepcion_iva=percepcion_iva,
+            user_impuestos_internos=impuestos_internos,
+            user_invoice_number=invoice_number,
+            user_invoice_type=invoice_type,
+            user_cae=cae
         )
         
         month_key = result.get("month")
@@ -452,13 +473,23 @@ async def ticket_edit(
     iva_21: float = Form(None),
     iva_10_5: float = Form(None),
     iva_27: float = Form(None),
+    percepcion_iibb: float = Form(None),
+    percepcion_iibb_jurisdiccion: str = Form(None),
+    percepcion_iva: float = Form(None),
+    impuestos_internos: float = Form(None),
+    invoice_number: str = Form(None),
+    invoice_type: str = Form(None),
+    cae: str = Form(None),
     user_email: str = Form(None)
 ):
     from ticket_manager import edit_ticket
     try:
         fields = {
             "vendor": vendor, "date": date, "cuit": cuit, "total": total,
-            "subtotal": subtotal, "iva_21": iva_21, "iva_10_5": iva_10_5, "iva_27": iva_27
+            "subtotal": subtotal, "iva_21": iva_21, "iva_10_5": iva_10_5, "iva_27": iva_27,
+            "percepcion_iibb": percepcion_iibb, "percepcion_iibb_jurisdiccion": percepcion_iibb_jurisdiccion,
+            "percepcion_iva": percepcion_iva, "impuestos_internos": impuestos_internos,
+            "invoice_number": invoice_number, "invoice_type": invoice_type, "cae": cae
         }
         res = edit_ticket(month, index, fields, user_email)
         if res.get("success"):

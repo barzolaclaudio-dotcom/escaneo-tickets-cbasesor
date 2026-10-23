@@ -19,8 +19,8 @@ from ticket_ocr import (
     get_monthly_summary,
 )
 
-NUMERIC_FIELDS = ("total", "subtotal", "iva_21", "iva_10_5", "iva_27")
-TEXT_FIELDS = ("vendor", "cuit", "date")
+NUMERIC_FIELDS = ("total", "subtotal", "iva_21", "iva_10_5", "iva_27", "percepcion_iibb", "percepcion_iva", "impuestos_internos")
+TEXT_FIELDS = ("vendor", "cuit", "date", "invoice_type", "invoice_number", "percepcion_iibb_jurisdiccion", "cae", "cae_vto")
 
 
 def _pdf_path(month_key: str, user_email: str = None):

@@ -120,7 +120,14 @@ def append_ticket_to_month_pdf(
     user_email: str = None,
     user_items: list = None,
     force: bool = False,
-    save_pdf: bool = False
+    save_pdf: bool = False,
+    user_percepcion_iibb: float = None,
+    user_percepcion_iibb_jurisdiccion: str = None,
+    user_percepcion_iva: float = None,
+    user_impuestos_internos: float = None,
+    user_invoice_number: str = None,
+    user_invoice_type: str = None,
+    user_cae: str = None
 ) -> dict:
     now = datetime.now()
     
@@ -139,7 +146,14 @@ def append_ticket_to_month_pdf(
         user_iva_21=user_iva_21,
         user_iva_10_5=user_iva_10_5,
         user_iva_27=user_iva_27,
-        user_items=user_items
+        user_items=user_items,
+        user_percepcion_iibb=user_percepcion_iibb,
+        user_percepcion_iibb_jurisdiccion=user_percepcion_iibb_jurisdiccion,
+        user_percepcion_iva=user_percepcion_iva,
+        user_impuestos_internos=user_impuestos_internos,
+        user_invoice_number=user_invoice_number,
+        user_invoice_type=user_invoice_type,
+        user_cae=user_cae
     )
     
     # 2. Ruteo automático del mes según la FECHA REAL del ticket

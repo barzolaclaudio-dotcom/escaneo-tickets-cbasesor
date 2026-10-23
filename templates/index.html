@@ -91,26 +91,26 @@
                 </div>
                 <div>
                     <span class="text-[10px] uppercase tracking-[0.2em] px-2.5 py-1 bg-gold-500/10 text-gold-400 border border-gold-500/30 rounded-full font-bold">
-                        Acceso Exclusivo
+                        by CB Asesor
                     </span>
-                    <h2 class="text-2xl font-bold text-white mt-3 tracking-tight">Bienvenido a CB Asesor</h2>
+                    <h2 class="text-xl font-bold text-white mt-3 tracking-tight">Control Inteligente de Comprobantes & Gastos</h2>
                     <p class="text-xs text-cb-muted mt-1 leading-relaxed">
-                        Control inteligente de tickets, comprobantes y gastos profesionales.
+                        Facturas, Tickets, Remitos y Gestión Impositiva en un solo lugar.
                     </p>
                 </div>
 
                 <div class="bg-[#18181c] border border-gold-500/15 rounded-2xl p-4 text-left space-y-3">
                     <div class="flex items-center gap-3 text-xs text-zinc-300">
                         <span class="w-6 h-6 rounded-lg bg-gold-500/10 text-gold-400 flex items-center justify-center font-bold">⚡</span>
-                        <span>Lectura automática de tickets con OCR</span>
+                        <span>Lectura automática de Facturas, Tickets y Remitos</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs text-zinc-300">
+                        <span class="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold">🏛️</span>
+                        <span>Discriminación de IVA, IIBB y Percepciones por jurisdicción</span>
                     </div>
                     <div class="flex items-center gap-3 text-xs text-zinc-300">
                         <span class="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold">🔒</span>
-                        <span>Privacidad total: fotos guardadas solo en tu equipo</span>
-                    </div>
-                    <div class="flex items-center gap-3 text-xs text-zinc-300">
-                        <span class="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold">📊</span>
-                        <span>Reportes mensuales y exportación a Excel</span>
+                        <span>Cero fotos en la nube: privacidad total en tu equipo</span>
                     </div>
                 </div>
 
@@ -400,15 +400,23 @@
                 <span id="expense-month-badge" class="text-[10px] font-semibold text-gold-400 bg-gold-500/10 px-2 py-0.5 rounded border border-gold-500/30">Octubre</span>
             </div>
 
-            <!-- Métricas Principales -->
-            <div class="grid grid-cols-2 gap-3">
-                <div class="bg-[#18181f] p-3.5 rounded-xl border border-gold-500/20">
+            <!-- Métricas Principales (Grid de 4) -->
+            <div class="grid grid-cols-2 gap-2.5">
+                <div class="bg-[#18181f] p-3 rounded-xl border border-gold-500/20">
                     <span class="text-[10px] font-semibold uppercase text-cb-muted">Total Gastado</span>
-                    <p id="stat-total-spent" class="text-lg font-extrabold text-white mt-1">$0.00</p>
+                    <p id="stat-total-spent" class="text-base font-extrabold text-white mt-0.5">$0.00</p>
                 </div>
-                <div class="bg-[#18181f] p-3.5 rounded-xl border border-emerald-500/20">
+                <div class="bg-[#18181f] p-3 rounded-xl border border-emerald-500/20">
                     <span class="text-[10px] font-semibold uppercase text-emerald-400">IVA Crédito Fiscal</span>
-                    <p id="stat-total-iva" class="text-lg font-extrabold text-emerald-400 mt-1">$0.00</p>
+                    <p id="stat-total-iva" class="text-base font-extrabold text-emerald-400 mt-0.5">$0.00</p>
+                </div>
+                <div class="bg-[#18181f] p-3 rounded-xl border border-amber-500/20">
+                    <span class="text-[10px] font-semibold uppercase text-amber-400">Percep. IIBB</span>
+                    <p id="stat-total-iibb" class="text-base font-extrabold text-amber-400 mt-0.5">$0.00</p>
+                </div>
+                <div class="bg-[#18181f] p-3 rounded-xl border border-blue-500/20">
+                    <span class="text-[10px] font-semibold uppercase text-blue-400">Subtotal Neto</span>
+                    <p id="stat-total-subtotal" class="text-base font-extrabold text-blue-400 mt-0.5">$0.00</p>
                 </div>
             </div>
 
@@ -499,6 +507,25 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
+                    <div class="space-y-1">
+                        <label for="input-invoice-type" class="text-[11px] font-semibold text-slate-300">Tipo de Comprobante:</label>
+                        <select id="input-invoice-type" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-2 text-xs text-gold-400 font-bold focus:outline-none focus:border-gold-400">
+                            <option value="Factura A">Factura A</option>
+                            <option value="Factura B">Factura B</option>
+                            <option value="Factura C">Factura C</option>
+                            <option value="Factura M">Factura M</option>
+                            <option value="Remito">Remito (R/X)</option>
+                            <option value="Ticket / Comprobante">Ticket Fiscal</option>
+                            <option value="Nota de Crédito">Nota de Crédito</option>
+                            <option value="Recibo">Recibo</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label for="input-invoice-number" class="text-[11px] font-semibold text-slate-300">Punto Vta - N°:</label>
+                        <input type="text" id="input-invoice-number" placeholder="00001-00000001" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-400">
+                    </div>
+
                     <div class="col-span-2 space-y-1">
                         <label for="input-vendor" class="text-[11px] font-semibold text-slate-300">Comercio / Proveedor:</label>
                         <input type="text" id="input-vendor" placeholder="Buscando..." class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-400">
@@ -525,6 +552,26 @@
                     </div>
 
                     <div class="space-y-1">
+                        <label for="input-percep-iibb" class="text-[11px] font-semibold text-amber-400">Percep. IIBB ($):</label>
+                        <input type="number" step="0.01" id="input-percep-iibb" placeholder="0.00" class="w-full bg-[#121216] border border-amber-500/40 rounded-lg px-3 py-2 text-xs text-amber-300 placeholder-slate-500 focus:outline-none focus:border-amber-400">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label for="input-percep-jurisdiccion" class="text-[11px] font-semibold text-amber-400">Jurisdicción IIBB:</label>
+                        <input type="text" id="input-percep-jurisdiccion" placeholder="Ej: ARBA, AGIP..." class="w-full bg-[#121216] border border-amber-500/40 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label for="input-percep-iva" class="text-[11px] font-semibold text-slate-300">Percep. IVA ($):</label>
+                        <input type="number" step="0.01" id="input-percep-iva" placeholder="0.00" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-400">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label for="input-imp-internos" class="text-[11px] font-semibold text-slate-300">Imp. Internos ($):</label>
+                        <input type="number" step="0.01" id="input-imp-internos" placeholder="0.00" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-400">
+                    </div>
+
+                    <div class="space-y-1">
                         <label for="input-cuit" class="text-[11px] font-semibold text-slate-300">CUIT:</label>
                         <input type="text" id="input-cuit" placeholder="XX-XXXXXXXX-X" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-400">
                     </div>
@@ -533,6 +580,8 @@
                         <label for="input-date" class="text-[11px] font-semibold text-slate-300">Fecha:</label>
                         <input type="text" id="input-date" placeholder="DD/MM/YYYY" class="w-full bg-[#121216] border border-gold-500/30 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-gold-400">
                     </div>
+
+                    <input type="hidden" id="input-cae">
                 </div>
             </div>
 
@@ -612,14 +661,38 @@
         <div class="bg-cb-card gold-border rounded-2xl p-5 w-full max-w-sm space-y-3 max-h-[90vh] overflow-y-auto">
             <h3 class="font-bold text-white text-sm">Editar ticket</h3>
             <div class="grid grid-cols-2 gap-2 text-[11px] text-cb-muted">
-                <label class="col-span-2">Comercio<input id="te-vendor" type="text" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1.5 text-white text-xs"></label>
+                <div>
+                    <label>Tipo Comprobante
+                        <select id="te-invoice-type" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2 py-1.5 text-gold-400 text-xs">
+                            <option value="Factura A">Factura A</option>
+                            <option value="Factura B">Factura B</option>
+                            <option value="Factura C">Factura C</option>
+                            <option value="Factura M">Factura M</option>
+                            <option value="Remito">Remito (R/X)</option>
+                            <option value="Ticket / Comprobante">Ticket Fiscal</option>
+                            <option value="Nota de Crédito">Nota de Crédito</option>
+                            <option value="Recibo">Recibo</option>
+                        </select>
+                    </label>
+                </div>
+                <div>
+                    <label>Punto Vta - N°
+                        <input id="te-invoice-number" type="text" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1.5 text-white text-xs">
+                    </label>
+                </div>
+                <label class="col-span-2">Comercio / Proveedor<input id="te-vendor" type="text" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1.5 text-white text-xs"></label>
                 <label>Fecha (DD/MM/AAAA)<input id="te-date" type="text" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1.5 text-white text-xs"></label>
                 <label>CUIT<input id="te-cuit" type="text" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1.5 text-white text-xs"></label>
-                <label>Total<input id="te-total" type="number" step="0.01" inputmode="decimal" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1.5 text-white text-xs"></label>
-                <label>Subtotal<input id="te-subtotal" type="number" step="0.01" inputmode="decimal" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1.5 text-white text-xs"></label>
+                <label>Total<input id="te-total" type="number" step="0.01" inputmode="decimal" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1.5 text-white text-xs font-bold text-emerald-400"></label>
+                <label>Subtotal Neto<input id="te-subtotal" type="number" step="0.01" inputmode="decimal" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1.5 text-white text-xs"></label>
                 <label>IVA 21%<input id="te-iva21" type="number" step="0.01" inputmode="decimal" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1.5 text-white text-xs"></label>
                 <label>IVA 10,5%<input id="te-iva105" type="number" step="0.01" inputmode="decimal" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1.5 text-white text-xs"></label>
                 <label>IVA 27%<input id="te-iva27" type="number" step="0.01" inputmode="decimal" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1.5 text-white text-xs"></label>
+                <label class="text-amber-400">Percep. IIBB ($)<input id="te-percep-iibb" type="number" step="0.01" inputmode="decimal" class="mt-1 w-full bg-[#121216] border border-amber-500/40 rounded-lg px-2.5 py-1.5 text-amber-300 text-xs"></label>
+                <label class="text-amber-400">Jurisdicción IIBB<input id="te-percep-jurisdiccion" type="text" placeholder="Ej: ARBA, AGIP" class="mt-1 w-full bg-[#121216] border border-amber-500/40 rounded-lg px-2.5 py-1.5 text-white text-xs"></label>
+                <label>Percep. IVA ($)<input id="te-percep-iva" type="number" step="0.01" inputmode="decimal" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1.5 text-white text-xs"></label>
+                <label>Imp. Internos ($)<input id="te-imp-internos" type="number" step="0.01" inputmode="decimal" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1.5 text-white text-xs"></label>
+                <label class="col-span-2">CAE (Electrónica)<input id="te-cae" type="text" class="mt-1 w-full bg-[#121216] border border-gold-500/30 rounded-lg px-2.5 py-1.5 text-white text-xs"></label>
             </div>
             <div class="flex gap-2 pt-1">
                 <button onclick="closeTicketEdit()" class="flex-1 py-2 bg-white/5 border border-white/10 text-white rounded-lg text-xs font-bold">Cancelar</button>
@@ -1518,6 +1591,10 @@
         function applyExpensesToUI(data) {
             document.getElementById('stat-total-spent').textContent = `$${(data.total_spent || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
             document.getElementById('stat-total-iva').textContent = `$${(data.total_iva || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+            const iibbEl = document.getElementById('stat-total-iibb');
+            if (iibbEl) iibbEl.textContent = `$${(data.total_percepcion_iibb || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+            const subEl = document.getElementById('stat-total-subtotal');
+            if (subEl) subEl.textContent = `$${(data.total_subtotal || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
             lastVendorBreakdown = data.vendor_breakdown || [];
             lastTickets = data.tickets || [];
             filterVendorBreakdown();
@@ -1666,6 +1743,26 @@
                     if (data.vendor && data.vendor !== 'Comercio General') {
                         document.getElementById('input-vendor').value = data.vendor;
                     }
+                    if (data.invoice_type) document.getElementById('input-invoice-type').value = data.invoice_type;
+                    if (data.invoice_number) document.getElementById('input-invoice-number').value = data.invoice_number;
+                    if (data.percepcion_iibb && data.percepcion_iibb > 0) {
+                        document.getElementById('input-percep-iibb').value = data.percepcion_iibb;
+                    } else {
+                        document.getElementById('input-percep-iibb').value = '';
+                    }
+                    if (data.percepcion_iibb_jurisdiccion) document.getElementById('input-percep-jurisdiccion').value = data.percepcion_iibb_jurisdiccion;
+                    if (data.percepcion_iva && data.percepcion_iva > 0) {
+                        document.getElementById('input-percep-iva').value = data.percepcion_iva;
+                    } else {
+                        document.getElementById('input-percep-iva').value = '';
+                    }
+                    if (data.impuestos_internos && data.impuestos_internos > 0) {
+                        document.getElementById('input-imp-internos').value = data.impuestos_internos;
+                    } else {
+                        document.getElementById('input-imp-internos').value = '';
+                    }
+                    if (data.cae) document.getElementById('input-cae').value = data.cae;
+
                     if (data.total && data.total > 0) {
                         document.getElementById('input-total').value = data.total;
                     } else {
@@ -1699,6 +1796,26 @@
                             updateSelectedMonthCard();
                         }
                     }
+
+                    if (data.invoice_type) document.getElementById('input-invoice-type').value = data.invoice_type;
+                    if (data.invoice_number) document.getElementById('input-invoice-number').value = data.invoice_number;
+                    if (data.percepcion_iibb && data.percepcion_iibb > 0) {
+                        document.getElementById('input-percep-iibb').value = data.percepcion_iibb;
+                    } else {
+                        document.getElementById('input-percep-iibb').value = '';
+                    }
+                    if (data.percepcion_iibb_jurisdiccion) document.getElementById('input-percep-jurisdiccion').value = data.percepcion_iibb_jurisdiccion;
+                    if (data.percepcion_iva && data.percepcion_iva > 0) {
+                        document.getElementById('input-percep-iva').value = data.percepcion_iva;
+                    } else {
+                        document.getElementById('input-percep-iva').value = '';
+                    }
+                    if (data.impuestos_internos && data.impuestos_internos > 0) {
+                        document.getElementById('input-imp-internos').value = data.impuestos_internos;
+                    } else {
+                        document.getElementById('input-imp-internos').value = '';
+                    }
+                    if (data.cae) document.getElementById('input-cae').value = data.cae;
 
                     if (data.total && data.total > 0) {
                         badge.textContent = "✓ Autocompletado";
@@ -1773,6 +1890,13 @@
             const userIva105 = parseFloat(document.getElementById('input-iva-10-5').value);
             const userCuit = document.getElementById('input-cuit').value;
             const userDate = document.getElementById('input-date').value;
+            const userInvType = document.getElementById('input-invoice-type').value;
+            const userInvNum = document.getElementById('input-invoice-number').value;
+            const userPercepIIBB = parseFloat(document.getElementById('input-percep-iibb').value);
+            const userPercepJuris = document.getElementById('input-percep-jurisdiccion').value;
+            const userPercepIVA = parseFloat(document.getElementById('input-percep-iva').value);
+            const userImpInt = parseFloat(document.getElementById('input-imp-internos').value);
+            const userCAE = document.getElementById('input-cae').value;
 
             btn.disabled = true;
             btnText.textContent = 'Procesando...';
@@ -1805,6 +1929,13 @@
                 if (!isNaN(userIva105) && userIva105 > 0) formData.append('iva_10_5', userIva105);
                 if (userCuit && !userCuit.includes('X')) formData.append('cuit', userCuit);
                 if (userDate && !userDate.includes('D')) formData.append('date', userDate);
+                if (userInvType) formData.append('invoice_type', userInvType);
+                if (userInvNum) formData.append('invoice_number', userInvNum);
+                if (!isNaN(userPercepIIBB) && userPercepIIBB >= 0) formData.append('percepcion_iibb', userPercepIIBB);
+                if (userPercepJuris) formData.append('percepcion_iibb_jurisdiccion', userPercepJuris);
+                if (!isNaN(userPercepIVA) && userPercepIVA >= 0) formData.append('percepcion_iva', userPercepIVA);
+                if (!isNaN(userImpInt) && userImpInt >= 0) formData.append('impuestos_internos', userImpInt);
+                if (userCAE) formData.append('cae', userCAE);
                 if (currentScannedItems && currentScannedItems.length > 0) formData.append('items_json', JSON.stringify(currentScannedItems));
 
                 try {
@@ -2029,6 +2160,13 @@
             set('te-iva21', t.iva_21);
             set('te-iva105', t.iva_10_5);
             set('te-iva27', t.iva_27);
+            set('te-invoice-type', t.invoice_type || 'Factura A');
+            set('te-invoice-number', t.invoice_number);
+            set('te-percep-iibb', t.percepcion_iibb);
+            set('te-percep-jurisdiccion', t.percepcion_iibb_jurisdiccion);
+            set('te-percep-iva', t.percepcion_iva);
+            set('te-imp-internos', t.impuestos_internos);
+            set('te-cae', t.cae);
             document.getElementById('ticket-edit-modal').classList.remove('hidden');
             pushLayer('edit');
         }
@@ -2080,7 +2218,16 @@
             fd.append('vendor', val('te-vendor') || 'Comercio General');
             fd.append('date', val('te-date'));
             fd.append('cuit', val('te-cuit'));
-            const nums = { total: 'te-total', subtotal: 'te-subtotal', iva_21: 'te-iva21', iva_10_5: 'te-iva105', iva_27: 'te-iva27' };
+            fd.append('invoice_type', val('te-invoice-type'));
+            fd.append('invoice_number', val('te-invoice-number'));
+            fd.append('percepcion_iibb_jurisdiccion', val('te-percep-jurisdiccion'));
+            fd.append('cae', val('te-cae'));
+            const nums = {
+                total: 'te-total', subtotal: 'te-subtotal', iva_21: 'te-iva21',
+                iva_10_5: 'te-iva105', iva_27: 'te-iva27',
+                percepcion_iibb: 'te-percep-iibb', percepcion_iva: 'te-percep-iva',
+                impuestos_internos: 'te-imp-internos'
+            };
             for (const [k, id] of Object.entries(nums)) {
                 const v = val(id).replace(',', '.');
                 fd.append(k, v === '' ? '0' : v);

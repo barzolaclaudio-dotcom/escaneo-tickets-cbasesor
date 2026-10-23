@@ -137,32 +137,49 @@ def extract_data_with_gemini_vision(image_bytes: bytes) -> dict:
 
         b64_image = base64.b64encode(opt_bytes).decode("utf-8")
         
-        prompt = """Analiza la foto de este ticket de compra / factura de Argentina y responde ÚNICAMENTE con un objeto JSON válido con este formato exacto:
+        prompt = """Analiza la foto de este comprobante (Ticket, Factura A/B/C/M, Remito R/X, Recibo o Nota de Crédito) de Argentina y responde ÚNICAMENTE con un objeto JSON válido con este formato exacto:
 {
-  "vendor": "Nombre o Razón Social del Comercio",
-  "cuit": "CUIT del Comercio Vendedor en formato XX-XXXXXXXX-X",
+  "vendor": "Nombre o Razón Social del Comercio / Proveedor",
+  "cuit": "CUIT del Comercio / Proveedor en formato XX-XXXXXXXX-X",
   "invoice_type": "Factura A",
+  "invoice_number": "Punto de Venta y Número (ej: 00004-00012345)",
   "date": "Fecha exacta en formato DD/MM/YYYY",
   "subtotal": 0.00,
+  "neto_21": 0.00,
+  "neto_10_5": 0.00,
+  "neto_27": 0.00,
   "iva_21": 0.00,
   "iva_10_5": 0.00,
   "iva_27": 0.00,
+  "percepcion_iibb": 0.00,
+  "percepcion_iibb_jurisdiccion": "ARBA | AGIP | DGR Córdoba | API Santa Fe | Convenio Multilateral | Ninguna",
+  "percepcion_iva": 0.00,
+  "impuestos_internos": 0.00,
+  "no_gravado": 0.00,
+  "cae": "Número de CAE si aplica",
+  "cae_vto": "Fecha vencimiento CAE si aplica",
   "total": 0.00,
   "items": [
     {
-      "name": "Nombre o descripción del producto/servicio",
+      "name": "Nombre o descripción del producto/servicio/mercadería",
       "qty": 1.0,
       "price": 0.00
     }
   ]
 }
-Reglas estrictas:
-1. "date": Extrae la FECHA REAL impresa en el ticket (ej. 16/09/2026, 03/10/2026). NO inventes ni uses la fecha de hoy.
-2. "subtotal": Monto neto gravado antes de impuestos.
-3. "iva_21", "iva_10_5", "iva_27": Extrae el monto en pesos del IVA impreso.
-4. "total": El importe total final a pagar impreso.
-5. "vendor": Razón social o comercio impreso arriba (ej: NEGOCIOS COMERCIALES LA FAROLA, RERIFF S.A., YPF, CENCOSUD, CARREFOUR).
-6. "items": Lista detallada de productos/servicios comprados con su precio. Si no hay ítems detallados, devuelve una lista vacía [].
+Reglas estrictas para el análisis impositivo argentino:
+1. "invoice_type": Clasifica con precisión: "Factura A", "Factura B", "Factura C", "Factura M", "Remito", "Ticket", "Nota de Crédito A/B/C", "Recibo".
+2. "invoice_number": Extrae el Punto de Venta (4 o 5 dígitos) y Número (6 a 8 dígitos) separados por guion.
+3. "date": Extrae la FECHA REAL impresa (ej. 16/09/2026). NO inventes ni uses la fecha de hoy.
+4. "subtotal": Monto neto gravado total antes de IVA y percepciones.
+5. "iva_21", "iva_10_5", "iva_27": Extrae el monto discriminado en pesos de cada alícuota de IVA.
+6. "percepcion_iibb": Extrae el monto total de Percepciones de Ingresos Brutos (IIBB) si las hay.
+7. "percepcion_iibb_jurisdiccion": Indica la provincia o fisco (ej: ARBA Buenos Aires, AGIP CABA, Santa Fe, Córdoba, etc.).
+8. "percepcion_iva": Monto de percepción de IVA (ej. RG 2408, RG 5329).
+9. "impuestos_internos": Monto de impuestos internos, tasas municipales o combustibles.
+10. "total": El importe total final. Si es un Remito no valorizado de mercadería, pon 0.00.
+11. "cae": Extrae los 14 dígitos del Código de Autorización Electrónico si es Factura Electrónica.
+12. "items": Lista detallada de productos/servicios/bultos con cantidad y precio. Si no hay ítems detallados, devuelve [].
 """
 
         payload = {
@@ -234,39 +251,62 @@ def extract_data_from_image(
     user_iva_21: float = None,
     user_iva_10_5: float = None,
     user_iva_27: float = None,
-    user_items: list = None
+    user_items: list = None,
+    user_percepcion_iibb: float = None,
+    user_percepcion_iibb_jurisdiccion: str = None,
+    user_percepcion_iva: float = None,
+    user_impuestos_internos: float = None,
+    user_invoice_number: str = None,
+    user_invoice_type: str = None,
+    user_cae: str = None
 ) -> dict:
     """
-    Analiza la foto del ticket mediante IA Visión de Google Gemini o usa datos confirmados por el usuario.
+    Analiza la foto del comprobante (Factura, Ticket o Remito) mediante IA Visión o fallback OCR.
+    Extrae desglose impositivo argentino completo (IVA, IIBB, Percepciones, Retenciones y CAE).
     """
-    # Si los datos principales ya vienen confirmados desde el paso de pre-lectura, retornar al instante
+    # Si los datos principales ya vienen confirmados por el usuario
     if user_total is not None and user_total > 0 and user_vendor and user_vendor.strip() and user_vendor != "Comercio General":
         return {
             "id": datetime.now().strftime("%Y%m%d%H%M%S%f"),
             "vendor": user_vendor.strip(),
             "cuit": (user_cuit or "").strip(),
-            "invoice_type": "Factura A",
+            "invoice_type": (user_invoice_type or "Factura A").strip(),
+            "invoice_number": (user_invoice_number or "").strip(),
             "date": (user_date or "").strip() or datetime.now().strftime("%d/%m/%Y"),
             "subtotal": user_subtotal if (user_subtotal is not None and user_subtotal > 0) else user_total,
             "iva_21": user_iva_21 if (user_iva_21 is not None and user_iva_21 >= 0) else 0.0,
             "iva_10_5": user_iva_10_5 if (user_iva_10_5 is not None and user_iva_10_5 >= 0) else 0.0,
             "iva_27": user_iva_27 if (user_iva_27 is not None and user_iva_27 >= 0) else 0.0,
+            "percepcion_iibb": user_percepcion_iibb if (user_percepcion_iibb is not None and user_percepcion_iibb >= 0) else 0.0,
+            "percepcion_iibb_jurisdiccion": (user_percepcion_iibb_jurisdiccion or "").strip(),
+            "percepcion_iva": user_percepcion_iva if (user_percepcion_iva is not None and user_percepcion_iva >= 0) else 0.0,
+            "impuestos_internos": user_impuestos_internos if (user_impuestos_internos is not None and user_impuestos_internos >= 0) else 0.0,
+            "cae": (user_cae or "").strip(),
             "total": user_total,
             "items": user_items or [],
             "filename": filename_hint
         }
 
-    # 1. Intentar primero con Visión por IA (Google Gemini 1.5 Flash) si la API Key está presente
+    # 1. Intentar primero con Visión por IA (Google Gemini 1.5/3 Flash)
     ai_data = extract_data_with_gemini_vision(image_bytes)
     if ai_data:
         vendor = user_vendor.strip() if (user_vendor and user_vendor.strip() and user_vendor != "Comercio General") else str(ai_data.get("vendor", "Comercio General"))
-        total = user_total if (user_total is not None and user_total > 0) else parse_amount(str(ai_data.get("total", 0.0)))
+        total = user_total if (user_total is not None and user_total >= 0) else parse_amount(str(ai_data.get("total", 0.0)))
         cuit = user_cuit.strip() if (user_cuit and user_cuit.strip() and "X" not in user_cuit) else str(ai_data.get("cuit", ""))
         date_str = user_date.strip() if (user_date and user_date.strip() and "D" not in user_date) else str(ai_data.get("date", datetime.now().strftime("%d/%m/%Y")))
         subtotal = user_subtotal if (user_subtotal is not None and user_subtotal > 0) else parse_amount(str(ai_data.get("subtotal", 0.0)))
         iva_21 = user_iva_21 if (user_iva_21 is not None and user_iva_21 >= 0) else parse_amount(str(ai_data.get("iva_21", 0.0)))
         iva_10_5 = user_iva_10_5 if (user_iva_10_5 is not None and user_iva_10_5 >= 0) else parse_amount(str(ai_data.get("iva_10_5", 0.0)))
         iva_27 = user_iva_27 if (user_iva_27 is not None and user_iva_27 >= 0) else parse_amount(str(ai_data.get("iva_27", 0.0)))
+        
+        perc_iibb = user_percepcion_iibb if (user_percepcion_iibb is not None and user_percepcion_iibb >= 0) else parse_amount(str(ai_data.get("percepcion_iibb", 0.0)))
+        jurisdiccion = user_percepcion_iibb_jurisdiccion.strip() if user_percepcion_iibb_jurisdiccion else str(ai_data.get("percepcion_iibb_jurisdiccion", ""))
+        perc_iva = user_percepcion_iva if (user_percepcion_iva is not None and user_percepcion_iva >= 0) else parse_amount(str(ai_data.get("percepcion_iva", 0.0)))
+        imp_internos = user_impuestos_internos if (user_impuestos_internos is not None and user_impuestos_internos >= 0) else parse_amount(str(ai_data.get("impuestos_internos", 0.0)))
+        inv_num = user_invoice_number.strip() if user_invoice_number else str(ai_data.get("invoice_number", ""))
+        inv_type = user_invoice_type.strip() if user_invoice_type else str(ai_data.get("invoice_type", "Factura A"))
+        cae = user_cae.strip() if user_cae else str(ai_data.get("cae", ""))
+
         raw_items = ai_data.get("items", [])
         items = user_items if (user_items and len(user_items) > 0) else (raw_items if isinstance(raw_items, list) else [])
         
@@ -274,23 +314,58 @@ def extract_data_from_image(
             "id": datetime.now().strftime("%Y%m%d%H%M%S%f"),
             "vendor": vendor,
             "cuit": cuit,
-            "invoice_type": ai_data.get("invoice_type", "Factura A"),
+            "invoice_type": inv_type,
+            "invoice_number": inv_num,
             "date": date_str,
             "subtotal": subtotal,
             "iva_21": iva_21,
             "iva_10_5": iva_10_5,
             "iva_27": iva_27,
+            "percepcion_iibb": perc_iibb,
+            "percepcion_iibb_jurisdiccion": jurisdiccion,
+            "percepcion_iva": perc_iva,
+            "impuestos_internos": imp_internos,
+            "cae": cae,
             "total": total,
             "items": items,
             "filename": filename_hint
         }
 
+    # 2. Fallback OCR Clásico (Tesseract / Regex)
     raw_text = extract_raw_text_from_image(image_bytes)
     lines = [line.strip() for line in raw_text.split('\n') if line.strip()]
+    raw_upper = raw_text.upper()
     
-    # 1. Total (Leído de abajo hacia arriba o mayor monto válido)
-    total = user_total if (user_total is not None and user_total > 0) else 0.0
-    if total <= 0:
+    # Tipo de Comprobante
+    comp_type = user_invoice_type
+    if not comp_type:
+        if "REMITO" in raw_upper:
+            comp_type = "Remito"
+        elif "FACTURA A" in raw_upper or "TICKET FACTURA A" in raw_upper:
+            comp_type = "Factura A"
+        elif "FACTURA B" in raw_upper or "TICKET FACTURA B" in raw_upper:
+            comp_type = "Factura B"
+        elif "FACTURA C" in raw_upper or "TICKET FACTURA C" in raw_upper:
+            comp_type = "Factura C"
+        elif "FACTURA M" in raw_upper:
+            comp_type = "Factura M"
+        elif "NOTA DE CR" in raw_upper or "NC " in raw_upper:
+            comp_type = "Nota de Crédito"
+        elif "RECIBO" in raw_upper:
+            comp_type = "Recibo"
+        else:
+            comp_type = "Ticket / Comprobante"
+
+    # Número de Comprobante
+    inv_num = user_invoice_number or ""
+    if not inv_num:
+        num_m = re.search(r'(?:comp\.?\s*n[°º]|factura\s*(?:[abc]\s*)?n[°º]|remito\s*(?:[rx]\s*)?n[°º]|nro\.?|punto\s*de\s*vta)\s*[:\-]?\s*(\d{4,5}\s*[\-\/]\s*\d{6,8})', raw_text, re.I)
+        if num_m:
+            inv_num = num_m.group(1).replace(" ", "")
+
+    # Total
+    total = user_total if (user_total is not None and user_total >= 0) else 0.0
+    if total <= 0 and comp_type != "Remito":
         for line in reversed(lines):
             m = re.search(r'(?:TOTAL|RECIBIMOS|SUMA DE SUS PAGOS|EFECTIVO|IMPORTE\s+TOTAL)\s*[:=]?\s*\$?\s*([\d\.,]{4,12})', line, re.I)
             if m:
@@ -305,7 +380,7 @@ def extract_data_from_image(
             if parsed_nums:
                 total = max(parsed_nums)
 
-    # 2. Vendor / Comercio
+    # Vendor / Comercio
     vendor = user_vendor.strip() if (user_vendor and user_vendor.strip()) else None
     if not vendor:
         for line in lines[:8]:
@@ -315,7 +390,7 @@ def extract_data_from_image(
         if not vendor:
             vendor = "Comercio General"
 
-    # 3. CUIT
+    # CUIT
     cuit = user_cuit.strip() if (user_cuit and user_cuit.strip()) else ""
     if not cuit:
         for line in lines:
@@ -324,7 +399,7 @@ def extract_data_from_image(
                 cuit = cuit_match.group(1)
                 break
 
-    # 4. Fecha
+    # Fecha
     date_str = user_date.strip() if (user_date and user_date.strip()) else ""
     if not date_str:
         date_match = re.search(r'FECHA\s*[:=]?\s*(\d{2}[/\.-]\d{2}[/\.-]\d{2,4})', raw_text, re.I)
@@ -332,52 +407,89 @@ def extract_data_from_image(
             date_match = re.search(r'\b(\d{2}[/\.-]\d{2}[/\.-]\d{2,4})\b', raw_text)
         date_str = date_match.group(1) if date_match else ""
 
-    comp_type = "Factura A" if ("FACTURA A" in raw_text.upper() or "TICKET FACTURA A" in raw_text.upper()) else "Ticket / Comprobante"
-
-    # 5. IVA impreso (21%, 10.5%, 27%)
-    iva_21 = user_iva_21 if (user_iva_21 is not None and user_iva_21 >= 0) else None
-    if iva_21 is None:
-        iva_21 = 0.0
+    # IVA 21%, 10.5%, 27%
+    iva_21 = user_iva_21 if (user_iva_21 is not None and user_iva_21 >= 0) else 0.0
+    if iva_21 == 0.0:
         for line in lines:
             if re.search(r'(?:I\.?V\.?A\.?|IVA)\s*(?:GRAVADO\s*)?(?:21(?:[\.,]00)?)\s*%', line, re.I):
                 nums = re.findall(r'[\d]{1,3}(?:\.[\d]{3})*(?:,[\d]{2})|\b[\d]+\.[\d]{2}\b', line)
                 if nums:
-                    val_str = nums[-1] if ('BASE' in line.upper() and len(nums) >= 2) else nums[0]
-                    val = parse_amount(val_str)
+                    val = parse_amount(nums[-1] if ('BASE' in line.upper() and len(nums) >= 2) else nums[0])
                     if val > 0 and val != 21.0:
                         iva_21 = val
                         break
 
-    iva_10_5 = user_iva_10_5 if (user_iva_10_5 is not None and user_iva_10_5 >= 0) else None
-    if iva_10_5 is None:
-        iva_10_5 = 0.0
+    iva_10_5 = user_iva_10_5 if (user_iva_10_5 is not None and user_iva_10_5 >= 0) else 0.0
+    if iva_10_5 == 0.0:
         for line in lines:
             if re.search(r'(?:I\.?V\.?A\.?|IVA)\s*(?:GRAVADO\s*)?(?:10[\.,]5\d?)\s*%', line, re.I):
                 nums = re.findall(r'[\d]{1,3}(?:\.[\d]{3})*(?:,[\d]{2})|\b[\d]+\.[\d]{2}\b', line)
                 if nums:
-                    val_str = nums[-1] if ('BASE' in line.upper() and len(nums) >= 2) else nums[0]
-                    val = parse_amount(val_str)
+                    val = parse_amount(nums[-1] if ('BASE' in line.upper() and len(nums) >= 2) else nums[0])
                     if val > 0 and val != 10.5:
                         iva_10_5 = val
                         break
 
-    iva_27 = user_iva_27 if (user_iva_27 is not None and user_iva_27 >= 0) else None
-    if iva_27 is None:
-        iva_27 = 0.0
+    iva_27 = user_iva_27 if (user_iva_27 is not None and user_iva_27 >= 0) else 0.0
+    if iva_27 == 0.0:
         for line in lines:
             if re.search(r'(?:I\.?V\.?A\.?|IVA)\s*(?:GRAVADO\s*)?(?:27(?:[\.,]00)?)\s*%', line, re.I):
                 nums = re.findall(r'[\d]{1,3}(?:\.[\d]{3})*(?:,[\d]{2})|\b[\d]+\.[\d]{2}\b', line)
                 if nums:
-                    val_str = nums[-1] if ('BASE' in line.upper() and len(nums) >= 2) else nums[0]
-                    val = parse_amount(val_str)
+                    val = parse_amount(nums[-1] if ('BASE' in line.upper() and len(nums) >= 2) else nums[0])
                     if val > 0 and val != 27.0:
                         iva_27 = val
                         break
 
-    # 6. Subtotal Neto impreso
-    subtotal = user_subtotal if (user_subtotal is not None and user_subtotal > 0) else None
-    if subtotal is None or subtotal <= 0:
-        subtotal = 0.0
+    # Percepciones IIBB y Jurisdicción
+    perc_iibb = user_percepcion_iibb if (user_percepcion_iibb is not None and user_percepcion_iibb >= 0) else 0.0
+    jurisdiccion = user_percepcion_iibb_jurisdiccion or ""
+    if perc_iibb == 0.0:
+        for line in lines:
+            m = re.search(r'(?:perc(?:epci[oó]n)?\.?\s*(?:de\s*)?(?:ii\.?bb\.?|ing(?:resos)?\.?\s*brutos?|dgr|rentas))\s*[:\$]?\s*([\d\.,]{3,12})', line, re.I)
+            if m:
+                perc_iibb = parse_amount(m.group(1))
+                break
+    if not jurisdiccion and perc_iibb > 0:
+        if re.search(r'arba|buenos\s*aires|bs\.?\s*as\.?', raw_text, re.I):
+            jurisdiccion = "ARBA (Bs.As.)"
+        elif re.search(r'agip|caba|capital\s*federal', raw_text, re.I):
+            jurisdiccion = "AGIP (CABA)"
+        elif re.search(r'santa\s*fe|api', raw_text, re.I):
+            jurisdiccion = "API (Santa Fe)"
+        elif re.search(r'c[oó]rdoba|dgr\s*cba', raw_text, re.I):
+            jurisdiccion = "DGR (Córdoba)"
+        elif re.search(r'convenio\s*multilateral', raw_text, re.I):
+            jurisdiccion = "Convenio Multilateral"
+
+    # Percepción IVA
+    perc_iva = user_percepcion_iva if (user_percepcion_iva is not None and user_percepcion_iva >= 0) else 0.0
+    if perc_iva == 0.0:
+        for line in lines:
+            m = re.search(r'(?:perc(?:epci[oó]n)?\.?\s*(?:de\s*)?iva|rg\s*(?:2408|5329))\s*[:\$]?\s*([\d\.,]{3,12})', line, re.I)
+            if m:
+                perc_iva = parse_amount(m.group(1))
+                break
+
+    # Impuestos Internos
+    imp_internos = user_impuestos_internos if (user_impuestos_internos is not None and user_impuestos_internos >= 0) else 0.0
+    if imp_internos == 0.0:
+        for line in lines:
+            m = re.search(r'(?:imp(?:uestos)?\.?\s*int(?:ernos)?\.?|tasas?)\s*[:\$]?\s*([\d\.,]{3,12})', line, re.I)
+            if m:
+                imp_internos = parse_amount(m.group(1))
+                break
+
+    # CAE
+    cae = user_cae or ""
+    if not cae:
+        cae_m = re.search(r'c\.?a\.?e\.?\s*[:\-]?\s*(\d{14})', raw_text, re.I)
+        if cae_m:
+            cae = cae_m.group(1)
+
+    # Subtotal Neto
+    subtotal = user_subtotal if (user_subtotal is not None and user_subtotal > 0) else 0.0
+    if subtotal <= 0:
         for line in lines:
             m = re.search(r'(?:NETO\s+GRAVADO|SUBTOTAL\s+NETO|TOTAL\s+NETO|NETO\s+SIN\s+IVA|BASE\s+IMPONIBLE|SUBTOTAL)\s*[:=]?\s*\$?\s*([\d\.,]{3,12})', line, re.I)
             if m:
@@ -387,19 +499,25 @@ def extract_data_from_image(
                     break
 
         if subtotal == 0.0 and total > 0:
-            sum_iva = iva_21 + iva_10_5 + iva_27
-            subtotal = round(total - sum_iva, 2) if sum_iva > 0 else total
+            sum_imp = iva_21 + iva_10_5 + iva_27 + perc_iibb + perc_iva + imp_internos
+            subtotal = round(total - sum_imp, 2) if (total > sum_imp > 0) else total
 
     return {
         "id": datetime.now().strftime("%Y%m%d%H%M%S%f"),
         "vendor": vendor,
         "cuit": cuit,
         "invoice_type": comp_type,
+        "invoice_number": inv_num,
         "date": date_str,
         "subtotal": subtotal,
         "iva_21": iva_21,
         "iva_10_5": iva_10_5,
         "iva_27": iva_27,
+        "percepcion_iibb": perc_iibb,
+        "percepcion_iibb_jurisdiccion": jurisdiccion,
+        "percepcion_iva": perc_iva,
+        "impuestos_internos": imp_internos,
+        "cae": cae,
         "total": total,
         "items": [],
         "filename": filename_hint
@@ -482,7 +600,13 @@ def get_monthly_summary(month_str: str, user_email: str = None) -> dict:
     total_spent = sum(t.get("total", 0.0) for t in tickets)
     total_subtotal = sum(t.get("subtotal", 0.0) for t in tickets)
     total_iva = sum(t.get("iva_21", 0.0) + t.get("iva_10_5", 0.0) + t.get("iva_27", 0.0) for t in tickets)
+    total_percepcion_iibb = sum(t.get("percepcion_iibb", 0.0) for t in tickets)
+    total_percepcion_iva = sum(t.get("percepcion_iva", 0.0) for t in tickets)
+    total_impuestos_internos = sum(t.get("impuestos_internos", 0.0) for t in tickets)
     total_items_count = sum(len(t.get("items", [])) for t in tickets)
+    
+    remitos_count = sum(1 for t in tickets if "REMITO" in (t.get("invoice_type") or "").upper())
+    facturas_count = sum(1 for t in tickets if "FACTURA" in (t.get("invoice_type") or "").upper())
     
     vendors = {}
     for t in tickets:
@@ -504,7 +628,12 @@ def get_monthly_summary(month_str: str, user_email: str = None) -> dict:
         "total_spent": round(total_spent, 2),
         "total_subtotal": round(total_subtotal, 2),
         "total_iva": round(total_iva, 2),
+        "total_percepcion_iibb": round(total_percepcion_iibb, 2),
+        "total_percepcion_iva": round(total_percepcion_iva, 2),
+        "total_impuestos_internos": round(total_impuestos_internos, 2),
         "tickets_count": len(tickets),
+        "facturas_count": facturas_count,
+        "remitos_count": remitos_count,
         "total_items_count": total_items_count,
         "vendor_breakdown": vendor_breakdown,
         "tickets": tickets

@@ -47,15 +47,17 @@ def generate_excel_report(month_str: str, user_email: str = None) -> bytes:
     ws1["A3"] = "TOTAL GASTADO:"; ws1["B3"] = summary["total_spent"]
     ws1["A4"] = "SUBTOTAL NETO:"; ws1["B4"] = summary["total_subtotal"]
     ws1["A5"] = "TOTAL IVA (Crédito Fiscal):"; ws1["B5"] = summary["total_iva"]
-    ws1["A6"] = "TOTAL COMPROBANTES:"; ws1["B6"] = summary["tickets_count"]
+    ws1["A6"] = "TOTAL PERCEPCIONES IIBB:"; ws1["B6"] = summary.get("total_percepcion_iibb", 0.0)
+    ws1["A7"] = "TOTAL PERCEPCIONES IVA:"; ws1["B7"] = summary.get("total_percepcion_iva", 0.0)
+    ws1["A8"] = "TOTAL COMPROBANTES:"; ws1["B8"] = summary["tickets_count"]
     
-    for row in range(3, 7):
+    for row in range(3, 9):
         ws1[f"A{row}"].font = Font(bold=True)
-        ws1[f"B{row}"].number_format = '$#,##0.00' if row < 6 else '#,##0'
+        ws1[f"B{row}"].number_format = '$#,##0.00' if row < 8 else '#,##0'
         
     ws1.append([])
     ws1.append(["Comercio / Proveedor", "Monto Total ($)", "Porcentaje del Gasto", "N° de Compras"])
-    header_row_idx = 8
+    header_row_idx = 10
     for col_num in range(1, 5):
         cell = ws1.cell(row=header_row_idx, column=col_num)
         cell.fill = dark_fill
@@ -67,27 +69,40 @@ def generate_excel_report(month_str: str, user_email: str = None) -> bytes:
         ws1.append([v["vendor"], v["total"], f"{v['percentage']}%", count_v])
         
     # -------------------------------------------------------------
-    # HOJA 2: Libro IVA Compras (Contador)
+    # HOJA 2: Libro IVA Compras & Régimen de Percepciones (Contador)
     # -------------------------------------------------------------
-    ws2 = wb.create_sheet(title="Libro IVA Compras")
-    ws2.append(["Fecha", "Tipo Comprobante", "Proveedor", "CUIT", "Neto Gravado ($)", "IVA 21% ($)", "IVA 10.5% ($)", "Total ($)"])
+    ws2 = wb.create_sheet(title="Libro IVA & Percepciones")
+    ws2.append([
+        "Fecha", "Tipo Comprobante", "Punto Vta - N°", "Proveedor", "CUIT", "CAE",
+        "Neto Gravado ($)", "IVA 21% ($)", "IVA 10.5% ($)", "IVA 27% ($)", "Total IVA ($)",
+        "Percep. IIBB ($)", "Jurisdicción IIBB", "Percep. IVA ($)", "Imp. Internos ($)", "Total ($)"
+    ])
     
-    for col_num in range(1, 9):
+    for col_num in range(1, 17):
         cell = ws2.cell(row=1, column=col_num)
         cell.fill = gold_fill
         cell.font = gold_font
         cell.alignment = Alignment(horizontal="center")
         
     for t in tickets:
+        sum_iva = round(float(t.get("iva_21") or 0.0) + float(t.get("iva_10_5") or 0.0) + float(t.get("iva_27") or 0.0), 2)
         ws2.append([
             t.get("date", ""),
             t.get("invoice_type", "Factura A"),
+            t.get("invoice_number", ""),
             t.get("vendor", ""),
             t.get("cuit", ""),
-            t.get("subtotal", 0.0),
-            t.get("iva_21", 0.0),
-            t.get("iva_10_5", 0.0),
-            t.get("total", 0.0)
+            t.get("cae", ""),
+            float(t.get("subtotal") or 0.0),
+            float(t.get("iva_21") or 0.0),
+            float(t.get("iva_10_5") or 0.0),
+            float(t.get("iva_27") or 0.0),
+            sum_iva,
+            float(t.get("percepcion_iibb") or 0.0),
+            t.get("percepcion_iibb_jurisdiccion", ""),
+            float(t.get("percepcion_iva") or 0.0),
+            float(t.get("impuestos_internos") or 0.0),
+            float(t.get("total") or 0.0)
         ])
         
     # -------------------------------------------------------------
