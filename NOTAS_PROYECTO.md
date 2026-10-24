@@ -73,17 +73,22 @@ Registro de lo aprendido y decidido. Actualizar cada vez que aprendamos algo nue
 - **Borrados entre celulares:** el celular solo restaura un mes desde su copia local si el servidor quedo totalmente vacio. Si el servidor tiene otros meses, se respeta el borrado hecho desde otro celular.
 - Las cargas simultaneas no se pisan: el servidor atiende las subidas de a una (un solo proceso).
 
-## Infraestructura de Correos Institucionales (Pendiente de Creación en DonWeb)
+## Infraestructura de Correos Institucionales (DonWeb & Gmail)
+- **Servidor de Correo Host:** `c2631658.ferozo.com` (Puerto 465 SSL / 587 STARTTLS).
 - **1. Casilla de Envío Automático / Servidor (`notificaciones@cbasesor.com`):**
+  - **Estado:** Creada en DonWeb y vinculada en Gmail (Octubre 2026).
   - Casilla técnica tipo robot para envíos desatendidos desde Google Cloud VM.
   - Envía códigos OTP de registro y validación a usuarios nuevos.
   - Envía reportes mensuales con planillas Excel adjuntas a los contadores de cada usuario.
   - Remitente configurado: `CB Asesor <notificaciones@cbasesor.com>`.
-  - Configuración pendiente: Cargar contraseña en `/var/www/tickets/.env` con `SMTP_HOST=mail.cbasesor.com` y `SMTP_PORT=465`.
+  - **Paso pendiente:** Cargar contraseña en `/var/www/tickets/.env` con `SMTP_HOST=c2631658.ferozo.com` y `SMTP_PORT=465`.
 - **2. Casilla de Atención Humana / Soporte (`soporte@cbasesor.com`):**
+  - **Estado:** Creada en DonWeb, Reenvío a `barzolaclaudio@gmail.com` activado y "Enviar como" en Gmail verificado y confirmado (Octubre 2026).
   - Casilla oficial de contacto que figurará en la ficha pública de **Google Play Store**.
   - Visible en el pie de página de la web y en todos los correos automáticos.
-  - Recomendación: Configurar regla de reenvío automático en el panel de DonWeb para que los mensajes entrantes se repliquen en `barzolaclaudio@gmail.com`.
+  - Permite responder y redactar directamente desde la interfaz de Gmail en PC y móvil sin abrir Ferozo Webmail.
+- **3. Casilla Institucional General (`contacto@cbasesor.com`):**
+  - **Estado:** Creada en DonWeb, Reenvío activado y "Enviar como" en Gmail verificado y confirmado (Octubre 2026). Opera desde la misma bandeja de Gmail.
 
 ## Aspectos Legales, Marcas y Términos de Uso (Pendiente para Lanzamiento Comercial / Google Play)
 - **Registro de Marca:**
