@@ -76,12 +76,11 @@ Registro de lo aprendido y decidido. Actualizar cada vez que aprendamos algo nue
 ## Infraestructura de Correos Institucionales (DonWeb & Gmail)
 - **Servidor de Correo Host:** `c2631658.ferozo.com` (Puerto 465 SSL / 587 STARTTLS).
 - **1. Casilla de Envío Automático / Servidor (`notificaciones@cbasesor.com`):**
-  - **Estado:** Creada en DonWeb y vinculada en Gmail (Octubre 2026).
+  - **Estado:** Creada en DonWeb, configurada en Gmail como remitente y activa en Google Cloud VM (Octubre 2026).
   - Casilla técnica tipo robot para envíos desatendidos desde Google Cloud VM.
   - Envía códigos OTP de registro y validación a usuarios nuevos.
-  - Envía reportes mensuales con planillas Excel adjuntas a los contadores de cada usuario.
-  - Remitente configurado: `CB Asesor <notificaciones@cbasesor.com>`.
-  - **Paso pendiente:** Cargar contraseña en `/var/www/tickets/.env` con `SMTP_HOST=c2631658.ferozo.com` y `SMTP_PORT=465`.
+  - Envía paquetes contables mensuales con planillas Excel y documentación bancaria adjunta a los contadores de cada usuario.
+  - Pasarela SMTP de producción: `smtp.gmail.com:587` (App Password autorizada con remitente `CB Asesor <notificaciones@cbasesor.com>`). Cero bloqueo de firewall y entrega 100% garantizada.
 - **2. Casilla de Atención Humana / Soporte (`soporte@cbasesor.com`):**
   - **Estado:** Creada en DonWeb, Reenvío a `barzolaclaudio@gmail.com` activado y "Enviar como" en Gmail verificado y confirmado (Octubre 2026).
   - Casilla oficial de contacto que figurará en la ficha pública de **Google Play Store**.
@@ -89,6 +88,13 @@ Registro de lo aprendido y decidido. Actualizar cada vez que aprendamos algo nue
   - Permite responder y redactar directamente desde la interfaz de Gmail en PC y móvil sin abrir Ferozo Webmail.
 - **3. Casilla Institucional General (`contacto@cbasesor.com`):**
   - **Estado:** Creada en DonWeb, Reenvío activado y "Enviar como" en Gmail verificado y confirmado (Octubre 2026). Opera desde la misma bandeja de Gmail.
+
+## Cierre Contable Mensual & Gestión Documental (Octubre 2026)
+- **Documentación del Período:** Soporte para adjuntar extractos bancarios, resúmenes de tarjetas de crédito corporativas/personales, comprobantes de cuotas de préstamos y boletos.
+  - Almacenamiento aislado y privado por usuario en `Documentos_Mensuales/<safe_email>/<month_key>/`.
+- **Selector de Paquete de Envío al Contador:** Modal interactivo con checkboxes que permite seleccionar exactamente qué archivos enviar al contador (Excel de gastos, PDF de comprobantes, extractos bancarios tildados).
+- **Envío Transaccional Seguro:** La casilla actúa como tubería SMTP (no almacena copias de adjuntos de usuarios).
+- **Recuperación de Contraseña:** Flujo de autoservicio con código de seguridad OTP de 6 dígitos enviado por email y restablecimiento de contraseña.
 
 ## Aspectos Legales, Marcas y Términos de Uso (Pendiente para Lanzamiento Comercial / Google Play)
 - **Registro de Marca:**

@@ -57,18 +57,23 @@ def get_email_footer_html() -> str:
     </div>
     """
 
-def send_verification_email(to_email: str, name: str, code: str) -> dict:
+def send_verification_email(to_email: str, name: str, code: str, is_recovery: bool = False) -> dict:
     """
-    Envía un correo con el código de verificación de 6 dígitos.
+    Envía un correo con el código de verificación de 6 dígitos (para registro o recuperación).
     Si no hay variables SMTP configuradas, opera en modo desarrollo para pruebas inmediatas.
     """
     smtp_host, smtp_port, smtp_user, smtp_pass, smtp_from = get_smtp_config()
 
+    action_label = "recuperar tu contraseña" if is_recovery else "verificar tu cuenta"
+    subject_title = f"{code} es tu código para recuperar tu contraseña | CB Asesor" if is_recovery else f"{code} es tu código de verificación | CB Asesor"
+    box_title = "Recuperación de Contraseña" if is_recovery else "Verificación de tu cuenta"
+    intro_p = f"Usa el siguiente código de 6 dígitos para restablecer tu contraseña en CB Asesor:" if is_recovery else "Usa el siguiente código de 6 dígitos para verificar tu dirección de correo y activar tu cuenta:"
+
     # Si falta configuración de servidor SMTP, retornamos modo desarrollo para no bloquear el flujo
     if not smtp_host or not smtp_user or not smtp_pass:
-        logger.info(f"[MODO DEV / PRUEBAS] Código de verificación para {to_email} ({name}): {code}")
+        logger.info(f"[MODO DEV / PRUEBAS] Código ({action_label}) para {to_email} ({name}): {code}")
         print(f"\n==========================================")
-        print(f"🔑 CÓDIGO DE VERIFICACIÓN PARA: {to_email}")
+        print(f"🔑 CÓDIGO ({action_label.upper()}) PARA: {to_email}")
         print(f"👉 CÓDIGO: {code}")
         print(f"==========================================\n")
         return {
@@ -80,11 +85,11 @@ def send_verification_email(to_email: str, name: str, code: str) -> dict:
 
     try:
         msg = MIMEMultipart("alternative")
-        msg["Subject"] = f"{code} es tu código de verificación | CB Asesor"
+        msg["Subject"] = subject_title
         msg["From"] = smtp_from
         msg["To"] = to_email
 
-        text_content = f"Hola {name},\n\nTu código de verificación para CB Asesor es: {code}\n\nEste código vencerá en 15 minutos.\n\nEquipo CB Asesor."
+        text_content = f"Hola {name},\n\nTu código de seguridad para {action_label} en CB Asesor es: {code}\n\nEste código vencerá en 15 minutos.\n\nEquipo CB Asesor."
         footer_html = get_email_footer_html()
         html_content = f"""
         <!DOCTYPE html>
@@ -102,11 +107,11 @@ def send_verification_email(to_email: str, name: str, code: str) -> dict:
         <body>
           <div class="card">
             <div class="logo">CB Asesor</div>
-            <div class="title">Verificación de tu cuenta</div>
+            <div class="title">{box_title}</div>
             <p>Hola <strong>{name}</strong>,</p>
-            <p>Usa el siguiente código de 6 dígitos para verificar tu dirección de correo y activar tu cuenta:</p>
+            <p>{intro_p}</p>
             <div class="code-box">{code}</div>
-            <p style="font-size: 13px; color: #a1a1aa;">Este código es de uso único y vence en 15 minutos. Si no solicitaste este registro, podés desestimar este mensaje.</p>
+            <p style="font-size: 13px; color: #a1a1aa;">Este código es de uso único y vence en 15 minutos. Si no solicitaste esta acción, puedes desestimar este mensaje de forma segura.</p>
             {footer_html}
           </div>
         </body>
@@ -144,11 +149,13 @@ def send_accountant_report_email(
     user_email: str,
     month: str,
     stats: dict,
-    excel_bytes: bytes,
-    filename: str = "reporte_comprobantes.xlsx"
+    excel_bytes: bytes = None,
+    filename: str = "reporte_comprobantes.xlsx",
+    attachments: list = None,
+    custom_message: str = ""
 ) -> dict:
     """
-    Envía por correo el reporte contable mensual e impositivo con el archivo Excel adjunto al contador.
+    Envía por correo el paquete contable mensual con planillas y documentos bancarios seleccionados al contador.
     """
     smtp_host, smtp_port, smtp_user, smtp_pass, smtp_from = get_smtp_config()
 
@@ -158,20 +165,63 @@ def send_accountant_report_email(
     total_iibb = stats.get("total_iibb", 0.0)
     total_tickets = stats.get("total_tickets", 0)
 
+    # Lista consolidada de adjuntos: [ {"filename": str, "content": bytes} ]
+    final_attachments = []
+    if excel_bytes and filename:
+        final_attachments.append({"filename": filename, "content": excel_bytes})
+    if attachments:
+        for att in attachments:
+            if att.get("filename") and att.get("content"):
+                final_attachments.append(att)
+
     if not smtp_host or not smtp_user or not smtp_pass:
-        logger.info(f"[MODO DEV / PRUEBAS] Envío a contador {to_email} de {user_name} ({user_email}) para mes {month}: ${total_spent:.2f}")
+        logger.info(f"[MODO DEV / PRUEBAS] Envío a contador {to_email} de {user_name} ({user_email}) para mes {month}: ${total_spent:.2f} con {len(final_attachments)} adjuntos")
         return {
             "sent": False,
             "dev_mode": True,
-            "message": f"Servidor SMTP no configurado. Reporte simulado con éxito hacia {to_email}."
+            "message": f"Servidor SMTP no configurado. Reporte simulado con éxito hacia {to_email} ({len(final_attachments)} adjuntos)."
         }
 
     try:
         msg = MIMEMultipart()
-        msg["Subject"] = f"Reporte Contable e Impositivo {month} | {user_name}"
+        msg["Subject"] = f"Paquete Contable e Impositivo {month} | {user_name}"
         msg["From"] = smtp_from
         msg["To"] = to_email
         msg["Reply-To"] = user_email
+
+        # Construir bloque de nota personalizada si existe
+        custom_note_html = ""
+        if custom_message and custom_message.strip():
+            custom_note_html = f"""
+            <div style="margin: 18px 0; padding: 14px; background-color: #27272a; border-left: 4px solid #d4af37; border-radius: 6px; font-size: 13px; color: #fafafa; line-height: 1.5;">
+              <strong style="color: #d4af37;">Nota adjunta de {user_name}:</strong><br>
+              {custom_message.strip().replace(chr(10), '<br>')}
+            </div>
+            """
+
+        # Construir lista visual de adjuntos
+        attachments_items_html = ""
+        for att in final_attachments:
+            fn = att["filename"]
+            icon = "📊" if fn.endswith((".xlsx", ".xls", ".csv")) else ("📑" if fn.endswith(".pdf") else "📎")
+            attachments_items_html += f"""
+            <li style="margin-bottom: 4px;">
+              <span>{icon}</span> <strong style="color: #f4f4f5;">{fn}</strong>
+            </li>
+            """
+
+        attachments_block_html = ""
+        if final_attachments:
+            attachments_block_html = f"""
+            <div style="margin-top: 20px; padding: 14px; background-color: #121215; border-radius: 8px; border: 1px solid #27272a;">
+              <p style="margin: 0 0 10px 0; font-size: 13px; font-weight: bold; color: #d4af37;">
+                📎 Archivos y Documentación Adjunta ({len(final_attachments)}):
+              </p>
+              <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: #a1a1aa; line-height: 1.6;">
+                {attachments_items_html}
+              </ul>
+            </div>
+            """
 
         footer_html = get_email_footer_html()
         html_content = f"""
@@ -181,7 +231,7 @@ def send_accountant_report_email(
           <meta charset="utf-8">
           <style>
             body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #09090b; color: #f4f4f5; margin: 0; padding: 20px; }}
-            .card {{ max-width: 560px; margin: 0 auto; background-color: #18181b; border: 1px solid #d4af37; border-radius: 12px; padding: 28px; }}
+            .card {{ max-width: 580px; margin: 0 auto; background-color: #18181b; border: 1px solid #d4af37; border-radius: 12px; padding: 28px; }}
             .logo {{ color: #d4af37; font-size: 20px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 20px; text-align: center; }}
             .title {{ font-size: 16px; font-weight: 700; color: #fafafa; margin-bottom: 12px; }}
             .table {{ width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #121215; border-radius: 8px; overflow: hidden; }}
@@ -192,14 +242,16 @@ def send_accountant_report_email(
         </head>
         <body>
           <div class="card">
-            <div class="logo">CB Asesor • Control Contable</div>
-            <div class="title">Comprobantes & Gastos del Período: {month}</div>
+            <div class="logo">CB Asesor • Cierre Contable Mensual</div>
+            <div class="title">Paquete de Documentación & Gastos: {month}</div>
             <p>Estimado/a Contador/a,</p>
-            <p>Le compartimos el consolidado de comprobantes, facturas y gastos generado por <strong>{user_name}</strong> ({user_email}):</p>
+            <p>Le compartimos el cierre mensual y la documentación respaldatoria enviada por <strong>{user_name}</strong> ({user_email}):</p>
             
+            {custom_note_html}
+
             <table class="table">
               <tr>
-                <td><strong>Total Facturado / Gastado</strong></td>
+                <td><strong>Total Comprobantes Escaneados</strong></td>
                 <td class="val">${total_spent:,.2f}</td>
               </tr>
               <tr>
@@ -220,9 +272,7 @@ def send_accountant_report_email(
               </tr>
             </table>
 
-            <p style="font-size: 13px; color: #a1a1aa;">
-              📎 Se adjunta a este mensaje el archivo Excel (<strong>{filename}</strong>) que contiene el Libro IVA Compras detallado y el resumen de comprobantes para su liquidación contable.
-            </p>
+            {attachments_block_html}
 
             {footer_html}
           </div>
@@ -232,9 +282,9 @@ def send_accountant_report_email(
 
         msg.attach(MIMEText(html_content, "html", "utf-8"))
 
-        if excel_bytes:
-            part = MIMEApplication(excel_bytes, Name=filename)
-            part['Content-Disposition'] = f'attachment; filename="{filename}"'
+        for att in final_attachments:
+            part = MIMEApplication(att["content"], Name=att["filename"])
+            part['Content-Disposition'] = f'attachment; filename="{att["filename"]}"'
             msg.attach(part)
 
         if smtp_port == 465:

@@ -11,15 +11,19 @@ from pdf_processor import (
     generate_zip_report,
     PDFS_DIR
 )
-from ticket_ocr import extract_data_from_image, get_monthly_summary, DATA_DIR
+from ticket_ocr import extract_data_from_image, get_monthly_summary, DATA_DIR, sanitize_email
 from excel_exporter import generate_excel_report, generate_csv_report
 from gdrive_sync import restore_all_from_gdrive, sync_month_to_gdrive
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from fastapi import Request, Header
 
 import auth_db
 import email_sender
+
+BASE_DIR = Path(__file__).resolve().parent
+DOCS_DIR = BASE_DIR / "Documentos_Mensuales"
+DOCS_DIR.mkdir(exist_ok=True)
 
 app = FastAPI(title="Escáner de Tickets Factura A")
 
@@ -41,6 +45,14 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    code: str
+    new_password: str
+
 class UpdateProfileRequest(BaseModel):
     name: str
     accountant_email: Optional[str] = ""
@@ -48,6 +60,10 @@ class UpdateProfileRequest(BaseModel):
 
 class SendAccountantReportRequest(BaseModel):
     month: str
+    include_excel: bool = True
+    include_pdf_tickets: bool = False
+    selected_docs: Optional[list] = []
+    custom_message: Optional[str] = ""
 
 def get_auth_user(authorization: Optional[str] = Header(None)) -> Optional[dict]:
     if not authorization:
@@ -127,6 +143,44 @@ async def auth_login(req: LoginRequest):
         }
     }
 
+@app.post("/api/auth/forgot-password")
+async def auth_forgot_password(req: ForgotPasswordRequest):
+    email = req.email.strip().lower()
+    if not email or "@" not in email:
+        return JSONResponse(status_code=400, content={"success": False, "error": "Correo electrónico inválido"})
+    user = auth_db.get_user_by_email(email)
+    if not user:
+        return JSONResponse(status_code=404, content={"success": False, "error": "No existe una cuenta registrada con este correo electrónico."})
+    code = auth_db.create_verification_code(email, user["name"])
+    email_res = email_sender.send_verification_email(email, user["name"], code, is_recovery=True)
+    return {
+        "success": True,
+        "email": email,
+        "dev_mode": email_res.get("dev_mode", False),
+        "dev_code": email_res.get("code") if email_res.get("dev_mode") else None,
+        "message": "Código de recuperación enviado a tu correo."
+    }
+
+@app.post("/api/auth/reset-password")
+async def auth_reset_password(req: ResetPasswordRequest):
+    email = req.email.strip().lower()
+    code = req.code.strip()
+    new_password = req.new_password.strip()
+    if len(new_password) < 4:
+        return JSONResponse(status_code=400, content={"success": False, "error": "La contraseña debe tener al menos 4 caracteres"})
+    user = auth_db.reset_password(email, new_password, code)
+    if not user:
+        return JSONResponse(status_code=400, content={"success": False, "error": "Código incorrecto o vencido (validez: 15 min)"})
+    return {
+        "success": True,
+        "token": user["token"],
+        "user": {
+            "name": user["name"],
+            "email": user["email"]
+        },
+        "message": "Contraseña actualizada exitosamente."
+    }
+
 @app.get("/api/auth/me")
 async def auth_me(authorization: Optional[str] = Header(None)):
     user = get_auth_user(authorization)
@@ -170,6 +224,106 @@ async def update_profile(req: UpdateProfileRequest, authorization: Optional[str]
     updated_user = auth_db.validate_session(authorization.replace("Bearer ", "").strip())
     return {"success": True, "user": updated_user}
 
+def get_user_month_docs_dir(user_email: str, month: str) -> Path:
+    safe_email = sanitize_email(user_email)
+    month_key = month.replace("-", "_")
+    target_dir = DOCS_DIR / safe_email / month_key
+    target_dir.mkdir(parents=True, exist_ok=True)
+    return target_dir
+
+@app.get("/api/documents/{month}")
+async def list_month_documents(month: str, authorization: Optional[str] = Header(None)):
+    user = get_auth_user(authorization)
+    if not user:
+        return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
+    
+    docs_dir = get_user_month_docs_dir(user["email"], month)
+    doc_files = []
+    if docs_dir.exists():
+        for f in sorted(docs_dir.iterdir(), key=lambda x: x.stat().st_mtime, reverse=True):
+            if f.is_file():
+                size_kb = round(f.stat().st_size / 1024, 1)
+                name_l = f.name.lower()
+                cat = "banco" if any(w in name_l for w in ["banco", "extracto", "cuenta", "galicia", "santander", "bbva", "macro", "nacion", "resumen_cta"]) else \
+                      ("tarjeta" if any(w in name_l for w in ["tarjeta", "visa", "master", "amex", "credito"]) else \
+                      ("prestamo" if any(w in name_l for w in ["prestamo", "cuota", "credito", "mutuo", "financiacion"]) else "otro"))
+                doc_files.append({
+                    "name": f.name,
+                    "size_kb": size_kb,
+                    "category": cat,
+                    "uploaded_at": datetime.fromtimestamp(f.stat().st_mtime).strftime("%d/%m/%Y %H:%M")
+                })
+    
+    summary = get_monthly_summary(month, user_email=user["email"])
+    has_expenses = len(summary.get("tickets", [])) > 0
+    safe_email = sanitize_email(user["email"])
+    pdf_user_path = PDFS_DIR / safe_email / f"Tickets_{month.replace('-', '_')}.pdf"
+    pdf_root_path = PDFS_DIR / f"Tickets_{month.replace('-', '_')}.pdf"
+    has_pdf = pdf_user_path.exists() or pdf_root_path.exists()
+
+    return {
+        "success": True,
+        "month": month,
+        "documents": doc_files,
+        "has_excel": has_expenses,
+        "tickets_count": len(summary.get("tickets", [])),
+        "has_pdf_tickets": has_pdf
+    }
+
+@app.post("/api/documents/{month}/upload")
+async def upload_month_document(
+    month: str, 
+    file: UploadFile = File(...), 
+    category: str = Form("otro"),
+    authorization: Optional[str] = Header(None)
+):
+    user = get_auth_user(authorization)
+    if not user:
+        return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
+    
+    docs_dir = get_user_month_docs_dir(user["email"], month)
+    clean_name = Path(file.filename).name.replace(" ", "_")
+    dest_path = docs_dir / clean_name
+    
+    content = await file.read()
+    with open(dest_path, "wb") as f:
+        f.write(content)
+        
+    return {
+        "success": True, 
+        "filename": clean_name, 
+        "size_kb": round(len(content) / 1024, 1),
+        "message": f"Archivo '{clean_name}' adjuntado correctamente al mes {month}."
+    }
+
+@app.delete("/api/documents/{month}/{filename}")
+async def delete_month_document(month: str, filename: str, authorization: Optional[str] = Header(None)):
+    user = get_auth_user(authorization)
+    if not user:
+        return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
+    
+    clean_name = Path(filename).name
+    docs_dir = get_user_month_docs_dir(user["email"], month)
+    target = docs_dir / clean_name
+    if target.exists() and target.is_file():
+        target.unlink()
+        return {"success": True, "message": "Documento eliminado."}
+    return JSONResponse(status_code=404, content={"success": False, "error": "Archivo no encontrado."})
+
+@app.get("/api/documents/{month}/{filename}/download")
+async def download_month_document(month: str, filename: str, token: Optional[str] = None, authorization: Optional[str] = Header(None)):
+    auth_header = authorization or (f"Bearer {token}" if token else None)
+    user = get_auth_user(auth_header)
+    if not user:
+        raise HTTPException(status_code=401, detail="No autorizado")
+    
+    clean_name = Path(filename).name
+    docs_dir = get_user_month_docs_dir(user["email"], month)
+    target = docs_dir / clean_name
+    if not target.exists():
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    return FileResponse(path=str(target), filename=clean_name)
+
 @app.post("/api/user/send-accountant-report")
 async def send_accountant_report(req: SendAccountantReportRequest, authorization: Optional[str] = Header(None)):
     user = get_auth_user(authorization)
@@ -185,8 +339,47 @@ async def send_accountant_report(req: SendAccountantReportRequest, authorization
     
     month = req.month.strip()
     summary = get_monthly_summary(month, user_email=user["email"])
-    excel_bytes = generate_excel_report(month, user_email=user["email"])
-    filename = f"reporte_comprobantes_{month}_{user['name'].replace(' ', '_')}.xlsx"
+    
+    attachments_list = []
+    
+    # 1. Planilla Excel de comprobantes e IVA
+    if req.include_excel:
+        excel_bytes = generate_excel_report(month, user_email=user["email"])
+        if excel_bytes:
+            excel_filename = f"reporte_comprobantes_{month}_{user['name'].replace(' ', '_')}.xlsx"
+            attachments_list.append({"filename": excel_filename, "content": excel_bytes})
+            
+    # 2. PDF con las fotos de comprobantes escaneados
+    if req.include_pdf_tickets:
+        safe_email = sanitize_email(user["email"])
+        pdf_path = PDFS_DIR / safe_email / f"Tickets_{month.replace('-', '_')}.pdf"
+        if not pdf_path.exists():
+            pdf_path = PDFS_DIR / f"Tickets_{month.replace('-', '_')}.pdf"
+        if pdf_path.exists():
+            with open(pdf_path, "rb") as f:
+                attachments_list.append({
+                    "filename": f"Tickets_Escaneados_{month}.pdf",
+                    "content": f.read()
+                })
+                
+    # 3. Documentos adicionales seleccionados (bancarios, tarjetas, préstamos)
+    docs_dir = get_user_month_docs_dir(user["email"], month)
+    selected_docs = req.selected_docs or []
+    for doc_name in selected_docs:
+        clean_name = Path(doc_name).name
+        target_file = docs_dir / clean_name
+        if target_file.exists() and target_file.is_file():
+            with open(target_file, "rb") as f:
+                attachments_list.append({
+                    "filename": clean_name,
+                    "content": f.read()
+                })
+                
+    if not attachments_list:
+        return JSONResponse(status_code=400, content={
+            "success": False,
+            "error": "Debes seleccionar al menos un archivo para enviar a tu contador."
+        })
     
     res = email_sender.send_accountant_report_email(
         to_email=accountant_email,
@@ -200,8 +393,8 @@ async def send_accountant_report(req: SendAccountantReportRequest, authorization
             "total_iibb": summary.get("total_iibb", 0.0),
             "total_tickets": len(summary.get("tickets", []))
         },
-        excel_bytes=excel_bytes,
-        filename=filename
+        attachments=attachments_list,
+        custom_message=req.custom_message or ""
     )
     return res
 

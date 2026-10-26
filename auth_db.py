@@ -262,5 +262,39 @@ def user_exists(email: str) -> bool:
     conn.close()
     return row is not None
 
+def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
+    email = email.strip().lower()
+    conn = get_connection()
+    row = conn.execute("SELECT id, name, email FROM users WHERE email = ? AND is_active = 1", (email,)).fetchone()
+    conn.close()
+    if row:
+        return {"id": row["id"], "name": row["name"], "email": row["email"]}
+    return None
+
+def reset_password(email: str, new_password: str, code: str) -> Optional[Dict[str, Any]]:
+    email = email.strip().lower()
+    if not verify_code(email, code):
+        return None
+    pwd_hash = hash_password(new_password)
+    conn = get_connection()
+    try:
+        with conn:
+            conn.execute("UPDATE verification_codes SET used = 1 WHERE email = ? AND code = ?", (email, code))
+            conn.execute("UPDATE users SET password_hash = ? WHERE email = ?", (pwd_hash, email))
+            row = conn.execute("SELECT id, name, email, accountant_email, accountant_name FROM users WHERE email = ?", (email,)).fetchone()
+            if row:
+                token = create_session_for_user(row["id"], row["email"], row["name"], conn)
+                return {
+                    "user_id": row["id"],
+                    "name": row["name"],
+                    "email": row["email"],
+                    "accountant_email": row["accountant_email"] or "",
+                    "accountant_name": row["accountant_name"] or "",
+                    "token": token
+                }
+    finally:
+        conn.close()
+    return None
+
 # Inicializar DB al importar
 init_db()
