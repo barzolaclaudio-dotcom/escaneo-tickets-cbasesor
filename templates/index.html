@@ -718,10 +718,24 @@
                             <span class="flex items-center gap-2">
                                 <span class="text-sm">📂</span>
                                 <span class="font-bold">Documentos del Mes</span>
-                                <span class="text-[11px] text-zinc-400 hidden sm:inline">(Extractos Bancarios, Tarjetas & Boletos)</span>
+                                <span class="text-[11px] text-zinc-400 hidden sm:inline">(Extractos Bancarios & Boletos)</span>
                             </span>
                             <span id="docs-count-badge" class="px-2.5 py-0.5 bg-amber-500/15 text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/30">
                                 0 archivos
+                            </span>
+                        </button>
+                    </div>
+
+                    <!-- Botón para Resúmenes de Tarjetas Inteligentes con IA -->
+                    <div class="pt-2">
+                        <button onclick="openCardsModal()" class="w-full py-2.5 px-3.5 bg-gradient-to-r from-[#171228] to-[#121218] hover:from-[#211a3b] hover:to-[#1a1a24] text-purple-300 font-semibold rounded-xl border border-purple-500/30 text-xs flex items-center justify-between transition shadow-sm">
+                            <span class="flex items-center gap-2">
+                                <span class="text-sm">💳</span>
+                                <span class="font-bold text-white">Resúmenes de Tarjetas (IA)</span>
+                                <span class="text-[11px] text-purple-300/70 hidden sm:inline">(Visa, Master, Cabal, Lemon)</span>
+                            </span>
+                            <span id="cards-count-badge" class="px-2.5 py-0.5 bg-purple-500/20 text-purple-300 text-[10px] font-bold rounded-full border border-purple-500/40">
+                                0 tarjetas
                             </span>
                         </button>
                     </div>
@@ -878,6 +892,60 @@
             <div class="pt-2">
                 <button onclick="closeDocumentsModal()" class="w-full py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs rounded-xl transition">
                     Listo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: RESÚMENES DE TARJETAS INTELIGENTES (IA) -->
+    <div id="cards-modal" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-[#121215] border border-purple-500/30 rounded-3xl p-5 sm:p-7 max-w-3xl w-full shadow-2xl space-y-5 relative my-8">
+            <div class="flex items-center justify-between pb-3 border-b border-purple-500/20">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-lg">
+                        💳
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white text-base leading-tight">Resúmenes de Tarjetas con IA</h3>
+                        <p id="cards-modal-subtitle" class="text-xs text-purple-300/70 leading-tight">Visa, Mastercard, Cabal y Fintech</p>
+                    </div>
+                </div>
+                <button onclick="closeCardsModal()" class="text-zinc-400 hover:text-white p-1 text-lg font-bold">✕</button>
+            </div>
+
+            <!-- Zona de Subida de Resumen PDF -->
+            <div class="p-4 bg-[#181424] rounded-2xl border border-purple-500/30 space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-bold text-white">Cargar Resumen Bancario en PDF</p>
+                        <p class="text-[11px] text-zinc-400 mt-0.5">La IA extrae automáticamente compras, cuotas, categorías e impuestos.</p>
+                    </div>
+                    <div>
+                        <label class="py-2.5 px-4 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer transition shadow-md whitespace-nowrap">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                            <span>+ Subir Resumen PDF</span>
+                            <input type="file" id="card-file-input" class="hidden" accept=".pdf" onchange="uploadSelectedCard()">
+                        </label>
+                    </div>
+                </div>
+                <div id="card-upload-status" class="hidden p-3 rounded-xl text-xs font-medium"></div>
+            </div>
+
+            <!-- Lista de Tarjetas Analizadas -->
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-purple-400">Tarjetas y Cuentas del Período</span>
+                    <span id="cards-list-count" class="text-[11px] text-zinc-400">0 tarjetas</span>
+                </div>
+                <div id="cards-items-container" class="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+                    <p class="text-xs text-zinc-500 italic">Cargando tarjetas...</p>
+                </div>
+            </div>
+
+            <div class="pt-2 flex items-center justify-between border-t border-zinc-800">
+                <p class="text-[11px] text-zinc-400">💡 Los consumos se incluyen automáticamente en la pestaña <strong class="text-purple-300">Resumen Tarjetas</strong> del Excel.</p>
+                <button onclick="closeCardsModal()" class="py-2 px-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs rounded-xl transition">
+                    Cerrar
                 </button>
             </div>
         </div>
@@ -1062,6 +1130,60 @@
             <div class="pt-2">
                 <button onclick="closeDocumentsModal()" class="w-full py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs rounded-xl transition">
                     Listo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: RESÚMENES DE TARJETAS INTELIGENTES (IA) -->
+    <div id="cards-modal" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-[#121215] border border-purple-500/30 rounded-3xl p-5 sm:p-7 max-w-3xl w-full shadow-2xl space-y-5 relative my-8">
+            <div class="flex items-center justify-between pb-3 border-b border-purple-500/20">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-lg">
+                        💳
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white text-base leading-tight">Resúmenes de Tarjetas con IA</h3>
+                        <p id="cards-modal-subtitle" class="text-xs text-purple-300/70 leading-tight">Visa, Mastercard, Cabal y Fintech</p>
+                    </div>
+                </div>
+                <button onclick="closeCardsModal()" class="text-zinc-400 hover:text-white p-1 text-lg font-bold">✕</button>
+            </div>
+
+            <!-- Zona de Subida de Resumen PDF -->
+            <div class="p-4 bg-[#181424] rounded-2xl border border-purple-500/30 space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-bold text-white">Cargar Resumen Bancario en PDF</p>
+                        <p class="text-[11px] text-zinc-400 mt-0.5">La IA extrae automáticamente compras, cuotas, categorías e impuestos.</p>
+                    </div>
+                    <div>
+                        <label class="py-2.5 px-4 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer transition shadow-md whitespace-nowrap">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                            <span>+ Subir Resumen PDF</span>
+                            <input type="file" id="card-file-input" class="hidden" accept=".pdf" onchange="uploadSelectedCard()">
+                        </label>
+                    </div>
+                </div>
+                <div id="card-upload-status" class="hidden p-3 rounded-xl text-xs font-medium"></div>
+            </div>
+
+            <!-- Lista de Tarjetas Analizadas -->
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-purple-400">Tarjetas y Cuentas del Período</span>
+                    <span id="cards-list-count" class="text-[11px] text-zinc-400">0 tarjetas</span>
+                </div>
+                <div id="cards-items-container" class="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+                    <p class="text-xs text-zinc-500 italic">Cargando tarjetas...</p>
+                </div>
+            </div>
+
+            <div class="pt-2 flex items-center justify-between border-t border-zinc-800">
+                <p class="text-[11px] text-zinc-400">💡 Los consumos se incluyen automáticamente en la pestaña <strong class="text-purple-300">Resumen Tarjetas</strong> del Excel.</p>
+                <button onclick="closeCardsModal()" class="py-2 px-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs rounded-xl transition">
+                    Cerrar
                 </button>
             </div>
         </div>
@@ -1611,7 +1733,7 @@
                 populateMonthDropdown();
                 updateSelectedMonthCard();
                 fetchStats();
-                loadMonthDocuments();
+                loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards();
                 alert("✅ ¡Contraseña actualizada con éxito! Ya estás dentro de tu cuenta.");
             } catch (err) {
                 if (errEl) { errEl.textContent = "Error de conexión: " + err.message; errEl.classList.remove('hidden'); }
@@ -1762,7 +1884,7 @@
             
             const modal = document.getElementById('documents-modal');
             if (modal) modal.classList.remove('hidden');
-            loadMonthDocuments(month);
+            loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month);
         }
 
         function closeDocumentsModal() {
@@ -1881,7 +2003,7 @@
                         setTimeout(() => statusEl.classList.add('hidden'), 3500);
                     }
                     if (fileInput) fileInput.value = '';
-                    loadMonthDocuments(month);
+                    loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month);
                 } else {
                     if (statusEl) {
                         statusEl.textContent = `❌ ${data.error || 'Error al subir documento.'}`;
@@ -1908,12 +2030,284 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    loadMonthDocuments(month);
+                    loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month);
                 } else {
                     alert(`❌ Error al eliminar: ${data.error}`);
                 }
             } catch (err) {
                 alert(`❌ Error: ${err.message}`);
+            }
+        }
+
+        // ==========================================
+        // RESÚMENES DE TARJETAS INTELIGENTES (IA)
+        // ==========================================
+        let currentMonthCardsData = [];
+
+        function openCardsModal() {
+            const month = (typeof getSelectedMonth === 'function') ? getSelectedMonth() : (document.getElementById('month-selector')?.value || '');
+            const monthTitle = document.getElementById('selected-month-title')?.textContent || month;
+            const subtitle = document.getElementById('cards-modal-subtitle');
+            if (subtitle) subtitle.textContent = `Tarjetas y Resúmenes de ${monthTitle}`;
+            
+            const modal = document.getElementById('cards-modal');
+            if (modal) modal.classList.remove('hidden');
+            loadMonthCards(month);
+        }
+
+        function closeCardsModal() {
+            const modal = document.getElementById('cards-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function loadMonthCards(targetMonth) {
+            const month = targetMonth || ((typeof getSelectedMonth === 'function') ? getSelectedMonth() : (document.getElementById('month-selector')?.value || ''));
+            const token = getAuthToken();
+            if (!token) return;
+
+            try {
+                const res = await fetch(`/api/cards/${month}`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                currentMonthCardsData = data.cards || [];
+
+                const count = currentMonthCardsData.length;
+                const badge = document.getElementById('cards-count-badge');
+                if (badge) {
+                    badge.textContent = `${count} ${count === 1 ? 'tarjeta' : 'tarjetas'}`;
+                }
+
+                renderCardsModalList(currentMonthCardsData);
+            } catch (err) {
+                console.warn("Error cargando tarjetas del mes:", err);
+            }
+        }
+
+        function renderCardsModalList(cards) {
+            const container = document.getElementById('cards-items-container');
+            const countEl = document.getElementById('cards-list-count');
+            if (countEl) countEl.textContent = `${cards.length} ${cards.length === 1 ? 'tarjeta' : 'tarjetas'}`;
+            if (!container) return;
+
+            if (cards.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 px-4 bg-[#161224] rounded-2xl border border-purple-500/20">
+                        <span class="text-3xl block mb-2">💳</span>
+                        <p class="text-sm text-purple-200 font-bold">No hay resúmenes de tarjeta cargados para este mes.</p>
+                        <p class="text-xs text-purple-300/60 mt-1 max-w-sm mx-auto">Subí el PDF de tu resumen de Visa, Mastercard, Cabal o Lemon y la IA extraerá todas las compras, cuotas y categorías.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = cards.map(c => {
+                const consumos = c.consumos || [];
+                const imp = c.impuestos_y_cargos || {};
+                const totalImp = (imp.sellos || 0) + (imp.intereses_financiacion || 0) + (imp.iva_intereses_21 || 0) + (imp.percepcion_iibb || 0) + (imp.percepcion_afip_rg4815 || 0) + (imp.otros_cargos || 0);
+                const cardId = c.id || 'card_' + Math.random().toString(36).substr(2, 9);
+                const ultimos4 = c.numero_tarjeta_ultimos4 ? `•••• ${c.numero_tarjeta_ultimos4}` : '';
+                
+                return `
+                    <div class="bg-[#171325] rounded-2xl border border-purple-500/30 overflow-hidden shadow-lg transition hover:border-purple-400/50">
+                        <!-- Cabecera de la Tarjeta -->
+                        <div class="p-4 bg-gradient-to-r from-purple-950/40 via-[#1c1630] to-[#171325] border-b border-purple-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center text-xl flex-shrink-0">
+                                    💳
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <h4 class="font-bold text-white text-sm">${c.marca || 'Tarjeta'} ${c.tipo_tarjeta || ''}</h4>
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/25 text-purple-200 border border-purple-400/30">${c.entidad || 'Banco'}</span>
+                                        ${ultimos4 ? `<span class="text-[11px] text-zinc-400 font-mono">${ultimos4}</span>` : ''}
+                                    </div>
+                                    <p class="text-[11px] text-zinc-400 mt-0.5">
+                                        Cierre: <strong class="text-zinc-200">${c.fecha_cierre || '-'}</strong> • Vto: <strong class="text-zinc-200">${c.fecha_vencimiento || '-'}</strong>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between sm:justify-end gap-3">
+                                <div class="text-right">
+                                    <p class="text-[10px] text-zinc-400 uppercase font-bold tracking-wider">Total a Pagar</p>
+                                    <p class="text-base font-extrabold text-emerald-400">$${(c.saldo_pesos || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+                                    ${c.saldo_dolares > 0 ? `<p class="text-[11px] font-bold text-sky-400">U$S ${(c.saldo_dolares || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>` : ''}
+                                </div>
+                                <button onclick="deleteCard('${c.id}')" class="p-2 text-zinc-400 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition" title="Eliminar este resumen">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Resumen Rápido y Botones -->
+                        <div class="px-4 py-2.5 bg-[#120f1d] flex items-center justify-between text-xs border-b border-purple-500/10">
+                            <div class="flex items-center gap-3 text-[11px] text-zinc-300">
+                                <span>🛒 <strong>${consumos.length}</strong> compras</span>
+                                <span>🏛️ Impuestos: <strong>$${totalImp.toLocaleString('es-AR', {minimumFractionDigits: 2})}</strong></span>
+                            </div>
+                            <button onclick="toggleCardDetails('${cardId}')" class="text-purple-400 hover:text-purple-300 font-semibold text-[11px] flex items-center gap-1 transition">
+                                <span id="btn-text-${cardId}">Ver Consumos</span>
+                                <svg id="btn-icon-${cardId}" class="w-3.5 h-3.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                        </div>
+
+                        <!-- Desglose de Consumos e Impuestos (Colapsable) -->
+                        <div id="details-${cardId}" class="hidden p-4 space-y-4 bg-[#141021]">
+                            <!-- Tabla de Consumos -->
+                            <div>
+                                <h5 class="text-[11px] font-bold uppercase tracking-wider text-purple-300 mb-2">Detalle de Compras y Cuotas</h5>
+                                ${consumos.length === 0 ? '<p class="text-xs text-zinc-500">No se registraron compras individuales en este resumen.</p>' : `
+                                    <div class="overflow-x-auto rounded-xl border border-zinc-800">
+                                        <table class="w-full text-left text-xs">
+                                            <thead class="bg-[#1c182c] text-zinc-400 text-[10px] uppercase">
+                                                <tr>
+                                                    <th class="py-2 px-3">Fecha</th>
+                                                    <th class="py-2 px-3">Comercio</th>
+                                                    <th class="py-2 px-3">Cuota</th>
+                                                    <th class="py-2 px-3">Categoría</th>
+                                                    <th class="py-2 px-3 text-right">Monto</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-zinc-800/60 font-mono">
+                                                ${consumos.map(item => `
+                                                    <tr class="hover:bg-purple-900/10 text-zinc-300 font-sans">
+                                                        <td class="py-1.5 px-3 whitespace-nowrap text-[11px]">${item.fecha || '-'}</td>
+                                                        <td class="py-1.5 px-3 font-semibold text-white">${item.detalle || '-'}</td>
+                                                        <td class="py-1.5 px-3 text-[11px] text-zinc-400">${item.cuota_actual && item.cuota_total ? `<span class="px-1.5 py-0.5 rounded bg-zinc-800 text-purple-300 font-bold">${item.cuota_actual}/${item.cuota_total}</span>` : '-'}</td>
+                                                        <td class="py-1.5 px-3"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">${item.categoria || 'Varios'}</span></td>
+                                                        <td class="py-1.5 px-3 text-right font-bold ${item.moneda === 'USD' ? 'text-sky-300' : 'text-zinc-200'}">${item.moneda === 'USD' ? 'U$S ' : '$ '}${(item.monto || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                                                    </tr>
+                                                `).join('')}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                `}
+                            </div>
+
+                            <!-- Desglose Impositivo -->
+                            <div class="p-3 bg-[#19152b] rounded-xl border border-purple-500/20">
+                                <h5 class="text-[11px] font-bold uppercase tracking-wider text-gold-400 mb-2">Desglose Impositivo & Cargos Bancarios</h5>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                                    <div class="p-2 rounded-lg bg-black/20">
+                                        <p class="text-[10px] text-zinc-400">Sellos</p>
+                                        <p class="font-bold text-white">$${(imp.sellos || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-black/20">
+                                        <p class="text-[10px] text-zinc-400">Intereses Financiación</p>
+                                        <p class="font-bold text-white">$${(imp.intereses_financiacion || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-black/20">
+                                        <p class="text-[10px] text-zinc-400">IVA 21% Intereses</p>
+                                        <p class="font-bold text-gold-300">$${(imp.iva_intereses_21 || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-black/20">
+                                        <p class="text-[10px] text-zinc-400">Perc. Ingresos Brutos</p>
+                                        <p class="font-bold text-amber-300">$${(imp.percepcion_iibb || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-black/20">
+                                        <p class="text-[10px] text-zinc-400">Perc. AFIP RG 4815</p>
+                                        <p class="font-bold text-purple-300">$${(imp.percepcion_afip_rg4815 || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-black/20">
+                                        <p class="text-[10px] text-zinc-400">Otros Cargos</p>
+                                        <p class="font-bold text-zinc-300">$${(imp.otros_cargos || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleCardDetails(cardId) {
+            const el = document.getElementById(`details-${cardId}`);
+            const btnText = document.getElementById(`btn-text-${cardId}`);
+            const btnIcon = document.getElementById(`btn-icon-${cardId}`);
+            if (!el) return;
+            const isHidden = el.classList.contains('hidden');
+            if (isHidden) {
+                el.classList.remove('hidden');
+                if (btnText) btnText.textContent = 'Ocultar Consumos';
+                if (btnIcon) btnIcon.classList.add('rotate-180');
+            } else {
+                el.classList.add('hidden');
+                if (btnText) btnText.textContent = 'Ver Consumos';
+                if (btnIcon) btnIcon.classList.remove('rotate-180');
+            }
+        }
+
+        async function uploadSelectedCard() {
+            const fileInput = document.getElementById('card-file-input');
+            const statusEl = document.getElementById('card-upload-status');
+            const file = fileInput?.files[0];
+            if (!file) return;
+
+            const month = (typeof getSelectedMonth === 'function') ? getSelectedMonth() : (document.getElementById('month-selector')?.value || '');
+            const token = getAuthToken();
+
+            if (statusEl) {
+                statusEl.innerHTML = `
+                    <div class="flex items-center gap-2 text-purple-300">
+                        <svg class="animate-spin h-4 w-4 text-purple-400" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                        <span>Analizando resumen <strong>'${file.name}'</strong> con IA... esto demora unos segundos.</span>
+                    </div>
+                `;
+                statusEl.className = 'p-3 rounded-xl text-xs font-medium bg-purple-500/15 border border-purple-500/30 block';
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const res = await fetch(`/api/cards/${month}/upload-and-parse`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (statusEl) {
+                        statusEl.innerHTML = `✅ <strong>${data.message || 'Resumen procesado con éxito.'}</strong>`;
+                        statusEl.className = 'p-3 rounded-xl text-xs font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 block';
+                        setTimeout(() => statusEl.classList.add('hidden'), 4000);
+                    }
+                    if (fileInput) fileInput.value = '';
+                    loadMonthCards(month);
+                    if (typeof loadMonthDocuments === 'function') loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month);
+                } else {
+                    if (statusEl) {
+                        statusEl.innerHTML = `❌ <strong>Error:</strong> ${data.error || 'No se pudo procesar el resumen.'}`;
+                        statusEl.className = 'p-3 rounded-xl text-xs font-medium bg-red-500/15 text-red-400 border border-red-500/30 block';
+                    }
+                }
+            } catch (err) {
+                if (statusEl) {
+                    statusEl.innerHTML = `❌ <strong>Error de conexión:</strong> ${err.message}`;
+                    statusEl.className = 'p-3 rounded-xl text-xs font-medium bg-red-500/15 text-red-400 border border-red-500/30 block';
+                }
+            }
+        }
+
+        async function deleteCard(cardId) {
+            if (!confirm('¿Seguro que deseas eliminar este resumen de tarjeta del período?')) return;
+            const month = (typeof getSelectedMonth === 'function') ? getSelectedMonth() : (document.getElementById('month-selector')?.value || '');
+            const token = getAuthToken();
+
+            try {
+                const res = await fetch(`/api/cards/${month}/${cardId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadMonthCards(month);
+                } else {
+                    alert('Error al eliminar: ' + (data.error || 'Error desconocido'));
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
             }
         }
 
@@ -2089,7 +2483,7 @@
                     if (statusEl) statusEl.classList.add('hidden');
                     if (input) input.value = '';
                     await loadPackFilesChecklist(month);
-                    loadMonthDocuments(month);
+                    loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month);
                 } else {
                     if (statusEl) {
                         statusEl.textContent = `❌ ${data.error || 'Error al subir archivo'}`;
@@ -2201,7 +2595,7 @@
                             populateMonthDropdown();
                             updateSelectedMonthCard();
                             fetchStats();
-                            loadMonthDocuments();
+                            loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards();
                             return;
                         }
                     }
@@ -2336,7 +2730,7 @@
                 populateMonthDropdown();
                 updateSelectedMonthCard();
                 fetchStats();
-                loadMonthDocuments();
+                loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards();
             } catch (err) {
                 if (errEl) { errEl.textContent = "Error de conexión: " + err.message; errEl.classList.remove('hidden'); }
             } finally {
@@ -2377,7 +2771,7 @@
                 populateMonthDropdown();
                 updateSelectedMonthCard();
                 fetchStats();
-                loadMonthDocuments();
+                loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards();
             } catch (err) {
                 if (errEl) { errEl.textContent = "Error de conexión: " + err.message; errEl.classList.remove('hidden'); }
             } finally {
@@ -2450,7 +2844,7 @@
         function onMonthChange() {
             updateSelectedMonthCard();
             fetchExpensesData();
-            loadMonthDocuments();
+            loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards();
         }
 
         function updateSelectedMonthCard() {

@@ -93,8 +93,31 @@ Registro de lo aprendido y decidido. Actualizar cada vez que aprendamos algo nue
 - **Documentación del Período:** Soporte para adjuntar extractos bancarios, resúmenes de tarjetas de crédito corporativas/personales, comprobantes de cuotas de préstamos y boletos.
   - Almacenamiento aislado y privado por usuario en `Documentos_Mensuales/<safe_email>/<month_key>/`.
 - **Selector de Paquete de Envío al Contador:** Modal interactivo con checkboxes que permite seleccionar exactamente qué archivos enviar al contador (Excel de gastos, PDF de comprobantes, extractos bancarios tildados).
+- **Paquete Contable Mensual en ZIP (Integración con OneDrive/PC):**
+  - Botón directo en el dashboard y dentro del modal del contador: **"Descargar Paquete Contador (.ZIP)"**.
+  - Genera automáticamente un archivo comprimido nombrado con el período (ej. `Contador_Octubre_2026.zip`), listo para descomprimir o respaldar en la carpeta OneDrive `#responsable inscripto/Contador Octubre 2026`.
+  - Contenido empaquetado:
+    1. `Gastos_Octubre_2026.xlsx` (Resumen, Libro IVA Compras y Detalle de ítems).
+    2. `Libro_IVA_Compras_Octubre_2026.csv` (para importación directa en sistemas contables como Tango/Holistor).
+    3. `Tickets_Comprobantes_Octubre_2026.pdf` (todas las fotos de comprobantes escaneados).
+    4. Todos los documentos bancarios/cuotas adjuntos en el período (ej. `Cuota Supervielle 2-24.pdf`, extractos).
+    5. `RESUMEN_CIERRE.txt` con los totales fiscales calculados (Neto, IVA, Percepciones IIBB/IVA).
+  - Descarga no bloqueante mediante blob en segundo plano, sin recargar ni salir de la app PWA.
 - **Envío Transaccional Seguro:** La casilla actúa como tubería SMTP (no almacena copias de adjuntos de usuarios).
 - **Recuperación de Contraseña:** Flujo de autoservicio con código de seguridad OTP de 6 dígitos enviado por email y restablecimiento de contraseña.
+- **Detección Inteligente de PDFs en Subida Principal:** Si el usuario selecciona un PDF o comprobante bancario/cuota desde el botón principal de recorte de fotos ("Elegir Archivo / Galería"), la app detecta que no es una foto de ticket, evita romper el visor de recorte y le ofrece guardarlo de inmediato en "Documentos del Mes" para su contador.
+- **Módulo de Resúmenes de Tarjetas Inteligentes con IA (Etapa 1 - Octubre 2026):**
+  - Procesador integral de resúmenes de tarjetas de crédito y bancarias (`card_processor.py`) usando PyMuPDF + Gemini IA.
+  - Soporta resúmenes de Visa (BNA, Credicoop), Mastercard (Nativa BNA), Cabal (Credicoop), Lemon Cash y fintechs.
+  - Extracción automática de:
+    - Entidad bancaria, marca, tipo, terminación y fechas de cierre/vencimiento.
+    - Total adeudado en Pesos ($) y Dólares (USD), y pago mínimo.
+    - **Lista completa de consumos individuales** con fecha, comercio, plan de cuotas (ej. `02/06`), moneda e importe.
+    - **Categorización inteligente:** Combustible, Peajes, Supermercado, Servicios y Software, Indumentaria, Varios, etc.
+    - **Desglose de impuestos y tasas bancarias:** Sellos, Intereses de financiación, IVA 21% sobre intereses, Percepciones de Ingresos Brutos y Percepciones AFIP (RG 4815/5463).
+  - Interfaz web interactiva: botón dedicado "Resúmenes de Tarjetas (IA)", modal visual con tarjetas estilizadas, visor desplegable de compras y control de eliminación.
+  - **Integración con Excel:** Nueva pestaña institucional **`Resumen Tarjetas`** en el reporte `Gastos_Mes_Año.xlsx` con tablas formateadas con la identidad visual CB Asesor.
+  - Inclusión automática en el paquete `.ZIP` y envío por correo al contador.
 
 ## Aspectos Legales, Marcas y Términos de Uso (Pendiente para Lanzamiento Comercial / Google Play)
 - **Registro de Marca:**

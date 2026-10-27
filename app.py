@@ -2,6 +2,11 @@ from fastapi import FastAPI, File, UploadFile, Form, HTTPException, BackgroundTa
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, Response
 from pathlib import Path
 from datetime import datetime
+import io
+import zipfile
+import logging
+
+logger = logging.getLogger("app")
 
 from pdf_processor import (
     append_ticket_to_month_pdf,
@@ -14,6 +19,12 @@ from pdf_processor import (
 from ticket_ocr import extract_data_from_image, get_monthly_summary, DATA_DIR, sanitize_email
 from excel_exporter import generate_excel_report, generate_csv_report
 from gdrive_sync import restore_all_from_gdrive, sync_month_to_gdrive
+from card_processor import (
+    parse_credit_card_pdf,
+    load_monthly_cards,
+    add_card_to_month,
+    delete_card_from_month
+)
 from pydantic import BaseModel
 from typing import Optional, List
 from fastapi import Request, Header
@@ -66,7 +77,7 @@ class SendAccountantReportRequest(BaseModel):
     custom_message: Optional[str] = ""
 
 def get_auth_user(authorization: Optional[str] = Header(None)) -> Optional[dict]:
-    if not authorization:
+    if not authorization or not isinstance(authorization, str):
         return None
     token = authorization.replace("Bearer ", "").strip()
     return auth_db.validate_session(token)
@@ -323,6 +334,60 @@ async def download_month_document(month: str, filename: str, token: Optional[str
     if not target.exists():
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
     return FileResponse(path=str(target), filename=clean_name)
+
+# -------------------------------------------------------------
+# Endpoints de Tarjetas de Crédito y Débito (Etapa 1)
+# -------------------------------------------------------------
+@app.post("/api/cards/{month}/upload-and-parse")
+async def upload_and_parse_card(
+    month: str,
+    file: UploadFile = File(...),
+    authorization: Optional[str] = Header(None)
+):
+    user = get_auth_user(authorization)
+    if not user:
+        return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
+    
+    content = await file.read()
+    if not content:
+        return JSONResponse(status_code=400, content={"success": False, "error": "Archivo vacío"})
+        
+    filename = file.filename or "resumen.pdf"
+    clean_name = Path(filename).name.replace(" ", "_")
+    
+    # 1. Guardar copia física en la carpeta de documentos del usuario
+    docs_dir = get_user_month_docs_dir(user["email"], month)
+    dest_path = docs_dir / clean_name
+    try:
+        with open(dest_path, "wb") as f:
+            f.write(content)
+    except Exception as e:
+        logger.error(f"Error guardando archivo físico de tarjeta: {e}")
+
+    # 2. Parsear con PyMuPDF + Gemini
+    parsed = parse_credit_card_pdf(content, filename_hint=clean_name)
+    if not parsed.get("success"):
+        return JSONResponse(status_code=422, content={"success": False, "error": parsed.get("error", "Error procesando el resumen")})
+        
+    # 3. Guardar en JSON mensual
+    card_saved = add_card_to_month(month, parsed, user["email"])
+    return {"success": True, "card": card_saved, "message": f"Resumen de {card_saved.get('marca', 'Tarjeta')} procesado con éxito."}
+
+@app.get("/api/cards/{month}")
+async def get_monthly_cards_api(month: str, authorization: Optional[str] = Header(None)):
+    user = get_auth_user(authorization)
+    if not user:
+        return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
+    cards = load_monthly_cards(month, user["email"])
+    return {"success": True, "cards": cards}
+
+@app.delete("/api/cards/{month}/{card_id}")
+async def delete_monthly_card_api(month: str, card_id: str, authorization: Optional[str] = Header(None)):
+    user = get_auth_user(authorization)
+    if not user:
+        return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
+    ok = delete_card_from_month(month, card_id, user["email"])
+    return {"success": ok}
 
 @app.post("/api/user/send-accountant-report")
 async def send_accountant_report(req: SendAccountantReportRequest, authorization: Optional[str] = Header(None)):
@@ -657,6 +722,121 @@ async def download_zip(month: str, user_email: str = None):
             headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/download/accountant-pack/{month}")
+async def download_accountant_pack(
+    month: str, 
+    token: Optional[str] = None, 
+    user_email: Optional[str] = None, 
+    authorization: Optional[str] = Header(None)
+):
+    """
+    Descarga el Paquete Contable Completo del Mes en formato ZIP:
+    - Gastos_{Mes}_{Año}.xlsx (Excel profesional con Resumen, IVA Compras y Productos)
+    - Libro_IVA_Compras_{Mes}_{Año}.csv (para importar en sistemas contables)
+    - Tickets_Comprobantes_{Mes}_{Año}.pdf (PDF con todos los tickets/facturas escaneados)
+    - Documentos del Período (Extractos bancarios, resúmenes de tarjetas, cuotas de préstamos, etc.)
+    - RESUMEN_CIERRE.txt (resumen ejecutivo de totales)
+    """
+    try:
+        auth_str = authorization if isinstance(authorization, str) else None
+        auth_header = auth_str or (f"Bearer {token}" if token else None)
+        user = get_auth_user(auth_header) if auth_header else None
+        email = user["email"] if user else (user_email or "").strip()
+        user_name = user["name"] if user else "Usuario"
+        
+        month_key = month.replace("-", "_")
+        parts = month_key.split("_")
+        meses_nombres = {
+            "01": "Octubre" if False else "Enero", "02": "Febrero", "03": "Marzo", "04": "Abril",
+            "05": "Mayo", "06": "Junio", "07": "Julio", "08": "Agosto",
+            "09": "Septiembre", "10": "Octubre", "11": "Noviembre", "12": "Diciembre"
+        }
+        if len(parts) == 2 and parts[1] in meses_nombres:
+            month_label = f"{meses_nombres[parts[1]]}_{parts[0]}"
+        else:
+            month_label = month_key
+            
+        zip_filename = f"Contador_{month_label}.zip"
+        zip_buffer = io.BytesIO()
+        
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            summary = get_monthly_summary(month_key, user_email=email)
+            
+            # 1. Planilla Excel institucional CB Asesor
+            try:
+                excel_bytes = generate_excel_report(month_key, user_email=email)
+                if excel_bytes:
+                    zip_file.writestr(f"Gastos_{month_label}.xlsx", excel_bytes)
+            except Exception as e:
+                logger.error(f"Error generando Excel para zip contador: {e}")
+                
+            # 2. Libro IVA Compras en CSV
+            try:
+                csv_bytes = generate_csv_report(month_key, user_email=email)
+                if csv_bytes:
+                    zip_file.writestr(f"Libro_IVA_Compras_{month_label}.csv", csv_bytes)
+            except Exception as e:
+                logger.error(f"Error generando CSV para zip contador: {e}")
+                
+            # 3. PDF unificado de tickets y facturas escaneados
+            try:
+                safe_email = sanitize_email(email) if email else ""
+                pdf_path = None
+                if safe_email:
+                    pdf_path = PDFS_DIR / safe_email / f"Tickets_{month_key}.pdf"
+                if not pdf_path or not pdf_path.exists():
+                    pdf_path = PDFS_DIR / f"Tickets_{month_key}.pdf"
+                    
+                if pdf_path.exists():
+                    with open(pdf_path, "rb") as f:
+                        zip_file.writestr(f"Tickets_Comprobantes_{month_label}.pdf", f.read())
+            except Exception as e:
+                logger.error(f"Error adjuntando PDF para zip contador: {e}")
+                
+            # 4. Documentos adicionales del período (Bancos, Tarjetas, Préstamos, Boletos)
+            if email:
+                docs_dir = get_user_month_docs_dir(email, month_key)
+                if docs_dir.exists():
+                    for doc_file in sorted(docs_dir.glob("*")):
+                        if doc_file.is_file():
+                            try:
+                                with open(doc_file, "rb") as f:
+                                    zip_file.writestr(doc_file.name, f.read())
+                            except Exception as e:
+                                logger.error(f"Error agregando doc {doc_file.name} al zip: {e}")
+                                
+            # 5. Resumen Ejecutivo de Cierre
+            resumen_txt = (
+                f"====================================================\n"
+                f" CB ASESOR - PAQUETE CONTABLE MENSUAL\n"
+                f" Período: {month_label.replace('_', ' ')}\n"
+                f" Contribuyente: {user_name} ({email if email else 'Local'})\n"
+                f" Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}\n"
+                f"====================================================\n\n"
+                f"RESUMEN FISCAL DEL PERÍODO:\n"
+                f"- Total Gastado:            $ {summary.get('total_spent', 0.0):,.2f}\n"
+                f"- Subtotal Neto Gravado:    $ {summary.get('total_subtotal', 0.0):,.2f}\n"
+                f"- Total IVA Crédito Fiscal: $ {summary.get('total_iva', 0.0):,.2f}\n"
+                f"- Percepciones IIBB:        $ {summary.get('total_percepcion_iibb', 0.0):,.2f}\n"
+                f"- Percepciones IVA:         $ {summary.get('total_percepcion_iva', 0.0):,.2f}\n"
+                f"- Cantidad de Comprobantes: {summary.get('tickets_count', 0)}\n\n"
+                f"ARCHIVOS INCLUIDOS EN ESTE PAQUETE:\n"
+                f"1. Gastos_{month_label}.xlsx (Planilla Excel CB Asesor)\n"
+                f"2. Libro_IVA_Compras_{month_label}.csv (Formato exportable)\n"
+                f"3. Tickets_Comprobantes_{month_label}.pdf (Comprobantes escaneados)\n"
+                f"4. Documentación adicional adjunta (resúmenes bancarios, cuotas, extractos)\n"
+            )
+            zip_file.writestr("RESUMEN_CIERRE.txt", resumen_txt.encode("utf-8"))
+            
+        return Response(
+            content=zip_buffer.getvalue(),
+            media_type="application/zip",
+            headers={"Content-Disposition": f'attachment; filename="{zip_filename}"'}
+        )
+    except Exception as e:
+        logger.error(f"Error en download_accountant_pack: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

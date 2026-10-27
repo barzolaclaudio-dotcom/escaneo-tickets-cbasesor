@@ -130,6 +130,95 @@ def generate_excel_report(month_str: str, user_email: str = None) -> bytes:
                 item_price
             ])
             
+    # -------------------------------------------------------------
+    # HOJA 4: Resumen de Tarjetas y Consumos Bancarios (si existen)
+    # -------------------------------------------------------------
+    try:
+        from card_processor import load_monthly_cards
+        cards = load_monthly_cards(month_str, user_email=user_email)
+    except Exception:
+        cards = []
+
+    if cards:
+        ws4 = wb.create_sheet(title="Resumen Tarjetas")
+        
+        # Título
+        ws4.merge_cells("A1:G1")
+        title_cell = ws4["A1"]
+        title_cell.value = f"RESUMEN MENSUAL DE TARJETAS Y BANCOS - {month_str}"
+        title_cell.font = title_font
+        title_cell.alignment = Alignment(horizontal="center", vertical="center")
+        ws4.row_dimensions[1].height = 25
+        
+        # Tabla 1: Estado de Cuentas / Tarjetas
+        ws4.append([])
+        ws4.append(["Banco / Entidad", "Marca", "N° Tarjeta", "Cierre", "Vencimiento", "Total ($)", "Total (USD)", "Pago Mínimo ($)"])
+        hdr_row = ws4.max_row
+        for col_idx in range(1, 9):
+            c = ws4.cell(row=hdr_row, column=col_idx)
+            c.fill = gold_fill
+            c.font = gold_font
+            c.alignment = Alignment(horizontal="center", vertical="center")
+            
+        for card in cards:
+            ws4.append([
+                card.get("entidad", ""),
+                f"{card.get('marca', '')} {card.get('tipo_tarjeta', '')}".strip(),
+                card.get("numero_tarjeta_ultimos4") or "N/D",
+                card.get("fecha_cierre", ""),
+                card.get("fecha_vencimiento", ""),
+                card.get("saldo_pesos", 0.0),
+                card.get("saldo_dolares", 0.0),
+                card.get("pago_minimo_pesos", 0.0)
+            ])
+            
+        # Tabla 2: Consumos Detallados
+        ws4.append([])
+        ws4.append([])
+        ws4.append(["Fecha", "Tarjeta / Banco", "Comercio / Detalle", "Cuota", "Moneda", "Monto", "Categoría"])
+        tx_hdr_row = ws4.max_row
+        for col_idx in range(1, 8):
+            c = ws4.cell(row=tx_hdr_row, column=col_idx)
+            c.fill = dark_fill
+            c.font = header_font
+            c.alignment = Alignment(horizontal="center", vertical="center")
+            
+        for card in cards:
+            card_label = f"{card.get('marca', 'Tarjeta')} ({card.get('entidad', '')})".strip()
+            for tx in card.get("consumos", []):
+                cuota_str = f"{tx.get('cuota_actual')}/{tx.get('cuota_total')}" if tx.get("cuota_actual") and tx.get("cuota_total") else "-"
+                ws4.append([
+                    tx.get("fecha", ""),
+                    card_label,
+                    tx.get("detalle", ""),
+                    cuota_str,
+                    tx.get("moneda", "ARS"),
+                    tx.get("monto", 0.0),
+                    tx.get("categoria", "Varios")
+                ])
+                
+        # Tabla 3: Impuestos y Percepciones de Tarjetas
+        ws4.append([])
+        ws4.append(["Banco / Tarjeta", "Sellos ($)", "Intereses Fin. ($)", "IVA 21% Int. ($)", "Perc. IIBB ($)", "Perc. AFIP 4815 ($)", "Otros Cargos ($)"])
+        tax_hdr_row = ws4.max_row
+        for col_idx in range(1, 8):
+            c = ws4.cell(row=tax_hdr_row, column=col_idx)
+            c.fill = gold_fill
+            c.font = gold_font
+            c.alignment = Alignment(horizontal="center", vertical="center")
+            
+        for card in cards:
+            imp = card.get("impuestos_y_cargos", {})
+            ws4.append([
+                f"{card.get('entidad', '')} - {card.get('marca', '')}",
+                imp.get("sellos", 0.0),
+                imp.get("intereses_financiacion", 0.0),
+                imp.get("iva_intereses_21", 0.0),
+                imp.get("percepcion_iibb", 0.0),
+                imp.get("percepcion_afip_rg4815", 0.0),
+                imp.get("otros_cargos", 0.0)
+            ])
+
     # Ajustar ancho de columnas automáticamente
     for sheet in wb.worksheets:
         for col in sheet.columns:
