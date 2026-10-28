@@ -107,7 +107,8 @@ Registro de lo aprendido y decidido. Actualizar cada vez que aprendamos algo nue
 - **Recuperación de Contraseña:** Flujo de autoservicio con código de seguridad OTP de 6 dígitos enviado por email y restablecimiento de contraseña.
 - **Detección Inteligente de PDFs en Subida Principal:** Si el usuario selecciona un PDF o comprobante bancario/cuota desde el botón principal de recorte de fotos ("Elegir Archivo / Galería"), la app detecta que no es una foto de ticket, evita romper el visor de recorte y le ofrece guardarlo de inmediato en "Documentos del Mes" para su contador.
 - **Módulo de Resúmenes de Tarjetas Inteligentes con IA (Etapa 1 - Octubre 2026):**
-  - Procesador integral de resúmenes de tarjetas de crédito y bancarias (`card_processor.py`) usando PyMuPDF + Gemini IA.
+  - **ESTADO:** ✅ COMPLETADO, DESPLEGADO Y VERIFICADO EN PRODUCCIÓN (Google Cloud Platform).
+  - Procesador integral de resúmenes de tarjetas de crédito y bancarias (`card_processor.py`) usando PyMuPDF + Gemini IA (`gemini-3-flash-preview` / `gemini-3.5-flash`).
   - Soporta resúmenes de Visa (BNA, Credicoop), Mastercard (Nativa BNA), Cabal (Credicoop), Lemon Cash y fintechs.
   - Extracción automática de:
     - Entidad bancaria, marca, tipo, terminación y fechas de cierre/vencimiento.
@@ -118,6 +119,41 @@ Registro de lo aprendido y decidido. Actualizar cada vez que aprendamos algo nue
   - Interfaz web interactiva: botón dedicado "Resúmenes de Tarjetas (IA)", modal visual con tarjetas estilizadas, visor desplegable de compras y control de eliminación.
   - **Integración con Excel:** Nueva pestaña institucional **`Resumen Tarjetas`** en el reporte `Gastos_Mes_Año.xlsx` con tablas formateadas con la identidad visual CB Asesor.
   - Inclusión automática en el paquete `.ZIP` y envío por correo al contador.
+
+## Hoja de Ruta Pendiente (Próximas Etapas del Sistema Contable & Financiero Integral)
+
+### 📌 Etapa 2 (Pendiente): Extractos Bancarios & Comprobantes de Cuotas / Préstamos
+- **Objetivo:** Lectura y extracción estructurada de movimientos bancarios y financiamiento.
+- **Documentos soportados:**
+  - Cuentas Corrientes y Cajas de Ahorro: Banco Nación (BNA), Banco Supervielle, Banco Credicoop, Brubank y fintechs.
+  - Comprobantes de pago de cuotas de préstamos (ej. `Cuota Supervielle 2-24.pdf`, `Comprobante De Pago Credicoop cuota 16-24.pdf`, `Liquidación préstamo BNA.pdf`).
+- **Datos a extraer:** Saldos inicial/final, débitos automáticos, cargos de mantenimiento, transferencias, desglose de cuotas (capital amortizado, interés financiero e IVA bancario).
+- **Salida:** Pestaña `Movimientos_Bancarios` en el Excel mensual y conciliación de gastos bancarios deducibles.
+
+### 📌 Etapa 3 (Pendiente): Inversiones, Boletos de Caución y Mercado de Capitales
+- **Objetivo:** Digitalización y control de rendimiento de operaciones financieras.
+- **Documentos soportados:**
+  - Boletos de Caución Bursátil (ej. `boleto CAUCION ALLARIA 1.pdf`, boletos 2, 3, 4, etc.).
+  - Estados de cuenta de ALyCs y Fintech (ej. DIGIFIN / Lemon / Allaria).
+- **Datos a extraer:** Monto colocado / tomado, plazo en días, tasa nominal anual (TNA), fecha de concertación y vencimiento, interés ganado / pagado, aranceles y derechos de mercado.
+- **Salida:** Pestaña `Inversiones_Cauciones` en el Excel mensual para control patrimonial y cómputo de rentas.
+
+### 📌 Etapa 4 (Pendiente): Certificados de Retención de Clientes & VEPs Impositivos
+- **Objetivo:** Centralización del crédito fiscal y retenciones para las declaraciones juradas del contador.
+- **Documentos soportados:**
+  - Certificados de retención emitidos por clientes (Retención de Impuesto a las Ganancias, Retención de IVA, Retenciones provinciales de Ingresos Brutos / SIRCUPA).
+  - Comprobantes de pago de VEP (AFIP/ARCA, Convenio Multilateral IIBB de Credicoop/BNA).
+- **Datos a extraer:** CUIT del agente de retención, régimen impositivo, número de certificado, fecha, base imponible, alícuota e importe retenido exacto.
+- **Salida:** Planilla consolidada de `Retenciones_Sufridas` para que el contador descuente directamente de los pagos a cuenta mensuales y anuales.
+
+### 📌 Etapa 5 (Pendiente): Agente de IA para Asesoramiento Financiero y Consejos de Ahorro 💡
+- **Objetivo:** Auditor inteligente que analiza el 100% del ecosistema financiero del mes (Tickets + Tarjetas + Bancos + Inversiones).
+- **Capacidades:**
+  - **Diagnóstico Integral:** Total gastado, flujo de fondos real y concentración de gastos por rubro (supermercado, combustible, tecnología, servicios en USD).
+  - **Detección de Costos Financieros Ocultos:** Alerta de intereses resarcitorios/financiación en tarjetas, costos de cuotas y comparación con inflación.
+  - **Planificación de Cuotas Futuras:** Calendario de vencimientos de cuotas pendientes para los próximos meses.
+  - **Consejos Concretos de Ahorro y Optimización:** Recomendaciones tácticas para reducir gastos operativos y aprovechar mejor el IVA crédito fiscal.
+  - **Chat Consultivo en Vivo:** Ventana interactiva para responder cualquier consulta financiera o contable en lenguaje natural.
 
 ## Aspectos Legales, Marcas y Términos de Uso (Pendiente para Lanzamiento Comercial / Google Play)
 - **Registro de Marca:**
