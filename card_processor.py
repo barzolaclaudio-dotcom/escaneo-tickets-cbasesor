@@ -157,8 +157,10 @@ TEXTO DEL DOCUMENTO:
 """
 
     models_to_try = [
-        "gemini-3.1-flash-lite",
+        "gemini-3-flash-preview",
+        "gemini-3.5-flash",
         "gemini-flash-latest",
+        "gemini-3.1-flash-lite-preview",
         "gemini-3.8-flash"
     ]
 
