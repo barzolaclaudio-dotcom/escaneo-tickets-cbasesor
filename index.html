@@ -739,6 +739,21 @@
                             </span>
                         </button>
                     </div>
+
+                    <!-- Botón para Extractos Bancarios y Préstamos con IA (Etapa 2) -->
+                    <div class="pt-2">
+                        <button onclick="openBankModal()" class="w-full py-2.5 px-3.5 bg-gradient-to-r from-[#0d1f2d] to-[#121218] hover:from-[#142d42] hover:to-[#1a1a24] text-sky-300 font-semibold rounded-xl border border-sky-500/30 text-xs flex items-center justify-between transition shadow-sm">
+                            <span class="flex items-center gap-2">
+                                <span class="text-sm">🏦</span>
+                                <span class="font-bold text-white">Extractos y Préstamos (IA)</span>
+                                <span class="text-[11px] text-sky-300/70 hidden sm:inline">(BNA, Supervielle, Credicoop, etc.)</span>
+                            </span>
+                            <span id="bank-count-badge" class="px-2.5 py-0.5 bg-sky-500/20 text-sky-300 text-[10px] font-bold rounded-full border border-sky-500/40">
+                                0 docs
+                            </span>
+                        </button>
+                    </div>
+
                 </div>
 
                 <!-- Historial de PDFs Mensuales -->
@@ -1136,53 +1151,54 @@
     </div>
 
     <!-- MODAL: RESÚMENES DE TARJETAS INTELIGENTES (IA) -->
-    <div id="cards-modal" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-        <div class="bg-[#121215] border border-purple-500/30 rounded-3xl p-5 sm:p-7 max-w-3xl w-full shadow-2xl space-y-5 relative my-8">
-            <div class="flex items-center justify-between pb-3 border-b border-purple-500/20">
+        <!-- MODAL: EXTRACTOS BANCARIOS Y PRÉSTAMOS CON IA (ETAPA 2) -->
+    <div id="bank-modal" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-[#121215] border border-sky-500/30 rounded-3xl p-5 sm:p-7 max-w-3xl w-full shadow-2xl space-y-5 relative my-8">
+            <div class="flex items-center justify-between pb-3 border-b border-sky-500/20">
                 <div class="flex items-center gap-2.5">
-                    <div class="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-lg">
-                        💳
+                    <div class="w-9 h-9 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center text-lg">
+                        🏦
                     </div>
                     <div>
-                        <h3 class="font-bold text-white text-base leading-tight">Resúmenes de Tarjetas con IA</h3>
-                        <p id="cards-modal-subtitle" class="text-xs text-purple-300/70 leading-tight">Visa, Mastercard, Cabal y Fintech</p>
+                        <h3 class="font-bold text-white text-base leading-tight">Extractos Bancarios y Préstamos con IA</h3>
+                        <p id="bank-modal-subtitle" class="text-xs text-sky-300/70 leading-tight">Banco Nación, Supervielle, Credicoop, Galicia y más</p>
                     </div>
                 </div>
-                <button onclick="closeCardsModal()" class="text-zinc-400 hover:text-white p-1 text-lg font-bold">✕</button>
+                <button onclick="closeBankModal()" class="text-zinc-400 hover:text-white p-1 text-lg font-bold">✕</button>
             </div>
 
-            <!-- Zona de Subida de Resumen PDF -->
-            <div class="p-4 bg-[#181424] rounded-2xl border border-purple-500/30 space-y-3">
+            <!-- Zona de Subida de Documento Bancario PDF -->
+            <div class="p-4 bg-[#0e1724] rounded-2xl border border-sky-500/30 space-y-3">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <p class="text-xs font-bold text-white">Cargar Resumen Bancario en PDF</p>
-                        <p class="text-[11px] text-zinc-400 mt-0.5">La IA extrae automáticamente compras, cuotas, categorías e impuestos.</p>
+                        <p class="text-xs font-bold text-white">Cargar Extracto Bancario o Comprobante de Cuota en PDF</p>
+                        <p class="text-[11px] text-zinc-400 mt-0.5">La IA extrae automáticamente cuotas (capital, interés, IVA) o movimientos de cuenta y comisiones deducibles.</p>
                     </div>
                     <div>
-                        <label class="py-2.5 px-4 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer transition shadow-md whitespace-nowrap">
+                        <label class="py-2.5 px-4 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer transition shadow-md whitespace-nowrap">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                            <span>+ Subir Resumen PDF</span>
-                            <input type="file" id="card-file-input" class="hidden" accept=".pdf" onchange="uploadSelectedCard()">
+                            <span>+ Subir PDF Bancario</span>
+                            <input type="file" id="bank-file-input" class="hidden" accept=".pdf" onchange="uploadSelectedBankDoc()">
                         </label>
                     </div>
                 </div>
-                <div id="card-upload-status" class="hidden p-3 rounded-xl text-xs font-medium"></div>
+                <div id="bank-upload-status" class="hidden p-3 rounded-xl text-xs font-medium"></div>
             </div>
 
-            <!-- Lista de Tarjetas Analizadas -->
+            <!-- Lista de Documentos Analizados -->
             <div class="space-y-3">
                 <div class="flex items-center justify-between">
-                    <span class="text-[11px] font-bold uppercase tracking-wider text-purple-400">Tarjetas y Cuentas del Período</span>
-                    <span id="cards-list-count" class="text-[11px] text-zinc-400">0 tarjetas</span>
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-sky-400">Documentos Bancarios del Período</span>
+                    <span id="bank-list-count" class="text-[11px] text-zinc-400">0 documentos</span>
                 </div>
-                <div id="cards-items-container" class="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
-                    <p class="text-xs text-zinc-500 italic">Cargando tarjetas...</p>
+                <div id="bank-items-container" class="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+                    <p class="text-xs text-zinc-500 italic">Cargando documentos bancarios...</p>
                 </div>
             </div>
 
             <div class="pt-2 flex items-center justify-between border-t border-zinc-800">
-                <p class="text-[11px] text-zinc-400">💡 Los consumos se incluyen automáticamente en la pestaña <strong class="text-purple-300">Resumen Tarjetas</strong> del Excel.</p>
-                <button onclick="closeCardsModal()" class="py-2 px-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs rounded-xl transition">
+                <p class="text-[11px] text-zinc-400">💡 Los préstamos y extractos se consolidan en la pestaña <strong class="text-sky-300">Bancos y Préstamos</strong> del Excel.</p>
+                <button onclick="closeBankModal()" class="py-2 px-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs rounded-xl transition">
                     Cerrar
                 </button>
             </div>
@@ -1733,7 +1749,7 @@
                 populateMonthDropdown();
                 updateSelectedMonthCard();
                 fetchStats();
-                loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards();
+                loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards(); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs();
                 alert("✅ ¡Contraseña actualizada con éxito! Ya estás dentro de tu cuenta.");
             } catch (err) {
                 if (errEl) { errEl.textContent = "Error de conexión: " + err.message; errEl.classList.remove('hidden'); }
@@ -1884,7 +1900,7 @@
             
             const modal = document.getElementById('documents-modal');
             if (modal) modal.classList.remove('hidden');
-            loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month);
+            loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs(month);
         }
 
         function closeDocumentsModal() {
@@ -2003,7 +2019,7 @@
                         setTimeout(() => statusEl.classList.add('hidden'), 3500);
                     }
                     if (fileInput) fileInput.value = '';
-                    loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month);
+                    loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs(month);
                 } else {
                     if (statusEl) {
                         statusEl.textContent = `❌ ${data.error || 'Error al subir documento.'}`;
@@ -2030,7 +2046,7 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month);
+                    loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs(month);
                 } else {
                     alert(`❌ Error al eliminar: ${data.error}`);
                 }
@@ -2275,7 +2291,7 @@
                     }
                     if (fileInput) fileInput.value = '';
                     loadMonthCards(month);
-                    if (typeof loadMonthDocuments === 'function') loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month);
+                    if (typeof loadMonthDocuments === 'function') loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs(month);
                 } else {
                     if (statusEl) {
                         statusEl.innerHTML = `❌ <strong>Error:</strong> ${data.error || 'No se pudo procesar el resumen.'}`;
@@ -2299,7 +2315,339 @@
                 const res = await fetch(`/api/cards/${month}/${cardId}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': 'Bearer ' + token }
+                }
+
+        // ====================================================
+        // EXTRACTOS BANCARIOS Y PRÉSTAMOS CON IA (ETAPA 2)
+        // ====================================================
+        let currentMonthBankData = [];
+
+        function openBankModal() {
+            const month = (typeof getSelectedMonth === 'function') ? getSelectedMonth() : (document.getElementById('month-selector')?.value || '');
+            const monthTitle = document.getElementById('selected-month-title')?.textContent || month;
+            const subtitle = document.getElementById('bank-modal-subtitle');
+            if (subtitle) subtitle.textContent = `Bancos y Préstamos de ${monthTitle}`;
+            
+            const modal = document.getElementById('bank-modal');
+            if (modal) modal.classList.remove('hidden');
+            loadMonthBankDocs(month);
+        }
+
+        function closeBankModal() {
+            const modal = document.getElementById('bank-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function loadMonthBankDocs(targetMonth) {
+            const month = targetMonth || ((typeof getSelectedMonth === 'function') ? getSelectedMonth() : (document.getElementById('month-selector')?.value || ''));
+            const token = getAuthToken();
+            if (!token) return;
+
+            try {
+                const res = await fetch(`/api/bank/${month}`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
                 });
+                if (!res.ok) return;
+                const data = await res.json();
+                currentMonthBankData = data.bank_docs || [];
+
+                const count = currentMonthBankData.length;
+                const badge = document.getElementById('bank-count-badge');
+                if (badge) {
+                    badge.textContent = `${count} ${count === 1 ? 'doc' : 'docs'}`;
+                }
+
+                renderBankModalList(currentMonthBankData);
+            } catch (err) {
+                console.warn("Error cargando documentos bancarios del mes:", err);
+            }
+        }
+
+        function renderBankModalList(docs) {
+            const container = document.getElementById('bank-items-container');
+            const countEl = document.getElementById('bank-list-count');
+            if (countEl) countEl.textContent = `${docs.length} ${docs.length === 1 ? 'documento' : 'documentos'}`;
+            if (!container) return;
+
+            if (docs.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 px-4 bg-[#0d1624] rounded-2xl border border-sky-500/20">
+                        <span class="text-3xl block mb-2">🏦</span>
+                        <p class="text-sm text-sky-200 font-bold">No hay extractos bancarios ni préstamos cargados para este mes.</p>
+                        <p class="text-xs text-sky-300/60 mt-1 max-w-sm mx-auto">Subí el PDF de tu comprobante de cuota (Supervielle, Credicoop, BNA) o extracto de cuenta corriente y la IA extraerá capital, intereses, IVA y gastos deducibles.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = docs.map(d => {
+                const docId = d.id || 'bank_' + Math.random().toString(36).substr(2, 9);
+                const isLoan = d.tipo_documento === 'cuota_prestamo';
+
+                if (isLoan) {
+                    const desg = d.desglose || {};
+                    const cuotaStr = (d.cuota_actual && d.cuota_total) ? `${d.cuota_actual}/${d.cuota_total}` : '-';
+                    const fecha = d.fecha_pago || d.fecha_vencimiento || '-';
+                    return `
+                        <div class="bg-[#0f1726] rounded-2xl border border-sky-500/30 overflow-hidden shadow-lg transition hover:border-sky-400/50">
+                            <!-- Cabecera Cuota Préstamo -->
+                            <div class="p-4 bg-gradient-to-r from-sky-950/40 via-[#101b2e] to-[#0f1726] border-b border-sky-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-400/30 flex items-center justify-center text-xl flex-shrink-0">
+                                        📄
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <h4 class="font-bold text-white text-sm">Cuota Préstamo ${cuotaStr}</h4>
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/25 text-sky-200 border border-sky-400/30">${d.entidad || 'Banco'}</span>
+                                            ${d.numero_prestamo ? `<span class="text-[11px] text-zinc-400 font-mono">Op: ${d.numero_prestamo}</span>` : ''}
+                                        </div>
+                                        <p class="text-[11px] text-zinc-400 mt-0.5">
+                                            Fecha de Pago / Vto: <strong class="text-zinc-200">${fecha}</strong> ${d.titular ? `• Titular: <span class="text-zinc-300">${d.titular}</span>` : ''}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between sm:justify-end gap-3">
+                                    <div class="text-right">
+                                        <p class="text-[10px] text-zinc-400 uppercase font-bold tracking-wider">Total Cuota</p>
+                                        <p class="text-base font-extrabold text-emerald-400">$${(d.monto_total || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+                                    </div>
+                                    <button onclick="deleteBankDoc('${d.id}')" class="p-2 text-zinc-400 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition" title="Eliminar este comprobante">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Desglose de la Cuota -->
+                            <div class="p-4 bg-[#0c1421] space-y-3">
+                                <h5 class="text-[11px] font-bold uppercase tracking-wider text-sky-300">Desglose Financiero & Fiscal de la Cuota</h5>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                                    <div class="p-2 rounded-lg bg-black/30 border border-zinc-800">
+                                        <p class="text-[10px] text-zinc-400">Capital Amortizado</p>
+                                        <p class="font-bold text-white">$${(desg.capital || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-black/30 border border-zinc-800">
+                                        <p class="text-[10px] text-zinc-400">Interés Compensatorio</p>
+                                        <p class="font-bold text-amber-300">$${(desg.interes_compensatorio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-black/30 border border-zinc-800">
+                                        <p class="text-[10px] text-zinc-400">IVA 21% Intereses</p>
+                                        <p class="font-bold text-gold-400">$${(desg.iva_intereses || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-black/30 border border-zinc-800">
+                                        <p class="text-[10px] text-zinc-400">Seguro y Gastos</p>
+                                        <p class="font-bold text-zinc-300">$${((desg.seguro_vida_deudor || 0) + (desg.gastos_administrativos || 0) + (desg.sellos_u_otros || 0)).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+                                    </div>
+                                </div>
+                                ${d.saldo_deuda_remanente ? `
+                                    <p class="text-[11px] text-zinc-400 pt-1">
+                                        Saldo de deuda restante tras el pago: <strong class="text-zinc-200 font-mono">$${(d.saldo_deuda_remanente || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</strong>
+                                    </p>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Extracto bancario
+                    const gastos = d.gastos_e_impuestos_deducibles || {};
+                    const totalGastos = (gastos.comisiones_mantenimiento || 0) + (gastos.impuesto_ley_25413_debitos_creditos || 0) + (gastos.iva_bancario_21 || 0) + (gastos.percepcion_sircreb_iibb || 0) + (gastos.otros_impuestos || 0);
+                    const movimientos = d.movimientos_principales || [];
+                    const periodoStr = (d.periodo_desde && d.periodo_hasta) ? `${d.periodo_desde} al ${d.periodo_hasta}` : (d.periodo || '-');
+
+                    return `
+                        <div class="bg-[#0f1726] rounded-2xl border border-sky-500/30 overflow-hidden shadow-lg transition hover:border-sky-400/50">
+                            <!-- Cabecera Extracto Bancario -->
+                            <div class="p-4 bg-gradient-to-r from-sky-950/40 via-[#101b2e] to-[#0f1726] border-b border-sky-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-400/30 flex items-center justify-center text-xl flex-shrink-0">
+                                        🏛️
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <h4 class="font-bold text-white text-sm">${d.entidad || 'Banco'}</h4>
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/25 text-sky-200 border border-sky-400/30">${d.tipo_cuenta || 'Cuenta Bancaria'}</span>
+                                            ${d.numero_cuenta ? `<span class="text-[11px] text-zinc-400 font-mono">N°: ${d.numero_cuenta}</span>` : ''}
+                                        </div>
+                                        <p class="text-[11px] text-zinc-400 mt-0.5">
+                                            Período: <strong class="text-zinc-200">${periodoStr}</strong> ${d.titular ? `• ${d.titular}` : ''}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between sm:justify-end gap-3">
+                                    <div class="text-right">
+                                        <p class="text-[10px] text-zinc-400 uppercase font-bold tracking-wider">Saldo Final</p>
+                                        <p class="text-base font-extrabold ${d.saldo_final >= 0 ? 'text-emerald-400' : 'text-red-400'}">$${(d.saldo_final || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+                                    </div>
+                                    <button onclick="deleteBankDoc('${d.id}')" class="p-2 text-zinc-400 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition" title="Eliminar este extracto">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Resumen de Saldos e Impuestos Deducibles -->
+                            <div class="px-4 py-2.5 bg-[#09111c] flex items-center justify-between text-xs border-b border-sky-500/10">
+                                <div class="flex items-center gap-3 text-[11px] text-zinc-300">
+                                    <span>Saldo Inicial: <strong>$${(d.saldo_inicial || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</strong></span>
+                                    <span>🏛️ Gastos/Impuestos Deducibles: <strong>$${totalGastos.toLocaleString('es-AR', {minimumFractionDigits: 2})}</strong></span>
+                                </div>
+                                <button onclick="toggleBankDetails('${docId}')" class="text-sky-400 hover:text-sky-300 font-semibold text-[11px] flex items-center gap-1 transition">
+                                    <span id="btn-text-${docId}">Ver Movimientos</span>
+                                    <svg id="btn-icon-${docId}" class="w-3.5 h-3.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+                            </div>
+
+                            <!-- Desglose de Gastos y Movimientos (Colapsable) -->
+                            <div id="details-${docId}" class="hidden p-4 space-y-4 bg-[#0a121e]">
+                                <!-- Desglose Deducible -->
+                                <div class="p-3 bg-[#0d1828] rounded-xl border border-sky-500/20">
+                                    <h5 class="text-[11px] font-bold uppercase tracking-wider text-gold-400 mb-2">Gastos e Impuestos Bancarios Deducibles</h5>
+                                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                                        <div class="p-2 rounded-lg bg-black/20">
+                                            <p class="text-[10px] text-zinc-400">Comisiones Cuenta</p>
+                                            <p class="font-bold text-white">$${(gastos.comisiones_mantenimiento || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+                                        </div>
+                                        <div class="p-2 rounded-lg bg-black/20">
+                                            <p class="text-[10px] text-zinc-400">Imp. Déb/Créd (Ley 25413)</p>
+                                            <p class="font-bold text-amber-300">$${(gastos.impuesto_ley_25413_debitos_creditos || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+                                        </div>
+                                        <div class="p-2 rounded-lg bg-black/20">
+                                            <p class="text-[10px] text-zinc-400">IVA 21% Bancario</p>
+                                            <p class="font-bold text-gold-300">$${(gastos.iva_bancario_21 || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+                                        </div>
+                                        <div class="p-2 rounded-lg bg-black/20">
+                                            <p class="text-[10px] text-zinc-400">SIRCREB / IIBB</p>
+                                            <p class="font-bold text-sky-300">$${(gastos.percepcion_sircreb_iibb || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Tabla de Movimientos Relevantes -->
+                                <div>
+                                    <h5 class="text-[11px] font-bold uppercase tracking-wider text-sky-300 mb-2">Movimientos Significativos (${movimientos.length})</h5>
+                                    ${movimientos.length === 0 ? '<p class="text-xs text-zinc-500">No se desglosaron movimientos individuales.</p>' : `
+                                        <div class="overflow-x-auto rounded-xl border border-zinc-800">
+                                            <table class="w-full text-left text-xs">
+                                                <thead class="bg-[#111d30] text-zinc-400 text-[10px] uppercase">
+                                                    <tr>
+                                                        <th class="py-2 px-3">Fecha</th>
+                                                        <th class="py-2 px-3">Tipo</th>
+                                                        <th class="py-2 px-3">Concepto</th>
+                                                        <th class="py-2 px-3">Categoría</th>
+                                                        <th class="py-2 px-3 text-right">Monto</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody class="divide-y divide-zinc-800/60 font-mono">
+                                                    ${movimientos.map(m => `
+                                                        <tr class="hover:bg-sky-900/10 text-zinc-300 font-sans">
+                                                            <td class="py-1.5 px-3 whitespace-nowrap text-[11px]">${m.fecha || '-'}</td>
+                                                            <td class="py-1.5 px-3"><span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${m.tipo === 'CREDITO' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">${m.tipo || 'DEBITO'}</span></td>
+                                                            <td class="py-1.5 px-3 font-semibold text-white">${m.concepto || '-'}</td>
+                                                            <td class="py-1.5 px-3"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-sky-500/15 text-sky-300 border border-sky-500/30">${m.categoria || 'Varios'}</span></td>
+                                                            <td class="py-1.5 px-3 text-right font-bold ${m.tipo === 'CREDITO' ? 'text-emerald-400' : 'text-zinc-200'}">$ ${(m.monto || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                                                        </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }).join('');
+        }
+
+        function toggleBankDetails(docId) {
+            const el = document.getElementById(`details-${docId}`);
+            const btnText = document.getElementById(`btn-text-${docId}`);
+            const btnIcon = document.getElementById(`btn-icon-${docId}`);
+            if (!el) return;
+            const isHidden = el.classList.contains('hidden');
+            if (isHidden) {
+                el.classList.remove('hidden');
+                if (btnText) btnText.textContent = 'Ocultar Detalle';
+                if (btnIcon) btnIcon.classList.add('rotate-180');
+            } else {
+                el.classList.add('hidden');
+                if (btnText) btnText.textContent = 'Ver Detalle';
+                if (btnIcon) btnIcon.classList.remove('rotate-180');
+            }
+        }
+
+        async function uploadSelectedBankDoc() {
+            const fileInput = document.getElementById('bank-file-input');
+            const statusEl = document.getElementById('bank-upload-status');
+            const file = fileInput?.files[0];
+            if (!file) return;
+
+            const month = (typeof getSelectedMonth === 'function') ? getSelectedMonth() : (document.getElementById('month-selector')?.value || '');
+            const token = getAuthToken();
+
+            if (statusEl) {
+                statusEl.innerHTML = `
+                    <div class="flex items-center gap-2 text-sky-300">
+                        <svg class="animate-spin h-4 w-4 text-sky-400" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                        <span>Analizando extracto/cuota <strong>'${file.name}'</strong> con IA... esto demora unos segundos.</span>
+                    </div>
+                `;
+                statusEl.className = 'p-3 rounded-xl text-xs font-medium bg-sky-500/15 border border-sky-500/30 block';
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const res = await fetch(`/api/bank/${month}/upload-and-parse`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (statusEl) {
+                        statusEl.innerHTML = `✅ <strong>${data.message || 'Documento bancario procesado con éxito.'}</strong>`;
+                        statusEl.className = 'p-3 rounded-xl text-xs font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 block';
+                        setTimeout(() => statusEl.classList.add('hidden'), 4000);
+                    }
+                    if (fileInput) fileInput.value = '';
+                    loadMonthBankDocs(month);
+                    if (typeof loadMonthDocuments === 'function') loadMonthDocuments(month);
+                } else {
+                    if (statusEl) {
+                        statusEl.innerHTML = `❌ Error: ${data.error || 'No se pudo interpretar el archivo.'}`;
+                        statusEl.className = 'p-3 rounded-xl text-xs font-medium bg-red-500/15 text-red-300 border border-red-500/30 block';
+                    }
+                }
+            } catch (err) {
+                if (statusEl) {
+                    statusEl.innerHTML = `❌ Error de conexión al procesar el archivo bancario.`;
+                    statusEl.className = 'p-3 rounded-xl text-xs font-medium bg-red-500/15 text-red-300 border border-red-500/30 block';
+                }
+            }
+        }
+
+        async function deleteBankDoc(docId) {
+            if (!confirm("¿Eliminar este documento bancario del mes?")) return;
+            const month = (typeof getSelectedMonth === 'function') ? getSelectedMonth() : (document.getElementById('month-selector')?.value || '');
+            const token = getAuthToken();
+
+            try {
+                const res = await fetch(`/api/bank/${month}/${docId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadMonthBankDocs(month);
+                    if (typeof loadMonthDocuments === 'function') loadMonthDocuments(month);
+                }
+            } catch (err) {
+                console.error("Error eliminando documento bancario:", err);
+            }
+        }
+
+);
                 const data = await res.json();
                 if (data.success) {
                     loadMonthCards(month);
@@ -2483,7 +2831,7 @@
                     if (statusEl) statusEl.classList.add('hidden');
                     if (input) input.value = '';
                     await loadPackFilesChecklist(month);
-                    loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month);
+                    loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs(month);
                 } else {
                     if (statusEl) {
                         statusEl.textContent = `❌ ${data.error || 'Error al subir archivo'}`;
@@ -2595,7 +2943,7 @@
                             populateMonthDropdown();
                             updateSelectedMonthCard();
                             fetchStats();
-                            loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards();
+                            loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards(); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs();
                             return;
                         }
                     }
@@ -2730,7 +3078,7 @@
                 populateMonthDropdown();
                 updateSelectedMonthCard();
                 fetchStats();
-                loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards();
+                loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards(); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs();
             } catch (err) {
                 if (errEl) { errEl.textContent = "Error de conexión: " + err.message; errEl.classList.remove('hidden'); }
             } finally {
@@ -2771,7 +3119,7 @@
                 populateMonthDropdown();
                 updateSelectedMonthCard();
                 fetchStats();
-                loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards();
+                loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards(); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs();
             } catch (err) {
                 if (errEl) { errEl.textContent = "Error de conexión: " + err.message; errEl.classList.remove('hidden'); }
             } finally {
@@ -2844,7 +3192,7 @@
         function onMonthChange() {
             updateSelectedMonthCard();
             fetchExpensesData();
-            loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards();
+            loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards(); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs();
         }
 
         function updateSelectedMonthCard() {

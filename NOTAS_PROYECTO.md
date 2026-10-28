@@ -119,16 +119,17 @@ Registro de lo aprendido y decidido. Actualizar cada vez que aprendamos algo nue
   - Interfaz web interactiva: botón dedicado "Resúmenes de Tarjetas (IA)", modal visual con tarjetas estilizadas, visor desplegable de compras y control de eliminación.
   - **Integración con Excel:** Nueva pestaña institucional **`Resumen Tarjetas`** en el reporte `Gastos_Mes_Año.xlsx` con tablas formateadas con la identidad visual CB Asesor.
   - Inclusión automática en el paquete `.ZIP` y envío por correo al contador.
+- **Módulo de Extractos Bancarios & Cuotas de Préstamos con IA (Etapa 2 - Octubre 2026):**
+  - **ESTADO:** ✅ COMPLETADO E INTEGRADO.
+  - Procesador inteligente (`bank_processor.py`) que detecta y procesa automáticamente en PDF:
+    - **Cuotas de Préstamos / Mutuos:** Banco Supervielle, Credicoop, BNA, etc. Extracción de N° préstamo, N° cuota (ej: `2/24`), fecha vencimiento/pago, total abonado, amortización de capital, interés compensatorio, IVA 21% sobre intereses (crédito deducible), seguro de vida saldo deudor y deuda remanente.
+    - **Extractos Bancarios:** Cuentas Corrientes y Cajas de Ahorro. Extracción de titular, cuenta/CBU, saldo inicial, total débitos, total créditos, saldo final y desglose completo de gastos e impuestos deducibles (comisiones de mantenimiento, Impuesto Ley 25.413 débitos y créditos, IVA bancario 21% y retenciones SIRCREB / IIBB).
+    - **Movimientos Relevantes:** Lista clasificada de débitos automáticos, transferencias y cargos significativos.
+  - Interfaz web interactiva: botón dedicado "Extractos y Préstamos (IA)" con temática azul cielo / marina, modal `bank-modal`, visualización de cuotas estilizadas, desglose colapsable de movimientos y eliminación segura.
+  - **Integración con Excel:** Nueva pestaña institucional **`Bancos y Préstamos`** (Hoja 5) en el archivo `Gastos_Mes_Año.xlsx` con secciones formateadas para Préstamos, Cuentas, Impuestos Computables y Movimientos.
+  - Sincronización automática de `index.html` y `templates/index.html`.
 
 ## Hoja de Ruta Pendiente (Próximas Etapas del Sistema Contable & Financiero Integral)
-
-### 📌 Etapa 2 (Pendiente): Extractos Bancarios & Comprobantes de Cuotas / Préstamos
-- **Objetivo:** Lectura y extracción estructurada de movimientos bancarios y financiamiento.
-- **Documentos soportados:**
-  - Cuentas Corrientes y Cajas de Ahorro: Banco Nación (BNA), Banco Supervielle, Banco Credicoop, Brubank y fintechs.
-  - Comprobantes de pago de cuotas de préstamos (ej. `Cuota Supervielle 2-24.pdf`, `Comprobante De Pago Credicoop cuota 16-24.pdf`, `Liquidación préstamo BNA.pdf`).
-- **Datos a extraer:** Saldos inicial/final, débitos automáticos, cargos de mantenimiento, transferencias, desglose de cuotas (capital amortizado, interés financiero e IVA bancario).
-- **Salida:** Pestaña `Movimientos_Bancarios` en el Excel mensual y conciliación de gastos bancarios deducibles.
 
 ### 📌 Etapa 3 (Pendiente): Inversiones, Boletos de Caución y Mercado de Capitales
 - **Objetivo:** Digitalización y control de rendimiento de operaciones financieras.

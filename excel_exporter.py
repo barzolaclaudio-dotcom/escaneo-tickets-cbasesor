@@ -219,6 +219,133 @@ def generate_excel_report(month_str: str, user_email: str = None) -> bytes:
                 imp.get("otros_cargos", 0.0)
             ])
 
+    # -------------------------------------------------------------
+    # HOJA 5: Bancos, Extractos y Préstamos (Etapa 2)
+    # -------------------------------------------------------------
+    try:
+        from bank_processor import load_monthly_bank_data
+        bank_docs = load_monthly_bank_data(month_str, user_email=user_email)
+    except Exception:
+        bank_docs = []
+
+    if bank_docs:
+        ws5 = wb.create_sheet(title="Bancos y Préstamos")
+        ws5.views.sheetView[0].showGridLines = True
+        
+        # Título
+        ws5.merge_cells("A1:J1")
+        title_cell_b = ws5["A1"]
+        title_cell_b.value = f"MOVIMIENTOS BANCARIOS Y PRÉSTAMOS - {month_str}"
+        title_cell_b.font = title_font
+        title_cell_b.alignment = Alignment(horizontal="center", vertical="center")
+        ws5.row_dimensions[1].height = 25
+
+        loans = [d for d in bank_docs if d.get("tipo_documento") == "cuota_prestamo"]
+        statements = [d for d in bank_docs if d.get("tipo_documento") == "extracto_bancario"]
+
+        # SECCIÓN 1: CUOTAS DE PRÉSTAMOS Y FINANCIAMIENTO
+        if loans:
+            ws5.append([])
+            ws5.append(["PRÉSTAMOS Y CUOTAS FINANCIERAS"])
+            ws5.cell(row=ws5.max_row, column=1).font = Font(name="Calibri", size=12, bold=True, color="D4AF37")
+            ws5.append(["Entidad / Banco", "N° Préstamo", "Cuota", "Vencimiento / Pago", "Capital ($)", "Interés ($)", "IVA Int. 21% ($)", "Seguro / Otros ($)", "Total Cuota ($)", "Deuda Restante ($)"])
+            loan_hdr_row = ws5.max_row
+            for col_idx in range(1, 11):
+                c = ws5.cell(row=loan_hdr_row, column=col_idx)
+                c.fill = gold_fill
+                c.font = gold_font
+                c.alignment = Alignment(horizontal="center", vertical="center")
+
+            for loan in loans:
+                desg = loan.get("desglose", {})
+                cuota_str = f"{loan.get('cuota_actual')}/{loan.get('cuota_total')}" if loan.get("cuota_actual") and loan.get("cuota_total") else "-"
+                ws5.append([
+                    loan.get("entidad", ""),
+                    loan.get("numero_prestamo") or "N/D",
+                    cuota_str,
+                    loan.get("fecha_pago") or loan.get("fecha_vencimiento", ""),
+                    desg.get("capital", 0.0),
+                    desg.get("interes_compensatorio", 0.0),
+                    desg.get("iva_intereses", 0.0),
+                    desg.get("seguro_vida_deudor", 0.0) + desg.get("gastos_administrativos", 0.0) + desg.get("sellos_u_otros", 0.0),
+                    loan.get("monto_total", 0.0),
+                    loan.get("saldo_deuda_remanente", 0.0)
+                ])
+
+        # SECCIÓN 2: RESUMEN DE CUENTAS Y EXTRACTOS BANCARIOS
+        if statements:
+            ws5.append([])
+            ws5.append(["RESUMEN DE CUENTAS BANCARIAS"])
+            ws5.cell(row=ws5.max_row, column=1).font = Font(name="Calibri", size=12, bold=True, color="D4AF37")
+            ws5.append(["Banco / Entidad", "Tipo de Cuenta", "N° de Cuenta / CBU", "Período", "Saldo Inicial ($)", "Total Débitos ($)", "Total Créditos ($)", "Saldo Final ($)"])
+            stmt_hdr_row = ws5.max_row
+            for col_idx in range(1, 9):
+                c = ws5.cell(row=stmt_hdr_row, column=col_idx)
+                c.fill = gold_fill
+                c.font = gold_font
+                c.alignment = Alignment(horizontal="center", vertical="center")
+
+            for st in statements:
+                periodo_str = f"{st.get('periodo_desde', '')} al {st.get('periodo_hasta', '')}" if st.get("periodo_desde") else st.get("periodo", "")
+                ws5.append([
+                    st.get("entidad", ""),
+                    st.get("tipo_cuenta", ""),
+                    st.get("numero_cuenta") or st.get("cbu") or "N/D",
+                    periodo_str,
+                    st.get("saldo_inicial", 0.0),
+                    st.get("total_debitos", 0.0),
+                    st.get("total_creditos", 0.0),
+                    st.get("saldo_final", 0.0)
+                ])
+
+            # SECCIÓN 3: GASTOS E IMPUESTOS BANCARIOS DEDUCIBLES
+            ws5.append([])
+            ws5.append(["GASTOS E IMPUESTOS BANCARIOS DEDUCIBLES"])
+            ws5.cell(row=ws5.max_row, column=1).font = Font(name="Calibri", size=12, bold=True, color="D4AF37")
+            ws5.append(["Banco / Cuenta", "Comisiones Mant. ($)", "Imp. Ley 25.413 Déb/Créd ($)", "IVA Bancario 21% ($)", "Perc. SIRCREB / IIBB ($)", "Otros Impuestos ($)"])
+            tax_b_hdr_row = ws5.max_row
+            for col_idx in range(1, 7):
+                c = ws5.cell(row=tax_b_hdr_row, column=col_idx)
+                c.fill = dark_fill
+                c.font = header_font
+                c.alignment = Alignment(horizontal="center", vertical="center")
+
+            for st in statements:
+                g = st.get("gastos_e_impuestos_deducibles", {})
+                cuenta_id = f"{st.get('entidad', '')} ({st.get('tipo_cuenta', '')})".strip()
+                ws5.append([
+                    cuenta_id,
+                    g.get("comisiones_mantenimiento", 0.0),
+                    g.get("impuesto_ley_25413_debitos_creditos", 0.0),
+                    g.get("iva_bancario_21", 0.0),
+                    g.get("percepcion_sircreb_iibb", 0.0),
+                    g.get("otros_impuestos", 0.0)
+                ])
+
+            # SECCIÓN 4: MOVIMIENTOS BANCARIOS PRINCIPALES
+            ws5.append([])
+            ws5.append(["DETALLE DE MOVIMIENTOS BANCARIOS RELEVANTES"])
+            ws5.cell(row=ws5.max_row, column=1).font = Font(name="Calibri", size=12, bold=True, color="D4AF37")
+            ws5.append(["Fecha", "Banco / Cuenta", "Tipo", "Concepto / Descripción", "Monto ($)", "Categoría"])
+            mov_hdr_row = ws5.max_row
+            for col_idx in range(1, 7):
+                c = ws5.cell(row=mov_hdr_row, column=col_idx)
+                c.fill = dark_fill
+                c.font = header_font
+                c.alignment = Alignment(horizontal="center", vertical="center")
+
+            for st in statements:
+                banco_label = f"{st.get('entidad', '')}".strip()
+                for mov in st.get("movimientos_principales", []):
+                    ws5.append([
+                        mov.get("fecha", ""),
+                        banco_label,
+                        mov.get("tipo", ""),
+                        mov.get("concepto", ""),
+                        mov.get("monto", 0.0),
+                        mov.get("categoria", "Varios")
+                    ])
+
     # Ajustar ancho de columnas automáticamente
     for sheet in wb.worksheets:
         for col in sheet.columns:

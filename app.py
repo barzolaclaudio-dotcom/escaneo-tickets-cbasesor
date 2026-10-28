@@ -25,6 +25,12 @@ from card_processor import (
     add_card_to_month,
     delete_card_from_month
 )
+from bank_processor import (
+    parse_bank_or_loan_pdf,
+    load_monthly_bank_data,
+    add_bank_doc_to_month,
+    delete_bank_doc_from_month
+)
 from pydantic import BaseModel
 from typing import Optional, List
 from fastapi import Request, Header
@@ -387,6 +393,61 @@ async def delete_monthly_card_api(month: str, card_id: str, authorization: Optio
     if not user:
         return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
     ok = delete_card_from_month(month, card_id, user["email"])
+    return {"success": ok}
+
+# -------------------------------------------------------------
+# Endpoints de Extractos Bancarios y Cuotas de Préstamos (Etapa 2)
+# -------------------------------------------------------------
+@app.post("/api/bank/{month}/upload-and-parse")
+async def upload_and_parse_bank_doc(
+    month: str,
+    file: UploadFile = File(...),
+    authorization: Optional[str] = Header(None)
+):
+    user = get_auth_user(authorization)
+    if not user:
+        return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
+    
+    content = await file.read()
+    if not content:
+        return JSONResponse(status_code=400, content={"success": False, "error": "Archivo vacío"})
+        
+    filename = file.filename or "documento_bancario.pdf"
+    clean_name = Path(filename).name.replace(" ", "_")
+    
+    # 1. Guardar copia física en la carpeta de documentos del usuario
+    docs_dir = get_user_month_docs_dir(user["email"], month)
+    dest_path = docs_dir / clean_name
+    try:
+        with open(dest_path, "wb") as f:
+            f.write(content)
+    except Exception as e:
+        logger.error(f"Error guardando archivo físico bancario: {e}")
+
+    # 2. Parsear con PyMuPDF + Gemini
+    parsed = parse_bank_or_loan_pdf(content, filename_hint=clean_name)
+    if not parsed.get("success"):
+        return JSONResponse(status_code=422, content={"success": False, "error": parsed.get("error", "Error procesando el documento bancario")})
+        
+    # 3. Guardar en JSON mensual
+    doc_saved = add_bank_doc_to_month(month, parsed, user["email"])
+    tipo_desc = "Comprobante de Cuota/Préstamo" if doc_saved.get("tipo_documento") == "cuota_prestamo" else "Extracto Bancario"
+    return {"success": True, "bank_doc": doc_saved, "message": f"{tipo_desc} de {doc_saved.get('entidad', 'Banco')} procesado con éxito."}
+
+@app.get("/api/bank/{month}")
+async def get_monthly_bank_docs_api(month: str, authorization: Optional[str] = Header(None)):
+    user = get_auth_user(authorization)
+    if not user:
+        return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
+    docs = load_monthly_bank_data(month, user["email"])
+    return {"success": True, "bank_docs": docs}
+
+@app.delete("/api/bank/{month}/{doc_id}")
+async def delete_monthly_bank_doc_api(month: str, doc_id: str, authorization: Optional[str] = Header(None)):
+    user = get_auth_user(authorization)
+    if not user:
+        return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
+    ok = delete_bank_doc_from_month(month, doc_id, user["email"])
     return {"success": ok}
 
 @app.post("/api/user/send-accountant-report")
