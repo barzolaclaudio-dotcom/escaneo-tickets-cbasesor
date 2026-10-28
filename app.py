@@ -658,7 +658,7 @@ async def upload_ticket(
             user_email=user_email,
             user_items=parsed_items,
             force=force,
-            save_pdf=False,
+            save_pdf=True,
             user_percepcion_iibb=percepcion_iibb,
             user_percepcion_iibb_jurisdiccion=percepcion_iibb_jurisdiccion,
             user_percepcion_iva=percepcion_iva,

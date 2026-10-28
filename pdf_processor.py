@@ -120,7 +120,7 @@ def append_ticket_to_month_pdf(
     user_email: str = None,
     user_items: list = None,
     force: bool = False,
-    save_pdf: bool = False,
+    save_pdf: bool = True,
     user_percepcion_iibb: float = None,
     user_percepcion_iibb_jurisdiccion: str = None,
     user_percepcion_iva: float = None,
