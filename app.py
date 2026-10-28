@@ -31,6 +31,12 @@ from bank_processor import (
     add_bank_doc_to_month,
     delete_bank_doc_from_month
 )
+from investment_processor import (
+    parse_investment_pdf,
+    load_monthly_investments,
+    add_investment_to_month,
+    delete_investment_from_month
+)
 from pydantic import BaseModel
 from typing import Optional, List
 from fastapi import Request, Header
@@ -448,6 +454,60 @@ async def delete_monthly_bank_doc_api(month: str, doc_id: str, authorization: Op
     if not user:
         return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
     ok = delete_bank_doc_from_month(month, doc_id, user["email"])
+    return {"success": ok}
+
+# -------------------------------------------------------------
+# Endpoints de Inversiones, Cauciones y Mercado de Capitales (Etapa 3)
+# -------------------------------------------------------------
+@app.post("/api/investments/{month}/upload-and-parse")
+async def upload_and_parse_investment(
+    month: str,
+    file: UploadFile = File(...),
+    authorization: Optional[str] = Header(None)
+):
+    user = get_auth_user(authorization)
+    if not user:
+        return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
+    
+    content = await file.read()
+    if not content:
+        return JSONResponse(status_code=400, content={"success": False, "error": "Archivo vacío"})
+        
+    filename = file.filename or "boleto_inversion.pdf"
+    clean_name = Path(filename).name.replace(" ", "_")
+    
+    # 1. Guardar copia física en la carpeta de documentos del usuario
+    docs_dir = get_user_month_docs_dir(user["email"], month)
+    dest_path = docs_dir / clean_name
+    try:
+        with open(dest_path, "wb") as f:
+            f.write(content)
+    except Exception as e:
+        logger.error(f"Error guardando archivo físico de inversión: {e}")
+
+    # 2. Parsear con PyMuPDF + Gemini
+    parsed = parse_investment_pdf(content, filename_hint=clean_name)
+    if not parsed.get("success"):
+        return JSONResponse(status_code=422, content={"success": False, "error": parsed.get("error", "Error procesando el comprobante bursátil")})
+        
+    # 3. Guardar en JSON mensual
+    inv_saved = add_investment_to_month(month, parsed, user["email"])
+    return {"success": True, "investment": inv_saved, "message": f"Operación de {inv_saved.get('especie', 'Inversión')} en {inv_saved.get('entidad', 'ALyC')} procesada con éxito."}
+
+@app.get("/api/investments/{month}")
+async def get_monthly_investments_api(month: str, authorization: Optional[str] = Header(None)):
+    user = get_auth_user(authorization)
+    if not user:
+        return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
+    investments = load_monthly_investments(month, user["email"])
+    return {"success": True, "investments": investments}
+
+@app.delete("/api/investments/{month}/{inv_id}")
+async def delete_monthly_investment_api(month: str, inv_id: str, authorization: Optional[str] = Header(None)):
+    user = get_auth_user(authorization)
+    if not user:
+        return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
+    ok = delete_investment_from_month(month, inv_id, user["email"])
     return {"success": ok}
 
 @app.post("/api/user/send-accountant-report")

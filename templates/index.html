@@ -754,6 +754,20 @@
                         </button>
                     </div>
 
+                    <!-- Botón para Inversiones, Cauciones y ALyCs con IA (Etapa 3) -->
+                    <div class="pt-2">
+                        <button onclick="openInvestmentsModal()" class="w-full py-2.5 px-3.5 bg-gradient-to-r from-[#0d2818] to-[#121218] hover:from-[#133d24] hover:to-[#1a1a24] text-emerald-300 font-semibold rounded-xl border border-emerald-500/30 text-xs flex items-center justify-between transition shadow-sm">
+                            <span class="flex items-center gap-2">
+                                <span class="text-sm">📈</span>
+                                <span class="font-bold text-white">Inversiones & Cauciones (IA)</span>
+                                <span class="text-[11px] text-emerald-300/70 hidden sm:inline">(Allaria, Balanz, Cocos, IOL)</span>
+                            </span>
+                            <span id="investments-count-badge" class="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 text-[10px] font-bold rounded-full border border-emerald-500/40">
+                                0 ops
+                            </span>
+                        </button>
+                    </div>
+
                 </div>
 
                 <!-- Historial de PDFs Mensuales -->
@@ -1199,6 +1213,60 @@
             <div class="pt-2 flex items-center justify-between border-t border-zinc-800">
                 <p class="text-[11px] text-zinc-400">💡 Los préstamos y extractos se consolidan en la pestaña <strong class="text-sky-300">Bancos y Préstamos</strong> del Excel.</p>
                 <button onclick="closeBankModal()" class="py-2 px-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs rounded-xl transition">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+        <!-- MODAL: INVERSIONES, CAUCIONES Y MERCADO DE CAPITALES (ETAPA 3) -->
+    <div id="investments-modal" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-[#121215] border border-emerald-500/30 rounded-3xl p-5 sm:p-7 max-w-3xl w-full shadow-2xl space-y-5 relative my-8">
+            <div class="flex items-center justify-between pb-3 border-b border-emerald-500/20">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg">
+                        📈
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white text-base leading-tight">Inversiones y Cauciones con IA</h3>
+                        <p id="investments-modal-subtitle" class="text-xs text-emerald-300/70 leading-tight">Allaria, Balanz, Cocos, IOL, Bull Market y Fintech</p>
+                    </div>
+                </div>
+                <button onclick="closeInvestmentsModal()" class="text-zinc-400 hover:text-white p-1 text-lg font-bold">✕</button>
+            </div>
+
+            <!-- Zona de Subida de Boleto PDF -->
+            <div class="p-4 bg-[#0d2116] rounded-2xl border border-emerald-500/30 space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-bold text-white">Cargar Boleto de Caución o Inversión en PDF</p>
+                        <p class="text-[11px] text-zinc-400 mt-0.5">La IA extrae automáticamente cauciones (plazo, TNA, intereses ganados), bonos, acciones y aranceles deducibles.</p>
+                    </div>
+                    <div>
+                        <label class="py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer transition shadow-md whitespace-nowrap">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                            <span>+ Subir Boleto PDF</span>
+                            <input type="file" id="investment-file-input" class="hidden" accept=".pdf" onchange="uploadSelectedInvestment()">
+                        </label>
+                    </div>
+                </div>
+                <div id="investment-upload-status" class="hidden p-3 rounded-xl text-xs font-medium"></div>
+            </div>
+
+            <!-- Lista de Operaciones Analizadas -->
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Operaciones Bursátiles del Período</span>
+                    <span id="investments-list-count" class="text-[11px] text-zinc-400">0 operaciones</span>
+                </div>
+                <div id="investments-items-container" class="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+                    <p class="text-xs text-zinc-500 italic">Cargando operaciones bursátiles...</p>
+                </div>
+            </div>
+
+            <div class="pt-2 flex items-center justify-between border-t border-zinc-800">
+                <p class="text-[11px] text-zinc-400">💡 Las cauciones e inversiones se consolidan en la pestaña <strong class="text-emerald-300">Inversiones y Cauciones</strong> del Excel.</p>
+                <button onclick="closeInvestmentsModal()" class="py-2 px-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs rounded-xl transition">
                     Cerrar
                 </button>
             </div>
@@ -1749,7 +1817,7 @@
                 populateMonthDropdown();
                 updateSelectedMonthCard();
                 fetchStats();
-                loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards(); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs();
+                loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards(); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs(); if (typeof loadMonthInvestments === "function") loadMonthInvestments();
                 alert("✅ ¡Contraseña actualizada con éxito! Ya estás dentro de tu cuenta.");
             } catch (err) {
                 if (errEl) { errEl.textContent = "Error de conexión: " + err.message; errEl.classList.remove('hidden'); }
@@ -1900,7 +1968,7 @@
             
             const modal = document.getElementById('documents-modal');
             if (modal) modal.classList.remove('hidden');
-            loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs(month);
+            loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs(month); if (typeof loadMonthInvestments === "function") loadMonthInvestments(month);
         }
 
         function closeDocumentsModal() {
@@ -2019,7 +2087,7 @@
                         setTimeout(() => statusEl.classList.add('hidden'), 3500);
                     }
                     if (fileInput) fileInput.value = '';
-                    loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs(month);
+                    loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs(month); if (typeof loadMonthInvestments === "function") loadMonthInvestments(month);
                 } else {
                     if (statusEl) {
                         statusEl.textContent = `❌ ${data.error || 'Error al subir documento.'}`;
@@ -2046,7 +2114,7 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs(month);
+                    loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs(month); if (typeof loadMonthInvestments === "function") loadMonthInvestments(month);
                 } else {
                     alert(`❌ Error al eliminar: ${data.error}`);
                 }
@@ -2291,7 +2359,7 @@
                     }
                     if (fileInput) fileInput.value = '';
                     loadMonthCards(month);
-                    if (typeof loadMonthDocuments === 'function') loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs(month);
+                    if (typeof loadMonthDocuments === 'function') loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs(month); if (typeof loadMonthInvestments === "function") loadMonthInvestments(month);
                 } else {
                     if (statusEl) {
                         statusEl.innerHTML = `❌ <strong>Error:</strong> ${data.error || 'No se pudo procesar el resumen.'}`;
@@ -2655,6 +2723,245 @@
             } catch (err) {
                 console.error("Error eliminando documento bancario:", err);
             }
+
+        // ====================================================
+        // INVERSIONES, CAUCIONES Y MERCADO DE CAPITALES (ETAPA 3)
+        // ====================================================
+        let currentMonthInvestmentsData = [];
+
+        function openInvestmentsModal() {
+            const month = (typeof getSelectedMonth === 'function') ? getSelectedMonth() : (document.getElementById('month-selector')?.value || '');
+            const monthTitle = document.getElementById('selected-month-title')?.textContent || month;
+            const subtitle = document.getElementById('investments-modal-subtitle');
+            if (subtitle) subtitle.textContent = `Inversiones y Cauciones de ${monthTitle}`;
+            
+            const modal = document.getElementById('investments-modal');
+            if (modal) modal.classList.remove('hidden');
+            loadMonthInvestments(month);
+        }
+
+        function closeInvestmentsModal() {
+            const modal = document.getElementById('investments-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function loadMonthInvestments(targetMonth) {
+            const month = targetMonth || ((typeof getSelectedMonth === 'function') ? getSelectedMonth() : (document.getElementById('month-selector')?.value || ''));
+            const token = getAuthToken();
+            if (!token) return;
+
+            try {
+                const res = await fetch(`/api/investments/${month}`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                currentMonthInvestmentsData = data.investments || [];
+
+                const count = currentMonthInvestmentsData.length;
+                const badge = document.getElementById('investments-count-badge');
+                if (badge) {
+                    badge.textContent = `${count} ${count === 1 ? 'op' : 'ops'}`;
+                }
+
+                renderInvestmentsModalList(currentMonthInvestmentsData);
+            } catch (err) {
+                console.warn("Error cargando inversiones del mes:", err);
+            }
+        }
+
+        function renderInvestmentsModalList(investments) {
+            const container = document.getElementById('investments-items-container');
+            const countEl = document.getElementById('investments-list-count');
+            if (countEl) countEl.textContent = `${investments.length} ${investments.length === 1 ? 'operación' : 'operaciones'}`;
+            if (!container) return;
+
+            if (investments.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 px-4 bg-[#0d2116] rounded-2xl border border-emerald-500/20">
+                        <span class="text-3xl block mb-2">📈</span>
+                        <p class="text-sm text-emerald-200 font-bold">No hay operaciones de inversión ni cauciones para este mes.</p>
+                        <p class="text-xs text-emerald-300/60 mt-1 max-w-sm mx-auto">Subí el PDF de tu boleto de caución (Allaria, Balanz, Cocos, IOL) o estado de cuenta y la IA extraerá monto, tasa (TNA), plazo, intereses y aranceles.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = investments.map(inv => {
+                const invId = inv.id || 'inv_' + Math.random().toString(36).substr(2, 9);
+                const fees = inv.aranceles_y_gastos || {};
+                const totalFees = (fees.arancel_alyc || 0) + (fees.derechos_mercado || 0) + (fees.iva_aranceles_21 || 0) + (fees.otros_gastos || 0);
+                const tipoLabel = (inv.tipo_operacion || '').replace(/_/g, ' ').toUpperCase();
+                const plazoStr = inv.plazo_dias ? `${inv.plazo_dias} días` : '-';
+                const tnaStr = inv.tasa_nominal_anual ? `${inv.tasa_nominal_anual}% TNA` : '';
+                const moneda = inv.moneda === 'USD' ? 'U$S ' : '$ ';
+
+                return `
+                    <div class="bg-[#0f2117] rounded-2xl border border-emerald-500/30 overflow-hidden shadow-lg transition hover:border-emerald-400/50">
+                        <!-- Cabecera de la Inversión -->
+                        <div class="p-4 bg-gradient-to-r from-emerald-950/40 via-[#10291c] to-[#0f2117] border-b border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-xl flex-shrink-0">
+                                    📈
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <h4 class="font-bold text-white text-sm">${inv.especie || 'Caución Bursátil'}</h4>
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/25 text-emerald-200 border border-emerald-400/30">${inv.entidad || 'ALyC'}</span>
+                                        ${tipoLabel ? `<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-zinc-800 text-zinc-300">${tipoLabel}</span>` : ''}
+                                    </div>
+                                    <p class="text-[11px] text-zinc-400 mt-0.5">
+                                        Concertación: <strong class="text-zinc-200">${inv.fecha_concertacion || '-'}</strong> • Vto: <strong class="text-zinc-200">${inv.fecha_vencimiento || '-'}</strong>
+                                        ${inv.numero_boleto ? ` • Boleto: <span class="font-mono text-zinc-300">${inv.numero_boleto}</span>` : ''}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between sm:justify-end gap-3">
+                                <div class="text-right">
+                                    <p class="text-[10px] text-zinc-400 uppercase font-bold tracking-wider">Monto Operado</p>
+                                    <p class="text-base font-extrabold text-emerald-400">${moneda}${(inv.monto_operado || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+                                    ${inv.monto_neto_liquidado ? `<p class="text-[11px] font-bold text-gold-400">Neto: ${moneda}${(inv.monto_neto_liquidado || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>` : ''}
+                                </div>
+                                <button onclick="deleteInvestment('${inv.id}')" class="p-2 text-zinc-400 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition" title="Eliminar esta operación">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Indicadores Clave de Rentabilidad -->
+                        <div class="px-4 py-2.5 bg-[#091710] flex items-center justify-between text-xs border-b border-emerald-500/10 flex-wrap gap-2">
+                            <div class="flex items-center gap-3 text-[11px] text-zinc-300">
+                                ${tnaStr ? `<span>🎯 Tasa: <strong class="text-emerald-400">${tnaStr}</strong></span>` : ''}
+                                <span>⏱️ Plazo: <strong>${plazoStr}</strong></span>
+                                <span>💰 Interés: <strong class="text-gold-300">${moneda}${(inv.interes_bruto || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</strong></span>
+                            </div>
+                            <button onclick="toggleInvestmentDetails('${invId}')" class="text-emerald-400 hover:text-emerald-300 font-semibold text-[11px] flex items-center gap-1 transition">
+                                <span id="btn-text-${invId}">Ver Gastos y Aranceles</span>
+                                <svg id="btn-icon-${invId}" class="w-3.5 h-3.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                        </div>
+
+                        <!-- Desglose de Gastos y Aranceles (Colapsable) -->
+                        <div id="details-${invId}" class="hidden p-4 space-y-3 bg-[#0a1a12]">
+                            <h5 class="text-[11px] font-bold uppercase tracking-wider text-emerald-300">Aranceles Bursátiles & Derechos de Mercado</h5>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                                <div class="p-2 rounded-lg bg-black/30 border border-zinc-800">
+                                    <p class="text-[10px] text-zinc-400">Arancel ALyC</p>
+                                    <p class="font-bold text-white">${moneda}${(fees.arancel_alyc || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+                                </div>
+                                <div class="p-2 rounded-lg bg-black/30 border border-zinc-800">
+                                    <p class="text-[10px] text-zinc-400">Derechos Mercado</p>
+                                    <p class="font-bold text-zinc-300">${moneda}${(fees.derechos_mercado || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+                                </div>
+                                <div class="p-2 rounded-lg bg-black/30 border border-zinc-800">
+                                    <p class="text-[10px] text-zinc-400">IVA 21% Aranceles</p>
+                                    <p class="font-bold text-gold-400">${moneda}${(fees.iva_aranceles_21 || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+                                </div>
+                                <div class="p-2 rounded-lg bg-black/30 border border-zinc-800">
+                                    <p class="text-[10px] text-zinc-400">Total Aranceles</p>
+                                    <p class="font-bold text-rose-300">${moneda}${totalFees.toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+                                </div>
+                            </div>
+                            ${inv.observaciones ? `
+                                <p class="text-[11px] text-zinc-400 pt-1">
+                                    Observación: <strong class="text-zinc-300">${inv.observaciones}</strong>
+                                </p>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleInvestmentDetails(invId) {
+            const el = document.getElementById(`details-${invId}`);
+            const btnText = document.getElementById(`btn-text-${invId}`);
+            const btnIcon = document.getElementById(`btn-icon-${invId}`);
+            if (!el) return;
+            const isHidden = el.classList.contains('hidden');
+            if (isHidden) {
+                el.classList.remove('hidden');
+                if (btnText) btnText.textContent = 'Ocultar Gastos';
+                if (btnIcon) btnIcon.classList.add('rotate-180');
+            } else {
+                el.classList.add('hidden');
+                if (btnText) btnText.textContent = 'Ver Gastos y Aranceles';
+                if (btnIcon) btnIcon.classList.remove('rotate-180');
+            }
+        }
+
+        async function uploadSelectedInvestment() {
+            const fileInput = document.getElementById('investment-file-input');
+            const statusEl = document.getElementById('investment-upload-status');
+            const file = fileInput?.files[0];
+            if (!file) return;
+
+            const month = (typeof getSelectedMonth === 'function') ? getSelectedMonth() : (document.getElementById('month-selector')?.value || '');
+            const token = getAuthToken();
+
+            if (statusEl) {
+                statusEl.innerHTML = `
+                    <div class="flex items-center gap-2 text-emerald-300">
+                        <svg class="animate-spin h-4 w-4 text-emerald-400" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                        <span>Analizando boleto bursátil <strong>'${file.name}'</strong> con IA... esto demora unos segundos.</span>
+                    </div>
+                `;
+                statusEl.className = 'p-3 rounded-xl text-xs font-medium bg-emerald-500/15 border border-emerald-500/30 block';
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const res = await fetch(`/api/investments/${month}/upload-and-parse`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (statusEl) {
+                        statusEl.innerHTML = `✅ <strong>${data.message || 'Boleto procesado con éxito.'}</strong>`;
+                        statusEl.className = 'p-3 rounded-xl text-xs font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 block';
+                        setTimeout(() => statusEl.classList.add('hidden'), 4000);
+                    }
+                    if (fileInput) fileInput.value = '';
+                    loadMonthInvestments(month);
+                    if (typeof loadMonthDocuments === 'function') loadMonthDocuments(month);
+                } else {
+                    if (statusEl) {
+                        statusEl.innerHTML = `❌ Error: ${data.error || 'No se pudo interpretar el archivo bursátil.'}`;
+                        statusEl.className = 'p-3 rounded-xl text-xs font-medium bg-red-500/15 text-red-300 border border-red-500/30 block';
+                    }
+                }
+            } catch (err) {
+                if (statusEl) {
+                    statusEl.innerHTML = `❌ Error de conexión al procesar el comprobante bursátil.`;
+                    statusEl.className = 'p-3 rounded-xl text-xs font-medium bg-red-500/15 text-red-300 border border-red-500/30 block';
+                }
+            }
+        }
+
+        async function deleteInvestment(invId) {
+            if (!confirm("¿Eliminar esta operación de inversión del mes?")) return;
+            const month = (typeof getSelectedMonth === 'function') ? getSelectedMonth() : (document.getElementById('month-selector')?.value || '');
+            const token = getAuthToken();
+
+            try {
+                const res = await fetch(`/api/investments/${month}/${invId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadMonthInvestments(month);
+                    if (typeof loadMonthDocuments === 'function') loadMonthDocuments(month);
+                }
+            } catch (err) {
+                console.error("Error eliminando inversión:", err);
+            }
+        }
+
         }
 
         // PAQUETE CONTABLE Y ENVÍO AL CONTADOR
@@ -2828,7 +3135,7 @@
                     if (statusEl) statusEl.classList.add('hidden');
                     if (input) input.value = '';
                     await loadPackFilesChecklist(month);
-                    loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs(month);
+                    loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs(month); if (typeof loadMonthInvestments === "function") loadMonthInvestments(month);
                 } else {
                     if (statusEl) {
                         statusEl.textContent = `❌ ${data.error || 'Error al subir archivo'}`;
@@ -2940,7 +3247,7 @@
                             populateMonthDropdown();
                             updateSelectedMonthCard();
                             fetchStats();
-                            loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards(); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs();
+                            loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards(); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs(); if (typeof loadMonthInvestments === "function") loadMonthInvestments();
                             return;
                         }
                     }
@@ -3075,7 +3382,7 @@
                 populateMonthDropdown();
                 updateSelectedMonthCard();
                 fetchStats();
-                loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards(); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs();
+                loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards(); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs(); if (typeof loadMonthInvestments === "function") loadMonthInvestments();
             } catch (err) {
                 if (errEl) { errEl.textContent = "Error de conexión: " + err.message; errEl.classList.remove('hidden'); }
             } finally {
@@ -3116,7 +3423,7 @@
                 populateMonthDropdown();
                 updateSelectedMonthCard();
                 fetchStats();
-                loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards(); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs();
+                loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards(); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs(); if (typeof loadMonthInvestments === "function") loadMonthInvestments();
             } catch (err) {
                 if (errEl) { errEl.textContent = "Error de conexión: " + err.message; errEl.classList.remove('hidden'); }
             } finally {
@@ -3189,7 +3496,7 @@
         function onMonthChange() {
             updateSelectedMonthCard();
             fetchExpensesData();
-            loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards(); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs();
+            loadMonthDocuments(); if (typeof loadMonthCards === "function") loadMonthCards(); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs(); if (typeof loadMonthInvestments === "function") loadMonthInvestments();
         }
 
         function updateSelectedMonthCard() {

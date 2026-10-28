@@ -346,6 +346,81 @@ def generate_excel_report(month_str: str, user_email: str = None) -> bytes:
                         mov.get("categoria", "Varios")
                     ])
 
+    # -------------------------------------------------------------
+    # HOJA 6: Inversiones, Cauciones y Mercado de Capitales (Etapa 3)
+    # -------------------------------------------------------------
+    try:
+        from investment_processor import load_monthly_investments
+        investments = load_monthly_investments(month_str, user_email=user_email)
+    except Exception:
+        investments = []
+
+    if investments:
+        ws6 = wb.create_sheet(title="Inversiones y Cauciones")
+        ws6.views.sheetView[0].showGridLines = True
+        
+        # Título
+        ws6.merge_cells("A1:K1")
+        title_cell_inv = ws6["A1"]
+        title_cell_inv.value = f"OPERACIONES BURSÁTILES, CAUCIONES E INVERSIONES - {month_str}"
+        title_cell_inv.font = title_font
+        title_cell_inv.alignment = Alignment(horizontal="center", vertical="center")
+        ws6.row_dimensions[1].height = 25
+
+        # SECCIÓN 1: BOLETOS DE OPERACIONES Y CAUCIONES
+        ws6.append([])
+        ws6.append(["DETALLE DE OPERACIONES Y CAUCIONES BURSÁTILES"])
+        ws6.cell(row=ws6.max_row, column=1).font = Font(name="Calibri", size=12, bold=True, color="D4AF37")
+        ws6.append(["ALyC / Entidad", "N° Boleto", "Operación", "Especie / Título", "Concertación", "Vencimiento", "Plazo (Días)", "TNA (%)", "Monto Operado", "Interés Bruto", "Neto Liquidado"])
+        inv_hdr_row = ws6.max_row
+        for col_idx in range(1, 12):
+            c = ws6.cell(row=inv_hdr_row, column=col_idx)
+            c.fill = gold_fill
+            c.font = gold_font
+            c.alignment = Alignment(horizontal="center", vertical="center")
+
+        for inv in investments:
+            tipo_op = inv.get("tipo_operacion", "").replace("_", " ").title()
+            ws6.append([
+                inv.get("entidad", ""),
+                inv.get("numero_boleto") or "N/D",
+                tipo_op,
+                inv.get("especie", ""),
+                inv.get("fecha_concertacion", ""),
+                inv.get("fecha_vencimiento", ""),
+                inv.get("plazo_dias") or "-",
+                inv.get("tasa_nominal_anual", 0.0),
+                inv.get("monto_operado", 0.0),
+                inv.get("interes_bruto", 0.0),
+                inv.get("monto_neto_liquidado", 0.0)
+            ])
+
+        # SECCIÓN 2: ARANCELES, DERECHOS DE MERCADO E IVA COMPUTABLE
+        ws6.append([])
+        ws6.append(["ARANCELES, DERECHOS DE MERCADO E IVA COMPUTABLE"])
+        ws6.cell(row=ws6.max_row, column=1).font = Font(name="Calibri", size=12, bold=True, color="D4AF37")
+        ws6.append(["ALyC / Entidad", "N° Boleto", "Arancel ALyC ($)", "Derechos Mercado ($)", "IVA 21% Aranceles ($)", "Otros Gastos ($)", "Total Gastos ($)"])
+        fees_hdr_row = ws6.max_row
+        for col_idx in range(1, 8):
+            c = ws6.cell(row=fees_hdr_row, column=col_idx)
+            c.fill = dark_fill
+            c.font = header_font
+            c.alignment = Alignment(horizontal="center", vertical="center")
+
+        for inv in investments:
+            fees = inv.get("aranceles_y_gastos", {})
+            total_gasto = (fees.get("arancel_alyc", 0.0) + fees.get("derechos_mercado", 0.0) + 
+                           fees.get("iva_aranceles_21", 0.0) + fees.get("otros_gastos", 0.0))
+            ws6.append([
+                inv.get("entidad", ""),
+                inv.get("numero_boleto") or "N/D",
+                fees.get("arancel_alyc", 0.0),
+                fees.get("derechos_mercado", 0.0),
+                fees.get("iva_aranceles_21", 0.0),
+                fees.get("otros_gastos", 0.0),
+                total_gasto
+            ])
+
     # Ajustar ancho de columnas automáticamente
     for sheet in wb.worksheets:
         for col in sheet.columns:

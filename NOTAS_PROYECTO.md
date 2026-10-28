@@ -128,16 +128,22 @@ Registro de lo aprendido y decidido. Actualizar cada vez que aprendamos algo nue
   - Interfaz web interactiva: botón dedicado "Extractos y Préstamos (IA)" con temática azul cielo / marina, modal `bank-modal`, visualización de cuotas estilizadas, desglose colapsable de movimientos y eliminación segura.
   - **Integración con Excel:** Nueva pestaña institucional **`Bancos y Préstamos`** (Hoja 5) en el archivo `Gastos_Mes_Año.xlsx` con secciones formateadas para Préstamos, Cuentas, Impuestos Computables y Movimientos.
   - Sincronización automática de `index.html` y `templates/index.html`.
+- **Módulo de Inversiones, Boletos de Caución y Mercado de Capitales con IA (Etapa 3 - Octubre 2026):**
+  - **ESTADO:** ✅ COMPLETADO E INTEGRADO.
+  - Procesador inteligente bursátil (`investment_processor.py`) usando PyMuPDF + Gemini IA.
+  - Soporta boletos de caución bursátil (Allaria, Balanz, Cocos, Bull Market, IOL) y estados de cuenta / rendimientos de fintechs (Digifin, Lemon, etc.).
+  - Extracción automática de:
+    - ALyC / Entidad emisora y N° de boleto o liquidación.
+    - Tipo de operación (caución colocadora/tomadora, compra/venta de títulos, rendimiento).
+    - Especie o instrumento (ej: Caución en Pesos, Lecaps, Bonos, Acciones/CEDEARs).
+    - Fechas de concertación y vencimiento, plazo en días (ej: 1, 3, 7 días) y Tasa Nominal Anual (TNA %).
+    - Monto operado, interés bruto ganado o pagado, y monto neto liquidado.
+    - **Desglose de aranceles y gastos:** Arancel ALyC, derechos de mercado (BYMA/CNV) e IVA 21% sobre aranceles (computable fiscalmente para el contador).
+  - Interfaz web interactiva: nuevo botón temático *"Inversiones & Cauciones (IA)"* en color esmeralda bursátil (`#0d2818`), modal `investments-modal` con visor de indicadores de rendimiento (Tasa TNA, Plazo, Intereses y Aranceles desglosados) y eliminación con confirmación.
+  - **Integración con Excel:** Nueva pestaña institucional **`Inversiones y Cauciones`** (Hoja 6) en el archivo `Gastos_Mes_Año.xlsx`.
+  - Inclusión en sincronización automática y paquete contable mensual.
 
 ## Hoja de Ruta Pendiente (Próximas Etapas del Sistema Contable & Financiero Integral)
-
-### 📌 Etapa 3 (Pendiente): Inversiones, Boletos de Caución y Mercado de Capitales
-- **Objetivo:** Digitalización y control de rendimiento de operaciones financieras.
-- **Documentos soportados:**
-  - Boletos de Caución Bursátil (ej. `boleto CAUCION ALLARIA 1.pdf`, boletos 2, 3, 4, etc.).
-  - Estados de cuenta de ALyCs y Fintech (ej. DIGIFIN / Lemon / Allaria).
-- **Datos a extraer:** Monto colocado / tomado, plazo en días, tasa nominal anual (TNA), fecha de concertación y vencimiento, interés ganado / pagado, aranceles y derechos de mercado.
-- **Salida:** Pestaña `Inversiones_Cauciones` en el Excel mensual para control patrimonial y cómputo de rentas.
 
 ### 📌 Etapa 4 (Pendiente): Certificados de Retención de Clientes & VEPs Impositivos
 - **Objetivo:** Centralización del crédito fiscal y retenciones para las declaraciones juradas del contador.
