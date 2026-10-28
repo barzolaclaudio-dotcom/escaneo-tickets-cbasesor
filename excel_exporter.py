@@ -513,6 +513,136 @@ def generate_excel_report(month_str: str, user_email: str = None) -> bytes:
             ws7.cell(row=tot_vep_row, column=1).font = Font(bold=True)
             ws7.cell(row=tot_vep_row, column=7).font = Font(bold=True, color="D4AF37")
 
+    # -------------------------------------------------------------
+    # HOJA 8: Auditoría Financiera y Consejos de Asesor IA (Etapa 5)
+    # -------------------------------------------------------------
+    try:
+        from advisor_processor import get_advisor_cache_file, collect_month_financial_ecosystem
+        cache_f = get_advisor_cache_file(month_str, user_email=user_email)
+        audit_data = None
+        if cache_f.exists():
+            import json
+            with open(cache_f, "r", encoding="utf-8") as jf:
+                audit_data = json.load(jf)
+        if not audit_data:
+            eco = collect_month_financial_ecosystem(month_str, user_email=user_email)
+            audit_data = {
+                "kpis": eco["kpis"],
+                "desglose_costos_ocultos": eco["desglose_costos_ocultos"],
+                "rubros": eco["rubros"],
+                "cuotas_futuras": eco["cuotas_futuras"],
+                "ai_insights": {
+                    "semaforo_salud": "Informativo",
+                    "semaforo_motivo": "Diagnóstico financiero automático consolidado",
+                    "resumen_ejecutivo": f"Salidas registradas por $ {eco['kpis']['total_salidas_pesos']:,.2f} y costos financieros de $ {eco['kpis']['costos_financieros_ocultos']:,.2f}.",
+                    "optimizacion_fiscal": f"Crédito fiscal computable en IVA: $ {eco['kpis']['credito_fiscal_iva_total']:,.2f}.",
+                    "consejos_ahorro": []
+                }
+            }
+
+        ws8 = wb.create_sheet(title="Auditoría y Asesor IA")
+        ws8.views.sheetView[0].showGridLines = True
+
+        ws8.merge_cells("A1:F1")
+        title_cell8 = ws8["A1"]
+        title_cell8.value = f"CB ASESOR - AUDITORÍA FINANCIERA & CONSEJOS IA ({month_str.replace('_', '/')})"
+        title_cell8.font = title_font
+        title_cell8.alignment = Alignment(horizontal="center", vertical="center")
+        ws8.row_dimensions[1].height = 25
+
+        # KPIs Principales
+        kpis = audit_data.get("kpis", {})
+        insights = audit_data.get("ai_insights", {})
+        ws8.append([])
+        ws8.append(["DIAGNÓSTICO GENERAL Y SEMÁFORO:", insights.get("semaforo_salud", "N/D"), f"({insights.get('semaforo_motivo', '')})"])
+        ws8.cell(row=ws8.max_row, column=1).font = Font(name="Calibri", size=11, bold=True, color="D4AF37")
+        ws8.cell(row=ws8.max_row, column=2).font = Font(name="Calibri", size=11, bold=True, color="10B981" if insights.get("semaforo_salud") == "Optimo" else ("EF4444" if insights.get("semaforo_salud") == "Alerta" else "F59E0B"))
+
+        ws8.append([])
+        ws8.append(["Indicador Financiero Clave", "Valor ($)", "Observaciones Contables / Fiscales"])
+        hdr8_row = ws8.max_row
+        for col_idx in range(1, 4):
+            c = ws8.cell(row=hdr8_row, column=col_idx)
+            c.fill = dark_fill
+            c.font = header_font
+            c.alignment = Alignment(horizontal="center", vertical="center")
+
+        indicadores = [
+            ("Total Salidas del Mes (Pesos)", kpis.get("total_salidas_pesos", 0.0), "Compras, tarjetas, cuotas bancarias y VEPs"),
+            ("Total Salidas del Mes (USD)", kpis.get("total_salidas_usd", 0.0), "Consumos en moneda extranjera"),
+            ("Costos Financieros Ocultos", kpis.get("costos_financieros_ocultos", 0.0), "Intereses de tarjeta, préstamos, comisiones y sellos"),
+            ("Crédito Fiscal de IVA Total Acumulado", kpis.get("credito_fiscal_iva_total", 0.0), "IVA computable de tickets, tarjetas, préstamos y bancos"),
+            ("Retenciones y Percepciones a Favor", kpis.get("creditos_impositivos_favor", 0.0), "Deducibles en declaraciones juradas impositivas"),
+            ("Cuotas Comprometidas Próximo Mes (+1)", kpis.get("cuotas_proximo_mes", 0.0), "Vencimientos exigibles en el mes siguiente"),
+            ("Rendimiento Inversiones / Cauciones", kpis.get("inversiones_rendimiento", 0.0), f"TNA Promedio: {kpis.get('inversiones_tna_promedio', 0)}%")
+        ]
+        for ind, val, obs in indicadores:
+            ws8.append([ind, val, obs])
+            ws8.cell(row=ws8.max_row, column=2).number_format = "$ #,##0.00"
+
+        # Resumen Ejecutivo de la IA
+        ws8.append([])
+        ws8.append(["RESUMEN EJECUTIVO Y DIAGNÓSTICO IA:"])
+        ws8.cell(row=ws8.max_row, column=1).font = Font(name="Calibri", size=11, bold=True, color="D4AF37")
+        ws8.append([insights.get("resumen_ejecutivo", "")])
+
+        if insights.get("analisis_costos_ocultos"):
+            ws8.append([])
+            ws8.append(["ANÁLISIS DE COSTOS FINANCIEROS Y DEUDA:"])
+            ws8.cell(row=ws8.max_row, column=1).font = Font(name="Calibri", size=11, bold=True, color="D4AF37")
+            ws8.append([insights.get("analisis_costos_ocultos", "")])
+
+        if insights.get("optimizacion_fiscal"):
+            ws8.append([])
+            ws8.append(["OPTIMIZACIÓN FISCAL & CRÉDITO DE IVA:"])
+            ws8.cell(row=ws8.max_row, column=1).font = Font(name="Calibri", size=11, bold=True, color="D4AF37")
+            ws8.append([insights.get("optimizacion_fiscal", "")])
+
+        # Consejos de Ahorro
+        consejos = insights.get("consejos_ahorro", [])
+        if consejos:
+            ws8.append([])
+            ws8.append(["CONSEJOS CONCRETOS DE AHORRO Y EFICIENCIA (IA)"])
+            ws8.cell(row=ws8.max_row, column=1).font = Font(name="Calibri", size=12, bold=True, color="D4AF37")
+            ws8.append(["Prioridad", "Título de Recomendación", "Acción Táctica Sugerida", "Impacto Estimado"])
+            cons_hdr = ws8.max_row
+            for col_idx in range(1, 5):
+                c = ws8.cell(row=cons_hdr, column=col_idx)
+                c.fill = dark_fill
+                c.font = header_font
+                c.alignment = Alignment(horizontal="center", vertical="center")
+            for cs in consejos:
+                ws8.append([
+                    cs.get("prioridad", "Media"),
+                    cs.get("titulo", ""),
+                    cs.get("descripcion", ""),
+                    cs.get("impacto_estimado", "")
+                ])
+
+        # Planificación de Cuotas Futuras
+        cuotas_f = audit_data.get("cuotas_futuras", [])
+        if cuotas_f:
+            ws8.append([])
+            ws8.append(["PLANIFICACIÓN DE CUOTAS COMPROMETIDAS A FUTURO"])
+            ws8.cell(row=ws8.max_row, column=1).font = Font(name="Calibri", size=12, bold=True, color="D4AF37")
+            ws8.append(["Período Futuro", "Cantidad de Cuotas", "Monto Total Comprometido ($)"])
+            cf_hdr = ws8.max_row
+            for col_idx in range(1, 4):
+                c = ws8.cell(row=cf_hdr, column=col_idx)
+                c.fill = dark_fill
+                c.font = header_font
+                c.alignment = Alignment(horizontal="center", vertical="center")
+            for cf in cuotas_f:
+                ws8.append([
+                    cf.get("periodo_label", cf.get("periodo", "")),
+                    cf.get("cantidad_cuotas", 0),
+                    cf.get("total", 0.0)
+                ])
+                ws8.cell(row=ws8.max_row, column=3).number_format = "$ #,##0.00"
+
+    except Exception as ex_ws8:
+        pass
+
     # Ajustar ancho de columnas automáticamente
     for sheet in wb.worksheets:
         for col in sheet.columns:

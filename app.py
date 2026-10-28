@@ -51,6 +51,11 @@ from tax_processor import (
     add_tax_doc_to_month,
     delete_tax_doc_from_month
 )
+from advisor_processor import (
+    collect_month_financial_ecosystem,
+    generate_financial_audit,
+    chat_financial_advisor
+)
 from pydantic import BaseModel
 from typing import Optional, List
 from fastapi import Request, Header
@@ -101,6 +106,10 @@ class SendAccountantReportRequest(BaseModel):
     include_pdf_tickets: bool = False
     selected_docs: Optional[list] = []
     custom_message: Optional[str] = ""
+
+class AdvisorChatRequest(BaseModel):
+    message: str
+    history: Optional[List[dict]] = []
 
 def get_auth_user(authorization: Optional[str] = Header(None)) -> Optional[dict]:
     if not authorization or not isinstance(authorization, str):
@@ -666,6 +675,66 @@ async def delete_monthly_tax_doc_api(month: str, doc_id: str, authorization: Opt
         return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
     ok = delete_tax_doc_from_month(month, doc_id, user["email"])
     return {"success": ok}
+
+# -------------------------------------------------------------
+# Endpoints de Asesor Financiero & Auditoría con IA (Etapa 5)
+# -------------------------------------------------------------
+@app.get("/api/advisor/{month}")
+async def get_advisor_audit_api(month: str, authorization: Optional[str] = Header(None)):
+    user = get_auth_user(authorization)
+    if not user:
+        return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
+    try:
+        audit = generate_financial_audit(month, user["email"], force_refresh=False)
+        return JSONResponse(content=audit)
+    except Exception as e:
+        logger.error(f"Error en get_advisor_audit_api: {e}")
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+
+@app.post("/api/advisor/{month}/regenerate")
+async def regenerate_advisor_audit_api(month: str, authorization: Optional[str] = Header(None)):
+    user = get_auth_user(authorization)
+    if not user:
+        return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
+    try:
+        audit = generate_financial_audit(month, user["email"], force_refresh=True)
+        return JSONResponse(content=audit)
+    except Exception as e:
+        logger.error(f"Error en regenerate_advisor_audit_api: {e}")
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+
+@app.post("/api/advisor/{month}/chat")
+async def advisor_chat_api(month: str, req: AdvisorChatRequest, authorization: Optional[str] = Header(None)):
+    user = get_auth_user(authorization)
+    if not user:
+        return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
+    if not req.message or not req.message.strip():
+        return JSONResponse(status_code=400, content={"success": False, "error": "Mensaje requerido"})
+    try:
+        ans = chat_financial_advisor(month, user["email"], req.message.strip(), req.history or [])
+        return JSONResponse(content=ans)
+    except Exception as e:
+        logger.error(f"Error en advisor_chat_api: {e}")
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+
+@app.get("/api/advisor/{month}/kpis")
+async def get_advisor_kpis_api(month: str, authorization: Optional[str] = Header(None)):
+    user = get_auth_user(authorization)
+    if not user:
+        return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
+    try:
+        eco = collect_month_financial_ecosystem(month, user["email"])
+        return JSONResponse(content={
+            "success": True, 
+            "kpis": eco["kpis"], 
+            "rubros": eco["rubros"], 
+            "cuotas_futuras": eco["cuotas_futuras"],
+            "desglose_costos_ocultos": eco["desglose_costos_ocultos"]
+        })
+    except Exception as e:
+        logger.error(f"Error en get_advisor_kpis_api: {e}")
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+
 
 @app.post("/api/user/send-accountant-report")
 async def send_accountant_report(req: SendAccountantReportRequest, authorization: Optional[str] = Header(None)):

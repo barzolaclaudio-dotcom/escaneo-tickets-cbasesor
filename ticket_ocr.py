@@ -706,9 +706,9 @@ def redistribute_user_documents(user_email: str = None):
         except Exception as e:
             logger.error(f"Error redistribuyendo inversiones para {user_email}: {e}")
 
-    # 3. Bancos: banco_YYYY_MM.json
-    for f in list(user_dir.glob("banco_20*.json")):
-        m_match = re.search(r'banco_(20\d{2}_[01]\d)\.json', f.name)
+    # 3. Bancos: bancos_YYYY_MM.json (y compatibilidad con banco_*.json)
+    for f in list(user_dir.glob("banco*_20*.json")):
+        m_match = re.search(r'bancos?_(20\d{2}_[01]\d)\.json', f.name)
         if not m_match:
             continue
         curr_m = m_match.group(1)
@@ -722,7 +722,7 @@ def redistribute_user_documents(user_email: str = None):
             for it in items:
                 target_m = resolve_document_target_month(it, fallback_month=curr_m)
                 if target_m != curr_m:
-                    target_file = user_dir / f"banco_{target_m}.json"
+                    target_file = user_dir / f"bancos_{target_m}.json"
                     target_items = []
                     if target_file.exists():
                         try:

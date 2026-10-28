@@ -154,17 +154,16 @@ Registro de lo aprendido y decidido. Actualizar cada vez que aprendamos algo nue
     - Base imponible, alícuota porcentual (%) e **importe retenido exacto** (crédito fiscal a favor para las DDJJ del contador) o monto abonado de VEPs.
   - Interfaz web interactiva: botón temático *"Retenciones & VEPs (IA)"* en color ámbar impositivo (`#241708`), modal `taxes-modal` con visualizador de créditos a favor y pagos de VEPs, y control de eliminación.
   - **Integración con Excel:** Nueva pestaña institucional **`Retenciones y VEPs`** (Hoja 7) en el archivo `Gastos_Mes_Año.xlsx` con totales calculados para que el contador descuente directamente en las declaraciones juradas.
-
-## Hoja de Ruta Pendiente (Próximas Etapas del Sistema Contable & Financiero Integral)
-
-### 📌 Etapa 5 (Pendiente): Agente de IA para Asesoramiento Financiero y Consejos de Ahorro 💡
-- **Objetivo:** Auditor inteligente que analiza el 100% del ecosistema financiero del mes (Tickets + Tarjetas + Bancos + Inversiones).
-- **Capacidades:**
-  - **Diagnóstico Integral:** Total gastado, flujo de fondos real y concentración de gastos por rubro (supermercado, combustible, tecnología, servicios en USD).
-  - **Detección de Costos Financieros Ocultos:** Alerta de intereses resarcitorios/financiación en tarjetas, costos de cuotas y comparación con inflación.
-  - **Planificación de Cuotas Futuras:** Calendario de vencimientos de cuotas pendientes para los próximos meses.
-  - **Consejos Concretos de Ahorro y Optimización:** Recomendaciones tácticas para reducir gastos operativos y aprovechar mejor el IVA crédito fiscal.
-  - **Chat Consultivo en Vivo:** Ventana interactiva para responder cualquier consulta financiera o contable en lenguaje natural.
+- **Módulo de Asesor Financiero & Auditoría con IA (Etapa 5 - Octubre 2026):**
+  - **ESTADO:** ✅ COMPLETADO E INTEGRADO.
+  - Auditor inteligente (`advisor_processor.py`) que consolida y analiza el 100% del ecosistema financiero mensual: Tickets de compras + Tarjetas de crédito + Cuentas bancarias y Préstamos + Inversiones bursátiles + Retenciones y VEPs.
+  - **Cálculo Determinístico de KPIs:** Salidas totales en pesos y USD, costos financieros ocultos (intereses de tarjetas, préstamos, comisiones de cuenta, impuesto de sellos), crédito fiscal de IVA acumulado y créditos impositivos a favor para el contador.
+  - **Detección de Fugas y Costos Ocultos:** Alerta de intereses resarcitorios/financiación en tarjetas, cargos bancarios y comparación con inflación.
+  - **Planificación de Cuotas Futuras:** Proyección automática mes a mes de cuotas comprometidas en tarjetas y préstamos para prever la liquidez y capacidad de pago.
+  - **Diagnóstico Ejecutivo con IA:** Semáforo de salud financiera (Óptimo, Atención, Alerta), evaluación de solvencia, optimización fiscal de IVA y retenciones, recomendaciones de inversión en cauciones bursátiles y consejos de ahorro concretos con impacto estimado.
+  - **Chat Consultivo en Vivo con CB Asesor IA:** Ventana interactiva y contextualizada en tiempo real que responde cualquier consulta financiera o contable en lenguaje natural fundamentada en los datos reales del usuario.
+  - **Interfaz Web Interactiva:** Botón temático *"Asesor Financiero IA (Auditoría & Chat)"* en violeta financiero (`#2a133d`), modal `advisor-modal` con pestañas de *Diagnóstico & Auditoría* y *Chat en Vivo*, badges dinámicos y chips de preguntas rápidas.
+  - **Integración con Excel:** Nueva pestaña institucional **`Auditoría y Asesor IA`** (Hoja 8) en el archivo `Gastos_Mes_Año.xlsx` con el diagnóstico completo, semáforo, indicadores clave y consejos accionables.
 
 ## Aspectos Legales, Marcas y Términos de Uso (Pendiente para Lanzamiento Comercial / Google Play)
 - **Registro de Marca:**
