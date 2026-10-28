@@ -2315,7 +2315,17 @@
                 const res = await fetch(`/api/cards/${month}/${cardId}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadMonthCards(month);
+                } else {
+                    alert('Error al eliminar: ' + (data.error || 'Error desconocido'));
                 }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
 
         // ====================================================
         // EXTRACTOS BANCARIOS Y PRÉSTAMOS CON IA (ETAPA 2)
@@ -2647,19 +2657,6 @@
             }
         }
 
-);
-                const data = await res.json();
-                if (data.success) {
-                    loadMonthCards(month);
-                } else {
-                    alert('Error al eliminar: ' + (data.error || 'Error desconocido'));
-                }
-            } catch (err) {
-                alert('Error: ' + err.message);
-            }
-        }
-
-        // ==========================================
         // PAQUETE CONTABLE Y ENVÍO AL CONTADOR
         // ==========================================
 
