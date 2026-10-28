@@ -2723,6 +2723,7 @@
             } catch (err) {
                 console.error("Error eliminando documento bancario:", err);
             }
+        }
 
         // ====================================================
         // INVERSIONES, CAUCIONES Y MERCADO DE CAPITALES (ETAPA 3)
@@ -2962,7 +2963,13 @@
             }
         }
 
-        }
+        // Exponer funciones globales para onclick
+        window.openInvestmentsModal = openInvestmentsModal;
+        window.closeInvestmentsModal = closeInvestmentsModal;
+        window.openBankModal = openBankModal;
+        window.closeBankModal = closeBankModal;
+        window.openCardsModal = openCardsModal;
+        window.closeCardsModal = closeCardsModal;
 
         // PAQUETE CONTABLE Y ENVÍO AL CONTADOR
         // ==========================================
