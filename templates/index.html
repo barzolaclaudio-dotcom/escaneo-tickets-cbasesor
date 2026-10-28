@@ -552,6 +552,23 @@
                     <button onclick="dismissSuccess()" class="text-xs bg-emerald-800 hover:bg-emerald-700 px-3 py-1.5 rounded-lg font-bold">OK</button>
                 </div>
 
+            
+
+
+
+                                <!-- Historial de PDFs Mensuales -->
+                <div class="bg-cb-card rounded-2xl p-5 gold-border space-y-3">
+                    <h3 class="font-bold text-white text-sm flex items-center justify-between">
+                        <span class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
+                            Historial de Comprobantes Mensuales
+                        </span>
+                    </h3>
+                    <div id="monthly-list" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+                        <p class="text-xs text-cb-muted italic">Cargando PDFs...</p>
+                    </div>
+                </div>
+
             </div>
 
             <!-- ======================================================== -->
@@ -712,112 +729,91 @@
                         </button>
                     </div>
 
-                    <!-- Botón para administrar Documentos Adicionales del Mes (Bancos, Tarjetas, Préstamos) -->
-                    <div class="pt-2">
-                        <button onclick="openDocumentsModal()" class="w-full py-2.5 px-3.5 bg-[#141418] hover:bg-[#1a1a20] text-amber-300 font-semibold rounded-xl border border-amber-500/30 text-xs flex items-center justify-between transition shadow-sm">
-                            <span class="flex items-center gap-2">
-                                <span class="text-sm">📂</span>
-                                <span class="font-bold">Documentos del Mes</span>
-                                <span class="text-[11px] text-zinc-400 hidden sm:inline">(Extractos Bancarios & Boletos)</span>
-                            </span>
-                            <span id="docs-count-badge" class="px-2.5 py-0.5 bg-amber-500/15 text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/30">
-                                0 archivos
-                            </span>
-                        </button>
+                    <!-- Módulos de Inteligencia Financiera & Documentación (Grilla de 2 columnas en Tablet/PC) -->
+                    <div class="pt-3 border-t border-zinc-800">
+                        <div class="flex items-center justify-between mb-2.5">
+                            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                                <span>⚡</span> Módulos Financieros & Documentación
+                            </h4>
+                            <span class="text-[10px] text-zinc-500">Gestión Contable con IA</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <!-- Botón 1: Documentos del Mes -->
+                            <button onclick="openDocumentsModal()" class="w-full py-2.5 px-3 bg-[#141418] hover:bg-[#1a1a20] text-amber-300 font-semibold rounded-xl border border-amber-500/30 text-xs flex items-center justify-between transition shadow-sm">
+                                <span class="flex items-center gap-2 truncate">
+                                    <span class="text-sm">📂</span>
+                                    <span class="font-bold truncate">Documentos del Mes</span>
+                                </span>
+                                <span id="docs-count-badge" class="px-2 py-0.5 bg-amber-500/15 text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/30 shrink-0">
+                                    0 archivos
+                                </span>
+                            </button>
+
+                            <!-- Botón 2: Resúmenes de Tarjetas (IA) -->
+                            <button onclick="openCardsModal()" class="w-full py-2.5 px-3 bg-gradient-to-r from-[#171228] to-[#121218] hover:from-[#211a3b] hover:to-[#1a1a24] text-purple-300 font-semibold rounded-xl border border-purple-500/30 text-xs flex items-center justify-between transition shadow-sm">
+                                <span class="flex items-center gap-2 truncate">
+                                    <span class="text-sm">💳</span>
+                                    <span class="font-bold text-white truncate">Tarjetas (IA)</span>
+                                </span>
+                                <span id="cards-count-badge" class="px-2 py-0.5 bg-purple-500/20 text-purple-300 text-[10px] font-bold rounded-full border border-purple-500/40 shrink-0">
+                                    0 tarjetas
+                                </span>
+                            </button>
+
+                            <!-- Botón 3: Extractos y Préstamos (IA) -->
+                            <button onclick="openBankModal()" class="w-full py-2.5 px-3 bg-gradient-to-r from-[#0d1f2d] to-[#121218] hover:from-[#142d42] hover:to-[#1a1a24] text-sky-300 font-semibold rounded-xl border border-sky-500/30 text-xs flex items-center justify-between transition shadow-sm">
+                                <span class="flex items-center gap-2 truncate">
+                                    <span class="text-sm">🏦</span>
+                                    <span class="font-bold text-white truncate">Bancos & Préstamos</span>
+                                </span>
+                                <span id="bank-count-badge" class="px-2 py-0.5 bg-sky-500/20 text-sky-300 text-[10px] font-bold rounded-full border border-sky-500/40 shrink-0">
+                                    0 docs
+                                </span>
+                            </button>
+
+                            <!-- Botón 4: Inversiones & Cauciones (IA) -->
+                            <button onclick="openInvestmentsModal()" class="w-full py-2.5 px-3 bg-gradient-to-r from-[#0d2818] to-[#121218] hover:from-[#133d24] hover:to-[#1a1a24] text-emerald-300 font-semibold rounded-xl border border-emerald-500/30 text-xs flex items-center justify-between transition shadow-sm">
+                                <span class="flex items-center gap-2 truncate">
+                                    <span class="text-sm">📈</span>
+                                    <span class="font-bold text-white truncate">Inversiones & Cauciones</span>
+                                </span>
+                                <span id="investments-count-badge" class="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 text-[10px] font-bold rounded-full border border-emerald-500/40 shrink-0">
+                                    0 ops
+                                </span>
+                            </button>
+
+                            <!-- Botón 5: Retenciones & VEPs (IA) -->
+                            <button onclick="openTaxesModal()" class="w-full py-2.5 px-3 bg-gradient-to-r from-[#241708] to-[#121218] hover:from-[#35230c] hover:to-[#1a1a24] text-amber-300 font-semibold rounded-xl border border-amber-500/30 text-xs flex items-center justify-between transition shadow-sm">
+                                <span class="flex items-center gap-2 truncate">
+                                    <span class="text-sm">🧾</span>
+                                    <span class="font-bold text-white truncate">Retenciones & VEPs</span>
+                                </span>
+                                <span id="taxes-count-badge" class="px-2 py-0.5 bg-amber-500/20 text-amber-300 text-[10px] font-bold rounded-full border border-amber-500/40 shrink-0">
+                                    0 docs
+                                </span>
+                            </button>
+
+                            <!-- Botón 6: Asesor Financiero IA (Auditoría & Chat) -->
+                            <button onclick="openAdvisorModal()" class="w-full py-2.5 px-3 bg-gradient-to-r from-[#2a133d] to-[#121118] hover:from-[#3b1a57] hover:to-[#1a1724] text-purple-200 font-semibold rounded-xl border border-purple-500/40 text-xs flex items-center justify-between transition shadow-sm group">
+                                <span class="flex items-center gap-2 truncate">
+                                    <span class="text-sm group-hover:scale-110 transition-transform">💡</span>
+                                    <span class="font-bold text-white truncate">Asesor Financiero IA</span>
+                                </span>
+                                <span id="advisor-count-badge" class="px-2 py-0.5 bg-purple-500/25 text-purple-200 text-[10px] font-bold rounded-full border border-purple-500/40 flex items-center gap-1 shrink-0">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                    Diagnóstico
+                                </span>
+                            </button>
+                        </div>
                     </div>
 
-                    <!-- Botón para Resúmenes de Tarjetas Inteligentes con IA -->
-                    <div class="pt-2">
-                        <button onclick="openCardsModal()" class="w-full py-2.5 px-3.5 bg-gradient-to-r from-[#171228] to-[#121218] hover:from-[#211a3b] hover:to-[#1a1a24] text-purple-300 font-semibold rounded-xl border border-purple-500/30 text-xs flex items-center justify-between transition shadow-sm">
-                            <span class="flex items-center gap-2">
-                                <span class="text-sm">💳</span>
-                                <span class="font-bold text-white">Resúmenes de Tarjetas (IA)</span>
-                                <span class="text-[11px] text-purple-300/70 hidden sm:inline">(Visa, Master, Cabal, Lemon)</span>
-                            </span>
-                            <span id="cards-count-badge" class="px-2.5 py-0.5 bg-purple-500/20 text-purple-300 text-[10px] font-bold rounded-full border border-purple-500/40">
-                                0 tarjetas
-                            </span>
-                        </button>
-                    </div>
-
-                    <!-- Botón para Extractos Bancarios y Préstamos con IA (Etapa 2) -->
-                    <div class="pt-2">
-                        <button onclick="openBankModal()" class="w-full py-2.5 px-3.5 bg-gradient-to-r from-[#0d1f2d] to-[#121218] hover:from-[#142d42] hover:to-[#1a1a24] text-sky-300 font-semibold rounded-xl border border-sky-500/30 text-xs flex items-center justify-between transition shadow-sm">
-                            <span class="flex items-center gap-2">
-                                <span class="text-sm">🏦</span>
-                                <span class="font-bold text-white">Extractos y Préstamos (IA)</span>
-                                <span class="text-[11px] text-sky-300/70 hidden sm:inline">(BNA, Supervielle, Credicoop, etc.)</span>
-                            </span>
-                            <span id="bank-count-badge" class="px-2.5 py-0.5 bg-sky-500/20 text-sky-300 text-[10px] font-bold rounded-full border border-sky-500/40">
-                                0 docs
-                            </span>
-                        </button>
-                    </div>
-
-                    <!-- Botón para Inversiones, Cauciones y ALyCs con IA (Etapa 3) -->
-                    <div class="pt-2">
-                        <button onclick="openInvestmentsModal()" class="w-full py-2.5 px-3.5 bg-gradient-to-r from-[#0d2818] to-[#121218] hover:from-[#133d24] hover:to-[#1a1a24] text-emerald-300 font-semibold rounded-xl border border-emerald-500/30 text-xs flex items-center justify-between transition shadow-sm">
-                            <span class="flex items-center gap-2">
-                                <span class="text-sm">📈</span>
-                                <span class="font-bold text-white">Inversiones & Cauciones (IA)</span>
-                                <span class="text-[11px] text-emerald-300/70 hidden sm:inline">(Allaria, Balanz, Cocos, IOL)</span>
-                            </span>
-                            <span id="investments-count-badge" class="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 text-[10px] font-bold rounded-full border border-emerald-500/40">
-                                0 ops
-                            </span>
-                        </button>
-                    </div>
-
-                    <!-- Botón para Retenciones y VEPs Impositivos con IA (Etapa 4) -->
-                    <div class="pt-2">
-                        <button onclick="openTaxesModal()" class="w-full py-2.5 px-3.5 bg-gradient-to-r from-[#241708] to-[#121218] hover:from-[#35230c] hover:to-[#1a1a24] text-amber-300 font-semibold rounded-xl border border-amber-500/30 text-xs flex items-center justify-between transition shadow-sm">
-                            <span class="flex items-center gap-2">
-                                <span class="text-sm">🧾</span>
-                                <span class="font-bold text-white">Retenciones & VEPs (IA)</span>
-                                <span class="text-[11px] text-amber-300/70 hidden sm:inline">(Ganancias, IVA, IIBB, VEPs)</span>
-                            </span>
-                            <span id="taxes-count-badge" class="px-2.5 py-0.5 bg-amber-500/20 text-amber-300 text-[10px] font-bold rounded-full border border-amber-500/40">
-                                0 docs
-                            </span>
-                        </button>
-                    </div>
-                    <!-- Botón para Asesor Financiero & Auditoría con IA (Etapa 5) -->
-                    <div class="pt-2">
-                        <button onclick="openAdvisorModal()" class="w-full py-2.5 px-3.5 bg-gradient-to-r from-[#2a133d] to-[#121118] hover:from-[#3b1a57] hover:to-[#1a1724] text-purple-200 font-semibold rounded-xl border border-purple-500/40 text-xs flex items-center justify-between transition shadow-sm group">
-                            <span class="flex items-center gap-2">
-                                <span class="text-sm group-hover:scale-110 transition-transform">💡</span>
-                                <span class="font-bold text-white">Asesor Financiero IA</span>
-                                <span class="text-[11px] text-purple-300/70 hidden sm:inline">(Auditoría & Chat)</span>
-                            </span>
-                            <span id="advisor-count-badge" class="px-2.5 py-0.5 bg-purple-500/25 text-purple-200 text-[10px] font-bold rounded-full border border-purple-500/40 flex items-center gap-1.5">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                                Diagnóstico
-                            </span>
-                        </button>
-                    </div>
-
-                </div>
-
-                <!-- Historial de PDFs Mensuales -->
-                <div class="bg-cb-card rounded-2xl p-5 gold-border space-y-3">
-                    <h3 class="font-bold text-white text-sm flex items-center justify-between">
-                        <span class="flex items-center gap-2">
-                            <svg class="w-4 h-4 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
-                            Historial de Comprobantes Mensuales
-                        </span>
-                    </h3>
-                    <div id="monthly-list" class="space-y-2 max-h-56 overflow-y-auto pr-1">
-                        <p class="text-xs text-cb-muted italic">Cargando PDFs...</p>
-                    </div>
                 </div>
 
             </div>
 
         </div>
 
-    </main>
-
-    <!-- QR Modal -->
+    </main><!-- QR Modal -->
 
     <!-- PANTALLA DETALLE DE COMERCIO -->
     <div id="vendor-detail-screen" class="hidden fixed inset-0 bg-[#0b0b0f]/95 backdrop-blur-md z-40 overflow-y-auto">
