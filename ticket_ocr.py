@@ -531,13 +531,39 @@ def sanitize_email(email: str) -> str:
     return clean
 
 def extract_month_from_date(date_str: str) -> str:
-    """Extrae YYYY_MM a partir de una cadena de fecha DD/MM/YYYY o DD-MM-YYYY."""
+    """Extrae YYYY_MM a partir de cualquier formato de fecha o período (DD/MM/YYYY, YYYY-MM-DD, MM/YYYY, YYYY_MM, etc.)."""
     if not date_str or not isinstance(date_str, str):
         return None
+    val = date_str.strip()
     try:
-        parts = re.split(r'[/.-]', date_str.strip())
+        # 1. YYYY_MM o YYYY-MM (ej: 2026_10 o 2026-10)
+        m_ym = re.search(r'\b(20\d{2})[-_](0[1-9]|1[0-2])\b', val)
+        if m_ym:
+            return f"{m_ym.group(1)}_{int(m_ym.group(2)):02d}"
+            
+        # 2. MM/YYYY o MM-YYYY (ej: 10/2026 o 9/2026)
+        m_my = re.search(r'\b(0?[1-9]|1[0-2])[-/](20\d{2})\b', val)
+        if m_my:
+            return f"{m_my.group(2)}_{int(m_my.group(1)):02d}"
+            
+        # 3. DD/MM/YYYY o DD-MM-YYYY o DD.MM.YYYY
+        m_dmy = re.search(r'\b(0?[1-9]|[12]\d|3[01])[-/.](0?[1-9]|1[0-2])[-/.](20\d{2})\b', val)
+        if m_dmy:
+            return f"{m_dmy.group(3)}_{int(m_dmy.group(2)):02d}"
+            
+        # 4. YYYY/MM/DD o YYYY-MM-DD
+        m_ymd = re.search(r'\b(20\d{2})[-/.](0?[1-9]|1[0-2])[-/.](0?[1-9]|[12]\d|3[01])\b', val)
+        if m_ymd:
+            return f"{m_ymd.group(1)}_{int(m_ymd.group(2)):02d}"
+            
+        # 5. Split de 3 partes
+        parts = re.split(r'[/.-]', val)
         if len(parts) == 3:
-            d, m, y = int(parts[0]), int(parts[1]), int(parts[2])
+            p0, p1, p2 = int(parts[0]), int(parts[1]), int(parts[2])
+            if p0 > 1000:
+                y, m = p0, p1
+            else:
+                y, m = p2, p1
             if y < 100:
                 y += 2000
             if 1 <= m <= 12 and 2000 <= y <= 2100:
@@ -545,6 +571,218 @@ def extract_month_from_date(date_str: str) -> str:
     except Exception:
         pass
     return None
+
+def resolve_document_target_month(doc_data: dict, fallback_month: str = None) -> str:
+    """Detecta inteligentemente a qué mes (YYYY_MM) pertenece un documento según sus fechas extraídas."""
+    if not isinstance(doc_data, dict):
+        if fallback_month:
+            clean = fallback_month.replace("-", "_")
+            if re.match(r'^20\d{2}_(0[1-9]|1[0-2])$', clean):
+                return clean
+        return datetime.now().strftime("%Y_%m")
+        
+    keys_priority = [
+        "fecha_emision", "fecha_pago", "fecha_concertacion", "fecha_cierre",
+        "periodo_hasta", "periodo_fiscal", "periodo", "fecha_vencimiento",
+        "fecha_retencion", "periodo_desde", "date", "fecha"
+    ]
+    for k in keys_priority:
+        val = doc_data.get(k)
+        if val and isinstance(val, str):
+            res = extract_month_from_date(val)
+            if res:
+                return res
+                
+    if fallback_month:
+        clean = fallback_month.replace("-", "_")
+        if re.match(r'^20\d{2}_(0[1-9]|1[0-2])$', clean):
+            return clean
+            
+    return datetime.now().strftime("%Y_%m")
+
+def redistribute_user_documents(user_email: str = None):
+    """Revisa los registros mensuales de un usuario y mueve a su mes correspondiente los que hayan quedado mal posicionados."""
+    if not user_email:
+        return
+    user_dir = get_user_data_dir(user_email)
+    if not user_dir or not user_dir.exists():
+        return
+        
+    base_docs_dir = BASE_DIR / "Documentos_Mensuales" / sanitize_email(user_email)
+    
+    # 1. Retenciones y VEPs: retenciones_YYYY_MM.json
+    for f in list(user_dir.glob("retenciones_20*.json")):
+        m_match = re.search(r'retenciones_(20\d{2}_[01]\d)\.json', f.name)
+        if not m_match:
+            continue
+        curr_m = m_match.group(1)
+        try:
+            with open(f, 'r', encoding='utf-8') as jf:
+                items = json.load(jf)
+            if not isinstance(items, list):
+                continue
+            
+            kept = []
+            changed = False
+            for it in items:
+                target_m = resolve_document_target_month(it, fallback_month=curr_m)
+                if target_m != curr_m:
+                    target_file = user_dir / f"retenciones_{target_m}.json"
+                    target_items = []
+                    if target_file.exists():
+                        try:
+                            with open(target_file, 'r', encoding='utf-8') as tjf:
+                                target_items = json.load(tjf)
+                        except Exception:
+                            target_items = []
+                    it_id = it.get("id") or it.get("numero_certificado")
+                    exists = any((x.get("id") == it_id or (it.get("numero_certificado") and x.get("numero_certificado") == it.get("numero_certificado"))) for x in target_items)
+                    if not exists:
+                        target_items.append(it)
+                        with open(target_file, 'w', encoding='utf-8') as tjf:
+                            json.dump(target_items, tjf, ensure_ascii=False, indent=2)
+                    
+                    if base_docs_dir.exists():
+                        curr_docs = base_docs_dir / curr_m
+                        dest_docs = base_docs_dir / target_m
+                        if curr_docs.exists():
+                            for pdf in list(curr_docs.glob("*.pdf")):
+                                cert_num = str(it.get("numero_certificado", "")).replace("/", "_").strip()
+                                if (cert_num and cert_num in pdf.name) or (it.get("fecha_emision") and it.get("fecha_emision").replace("/", "_") in pdf.name):
+                                    dest_docs.mkdir(parents=True, exist_ok=True)
+                                    target_pdf = dest_docs / pdf.name
+                                    if not target_pdf.exists():
+                                        try:
+                                            pdf.rename(target_pdf)
+                                        except Exception:
+                                            pass
+                    changed = True
+                else:
+                    kept.append(it)
+            
+            if changed:
+                with open(f, 'w', encoding='utf-8') as jf:
+                    json.dump(kept, jf, ensure_ascii=False, indent=2)
+                logger.info(f"Redistribuidas retenciones de {curr_m} para {user_email}")
+        except Exception as e:
+            logger.error(f"Error redistribuyendo retenciones para {user_email} en {curr_m}: {e}")
+
+    # 2. Inversiones: inversiones_YYYY_MM.json
+    for f in list(user_dir.glob("inversiones_20*.json")):
+        m_match = re.search(r'inversiones_(20\d{2}_[01]\d)\.json', f.name)
+        if not m_match:
+            continue
+        curr_m = m_match.group(1)
+        try:
+            with open(f, 'r', encoding='utf-8') as jf:
+                items = json.load(jf)
+            if not isinstance(items, list):
+                continue
+            kept = []
+            changed = False
+            for it in items:
+                target_m = resolve_document_target_month(it, fallback_month=curr_m)
+                if target_m != curr_m:
+                    target_file = user_dir / f"inversiones_{target_m}.json"
+                    target_items = []
+                    if target_file.exists():
+                        try:
+                            with open(target_file, 'r', encoding='utf-8') as tjf:
+                                target_items = json.load(tjf)
+                        except Exception:
+                            target_items = []
+                    it_id = it.get("id") or it.get("numero_boleto")
+                    exists = any(x.get("id") == it_id for x in target_items)
+                    if not exists:
+                        target_items.append(it)
+                        with open(target_file, 'w', encoding='utf-8') as tjf:
+                            json.dump(target_items, tjf, ensure_ascii=False, indent=2)
+                    changed = True
+                else:
+                    kept.append(it)
+            if changed:
+                with open(f, 'w', encoding='utf-8') as jf:
+                    json.dump(kept, jf, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.error(f"Error redistribuyendo inversiones para {user_email}: {e}")
+
+    # 3. Bancos: banco_YYYY_MM.json
+    for f in list(user_dir.glob("banco_20*.json")):
+        m_match = re.search(r'banco_(20\d{2}_[01]\d)\.json', f.name)
+        if not m_match:
+            continue
+        curr_m = m_match.group(1)
+        try:
+            with open(f, 'r', encoding='utf-8') as jf:
+                items = json.load(jf)
+            if not isinstance(items, list):
+                continue
+            kept = []
+            changed = False
+            for it in items:
+                target_m = resolve_document_target_month(it, fallback_month=curr_m)
+                if target_m != curr_m:
+                    target_file = user_dir / f"banco_{target_m}.json"
+                    target_items = []
+                    if target_file.exists():
+                        try:
+                            with open(target_file, 'r', encoding='utf-8') as tjf:
+                                target_items = json.load(tjf)
+                        except Exception:
+                            target_items = []
+                    it_id = it.get("id")
+                    exists = any(x.get("id") == it_id for x in target_items)
+                    if not exists:
+                        target_items.append(it)
+                        with open(target_file, 'w', encoding='utf-8') as tjf:
+                            json.dump(target_items, tjf, ensure_ascii=False, indent=2)
+                    changed = True
+                else:
+                    kept.append(it)
+            if changed:
+                with open(f, 'w', encoding='utf-8') as jf:
+                    json.dump(kept, jf, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.error(f"Error redistribuyendo bancos para {user_email}: {e}")
+
+    # 4. Tarjetas: tarjetas_YYYY_MM.json
+    for f in list(user_dir.glob("tarjetas_20*.json")):
+        m_match = re.search(r'tarjetas_(20\d{2}_[01]\d)\.json', f.name)
+        if not m_match:
+            continue
+        curr_m = m_match.group(1)
+        try:
+            with open(f, 'r', encoding='utf-8') as jf:
+                items = json.load(jf)
+            if not isinstance(items, list):
+                continue
+            kept = []
+            changed = False
+            for it in items:
+                target_m = resolve_document_target_month(it, fallback_month=curr_m)
+                if target_m != curr_m:
+                    target_file = user_dir / f"tarjetas_{target_m}.json"
+                    target_items = []
+                    if target_file.exists():
+                        try:
+                            with open(target_file, 'r', encoding='utf-8') as tjf:
+                                target_items = json.load(tjf)
+                        except Exception:
+                            target_items = []
+                    it_id = it.get("id")
+                    exists = any(x.get("id") == it_id for x in target_items)
+                    if not exists:
+                        target_items.append(it)
+                        with open(target_file, 'w', encoding='utf-8') as tjf:
+                            json.dump(target_items, tjf, ensure_ascii=False, indent=2)
+                    changed = True
+                else:
+                    kept.append(it)
+            if changed:
+                with open(f, 'w', encoding='utf-8') as jf:
+                    json.dump(kept, jf, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.error(f"Error redistribuyendo tarjetas para {user_email}: {e}")
 
 def get_user_data_dir(user_email: str = None) -> Path:
     safe_email = sanitize_email(user_email)

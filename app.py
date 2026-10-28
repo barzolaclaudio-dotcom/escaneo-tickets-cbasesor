@@ -16,7 +16,15 @@ from pdf_processor import (
     generate_zip_report,
     PDFS_DIR
 )
-from ticket_ocr import extract_data_from_image, get_monthly_summary, DATA_DIR, sanitize_email
+from ticket_ocr import (
+    extract_data_from_image, 
+    get_monthly_summary, 
+    DATA_DIR, 
+    sanitize_email,
+    extract_month_from_date,
+    resolve_document_target_month,
+    redistribute_user_documents
+)
 from excel_exporter import generate_excel_report, generate_csv_report
 from gdrive_sync import restore_all_from_gdrive, sync_month_to_gdrive
 from card_processor import (
@@ -310,19 +318,46 @@ async def upload_month_document(
     if not user:
         return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
     
-    docs_dir = get_user_month_docs_dir(user["email"], month)
+    content = await file.read()
+    if not content:
+        return JSONResponse(status_code=400, content={"success": False, "error": "Archivo vacío"})
+        
     clean_name = Path(file.filename).name.replace(" ", "_")
+    target_month = month.replace("-", "_")
+
+    # Si es PDF, intentar detectar si contiene fecha/período en el texto inicial
+    if clean_name.lower().endswith(".pdf"):
+        try:
+            import fitz
+            doc = fitz.open(stream=content, filetype="pdf")
+            if len(doc) > 0:
+                first_text = doc[0].get_text("text")[:2500]
+                doc.close()
+                detected = extract_month_from_date(first_text)
+                if detected:
+                    target_month = detected
+        except Exception:
+            pass
+
+    docs_dir = get_user_month_docs_dir(user["email"], target_month)
     dest_path = docs_dir / clean_name
     
-    content = await file.read()
     with open(dest_path, "wb") as f:
         f.write(content)
         
+    moved = (target_month != month.replace("-", "_"))
+    msg = f"Archivo '{clean_name}' adjuntado correctamente al mes {target_month.replace('_', '/')}."
+    if moved:
+        msg = f"Archivo '{clean_name}' detectado con fecha de {target_month.replace('_', '/')} y guardado automáticamente en ese período."
+
     return {
         "success": True, 
         "filename": clean_name, 
+        "target_month": target_month,
+        "original_month": month,
+        "moved": moved,
         "size_kb": round(len(content) / 1024, 1),
-        "message": f"Archivo '{clean_name}' adjuntado correctamente al mes {month}."
+        "message": msg
     }
 
 @app.delete("/api/documents/{month}/{filename}")
@@ -372,9 +407,17 @@ async def upload_and_parse_card(
         
     filename = file.filename or "resumen.pdf"
     clean_name = Path(filename).name.replace(" ", "_")
-    
-    # 1. Guardar copia física en la carpeta de documentos del usuario
-    docs_dir = get_user_month_docs_dir(user["email"], month)
+
+    # 1. Parsear con PyMuPDF + Gemini
+    parsed = parse_credit_card_pdf(content, filename_hint=clean_name)
+    if not parsed.get("success"):
+        return JSONResponse(status_code=422, content={"success": False, "error": parsed.get("error", "Error procesando el resumen")})
+
+    # 2. Ruteo automático del mes según la fecha real / de cierre del resumen
+    target_month = resolve_document_target_month(parsed, fallback_month=month)
+
+    # 3. Guardar copia física en la carpeta de documentos del usuario para el mes destino
+    docs_dir = get_user_month_docs_dir(user["email"], target_month)
     dest_path = docs_dir / clean_name
     try:
         with open(dest_path, "wb") as f:
@@ -382,14 +425,21 @@ async def upload_and_parse_card(
     except Exception as e:
         logger.error(f"Error guardando archivo físico de tarjeta: {e}")
 
-    # 2. Parsear con PyMuPDF + Gemini
-    parsed = parse_credit_card_pdf(content, filename_hint=clean_name)
-    if not parsed.get("success"):
-        return JSONResponse(status_code=422, content={"success": False, "error": parsed.get("error", "Error procesando el resumen")})
-        
-    # 3. Guardar en JSON mensual
-    card_saved = add_card_to_month(month, parsed, user["email"])
-    return {"success": True, "card": card_saved, "message": f"Resumen de {card_saved.get('marca', 'Tarjeta')} procesado con éxito."}
+    # 4. Guardar en JSON mensual de destino
+    card_saved = add_card_to_month(target_month, parsed, user["email"])
+    moved = (target_month != month.replace("-", "_"))
+    msg = f"Resumen de {card_saved.get('marca', 'Tarjeta')} procesado con éxito."
+    if moved:
+        msg = f"Resumen de {card_saved.get('marca', 'Tarjeta')} asignado automáticamente al período {target_month.replace('_', '/')} según su fecha de cierre."
+
+    return {
+        "success": True, 
+        "card": card_saved, 
+        "target_month": target_month,
+        "original_month": month,
+        "moved": moved,
+        "message": msg
+    }
 
 @app.get("/api/cards/{month}")
 async def get_monthly_cards_api(month: str, authorization: Optional[str] = Header(None)):
@@ -426,9 +476,17 @@ async def upload_and_parse_bank_doc(
         
     filename = file.filename or "documento_bancario.pdf"
     clean_name = Path(filename).name.replace(" ", "_")
-    
-    # 1. Guardar copia física en la carpeta de documentos del usuario
-    docs_dir = get_user_month_docs_dir(user["email"], month)
+
+    # 1. Parsear con PyMuPDF + Gemini
+    parsed = parse_bank_or_loan_pdf(content, filename_hint=clean_name)
+    if not parsed.get("success"):
+        return JSONResponse(status_code=422, content={"success": False, "error": parsed.get("error", "Error procesando el documento bancario")})
+
+    # 2. Ruteo automático del mes según la fecha / período del comprobante bancario
+    target_month = resolve_document_target_month(parsed, fallback_month=month)
+
+    # 3. Guardar copia física en la carpeta de documentos del usuario para el mes destino
+    docs_dir = get_user_month_docs_dir(user["email"], target_month)
     dest_path = docs_dir / clean_name
     try:
         with open(dest_path, "wb") as f:
@@ -436,15 +494,22 @@ async def upload_and_parse_bank_doc(
     except Exception as e:
         logger.error(f"Error guardando archivo físico bancario: {e}")
 
-    # 2. Parsear con PyMuPDF + Gemini
-    parsed = parse_bank_or_loan_pdf(content, filename_hint=clean_name)
-    if not parsed.get("success"):
-        return JSONResponse(status_code=422, content={"success": False, "error": parsed.get("error", "Error procesando el documento bancario")})
-        
-    # 3. Guardar en JSON mensual
-    doc_saved = add_bank_doc_to_month(month, parsed, user["email"])
+    # 4. Guardar en JSON mensual de destino
+    doc_saved = add_bank_doc_to_month(target_month, parsed, user["email"])
     tipo_desc = "Comprobante de Cuota/Préstamo" if doc_saved.get("tipo_documento") == "cuota_prestamo" else "Extracto Bancario"
-    return {"success": True, "bank_doc": doc_saved, "message": f"{tipo_desc} de {doc_saved.get('entidad', 'Banco')} procesado con éxito."}
+    moved = (target_month != month.replace("-", "_"))
+    msg = f"{tipo_desc} de {doc_saved.get('entidad', 'Banco')} procesado con éxito."
+    if moved:
+        msg = f"{tipo_desc} de {doc_saved.get('entidad', 'Banco')} asignado automáticamente al período {target_month.replace('_', '/')} según sus fechas."
+
+    return {
+        "success": True, 
+        "bank_doc": doc_saved, 
+        "target_month": target_month,
+        "original_month": month,
+        "moved": moved,
+        "message": msg
+    }
 
 @app.get("/api/bank/{month}")
 async def get_monthly_bank_docs_api(month: str, authorization: Optional[str] = Header(None)):
@@ -481,9 +546,17 @@ async def upload_and_parse_investment(
         
     filename = file.filename or "boleto_inversion.pdf"
     clean_name = Path(filename).name.replace(" ", "_")
-    
-    # 1. Guardar copia física en la carpeta de documentos del usuario
-    docs_dir = get_user_month_docs_dir(user["email"], month)
+
+    # 1. Parsear con PyMuPDF + Gemini
+    parsed = parse_investment_pdf(content, filename_hint=clean_name)
+    if not parsed.get("success"):
+        return JSONResponse(status_code=422, content={"success": False, "error": parsed.get("error", "Error procesando el comprobante bursátil")})
+
+    # 2. Ruteo automático del mes según la fecha de concertación
+    target_month = resolve_document_target_month(parsed, fallback_month=month)
+
+    # 3. Guardar copia física en la carpeta de documentos del usuario para el mes destino
+    docs_dir = get_user_month_docs_dir(user["email"], target_month)
     dest_path = docs_dir / clean_name
     try:
         with open(dest_path, "wb") as f:
@@ -491,14 +564,21 @@ async def upload_and_parse_investment(
     except Exception as e:
         logger.error(f"Error guardando archivo físico de inversión: {e}")
 
-    # 2. Parsear con PyMuPDF + Gemini
-    parsed = parse_investment_pdf(content, filename_hint=clean_name)
-    if not parsed.get("success"):
-        return JSONResponse(status_code=422, content={"success": False, "error": parsed.get("error", "Error procesando el comprobante bursátil")})
-        
-    # 3. Guardar en JSON mensual
-    inv_saved = add_investment_to_month(month, parsed, user["email"])
-    return {"success": True, "investment": inv_saved, "message": f"Operación de {inv_saved.get('especie', 'Inversión')} en {inv_saved.get('entidad', 'ALyC')} procesada con éxito."}
+    # 4. Guardar en JSON mensual de destino
+    inv_saved = add_investment_to_month(target_month, parsed, user["email"])
+    moved = (target_month != month.replace("-", "_"))
+    msg = f"Operación de {inv_saved.get('especie', 'Inversión')} en {inv_saved.get('entidad', 'ALyC')} procesada con éxito."
+    if moved:
+        msg = f"Operación de {inv_saved.get('especie', 'Inversión')} asignada automáticamente al período {target_month.replace('_', '/')} según su fecha de concertación."
+
+    return {
+        "success": True, 
+        "investment": inv_saved, 
+        "target_month": target_month,
+        "original_month": month,
+        "moved": moved,
+        "message": msg
+    }
 
 @app.get("/api/investments/{month}")
 async def get_monthly_investments_api(month: str, authorization: Optional[str] = Header(None)):
@@ -535,9 +615,17 @@ async def upload_and_parse_tax_doc(
         
     filename = file.filename or "comprobante_fiscal.pdf"
     clean_name = Path(filename).name.replace(" ", "_")
-    
-    # 1. Guardar copia física en la carpeta de documentos del usuario
-    docs_dir = get_user_month_docs_dir(user["email"], month)
+
+    # 1. Parsear con PyMuPDF + Gemini
+    parsed = parse_tax_or_vep_pdf(content, filename_hint=clean_name)
+    if not parsed.get("success"):
+        return JSONResponse(status_code=422, content={"success": False, "error": parsed.get("error", "Error procesando el comprobante impositivo")})
+
+    # 2. Ruteo automático del mes según la fecha de emisión del certificado o pago de VEP
+    target_month = resolve_document_target_month(parsed, fallback_month=month)
+
+    # 3. Guardar copia física en la carpeta de documentos del usuario para el mes destino
+    docs_dir = get_user_month_docs_dir(user["email"], target_month)
     dest_path = docs_dir / clean_name
     try:
         with open(dest_path, "wb") as f:
@@ -545,16 +633,23 @@ async def upload_and_parse_tax_doc(
     except Exception as e:
         logger.error(f"Error guardando archivo físico tributario: {e}")
 
-    # 2. Parsear con PyMuPDF + Gemini
-    parsed = parse_tax_or_vep_pdf(content, filename_hint=clean_name)
-    if not parsed.get("success"):
-        return JSONResponse(status_code=422, content={"success": False, "error": parsed.get("error", "Error procesando el comprobante impositivo")})
-        
-    # 3. Guardar en JSON mensual
-    tax_saved = add_tax_doc_to_month(month, parsed, user["email"])
+    # 4. Guardar en JSON mensual de destino
+    tax_saved = add_tax_doc_to_month(target_month, parsed, user["email"])
     tipo_desc = "Certificado de Retención" if tax_saved.get("tipo_documento") == "certificado_retencion" else "Pago de VEP"
     entidad_desc = tax_saved.get("agente_retencion_nombre") or tax_saved.get("organismo") or "AFIP/ARCA"
-    return {"success": True, "tax_doc": tax_saved, "message": f"{tipo_desc} ({entidad_desc}) procesado con éxito."}
+    moved = (target_month != month.replace("-", "_"))
+    msg = f"{tipo_desc} ({entidad_desc}) procesado con éxito."
+    if moved:
+        msg = f"{tipo_desc} ({entidad_desc}) asignado automáticamente al período {target_month.replace('_', '/')} según su fecha de emisión."
+
+    return {
+        "success": True, 
+        "tax_doc": tax_saved, 
+        "target_month": target_month,
+        "original_month": month,
+        "moved": moved,
+        "message": msg
+    }
 
 @app.get("/api/taxes/{month}")
 async def get_monthly_taxes_api(month: str, authorization: Optional[str] = Header(None)):

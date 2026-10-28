@@ -2149,13 +2149,23 @@
                 });
                 const data = await res.json();
                 if (data.success) {
+                    const targetMonth = data.target_month || month;
+                    const isMoved = !!data.moved && (targetMonth !== month);
                     if (statusEl) {
-                        statusEl.textContent = `✅ ${data.message || 'Documento adjuntado.'}`;
+                        statusEl.textContent = '✅ ' + (data.message || 'Documento adjuntado.');
                         statusEl.className = 'p-2.5 rounded-xl text-xs font-medium bg-emerald-500/10 text-emerald-300 block';
-                        setTimeout(() => statusEl.classList.add('hidden'), 3500);
+                        setTimeout(() => statusEl.classList.add('hidden'), 4500);
                     }
                     if (fileInput) fileInput.value = '';
-                    loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs(month); if (typeof loadMonthInvestments === "function") loadMonthInvestments(month); if (typeof loadMonthTaxes === "function") loadMonthTaxes(month);
+                    if (isMoved) {
+                        if (typeof ensureMonthInDropdown === 'function') ensureMonthInDropdown(targetMonth);
+                        const sel = document.getElementById('month-selector');
+                        if (sel) {
+                            sel.value = targetMonth;
+                            if (typeof onMonthChange === 'function') onMonthChange();
+                        }
+                    }
+                    loadMonthDocuments(targetMonth);
                 } else {
                     if (statusEl) {
                         statusEl.textContent = `❌ ${data.error || 'Error al subir documento.'}`;
@@ -2420,14 +2430,24 @@
                 });
                 const data = await res.json();
                 if (data.success) {
+                    const targetMonth = data.target_month || month;
+                    const isMoved = !!data.moved && (targetMonth !== month);
                     if (statusEl) {
-                        statusEl.innerHTML = `✅ <strong>${data.message || 'Resumen procesado con éxito.'}</strong>`;
+                        statusEl.innerHTML = '✅ <strong>' + (data.message || 'Resumen procesado con éxito.') + '</strong>';
                         statusEl.className = 'p-3 rounded-xl text-xs font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 block';
-                        setTimeout(() => statusEl.classList.add('hidden'), 4000);
+                        setTimeout(() => statusEl.classList.add('hidden'), 5000);
                     }
                     if (fileInput) fileInput.value = '';
-                    loadMonthCards(month);
-                    if (typeof loadMonthDocuments === 'function') loadMonthDocuments(month); if (typeof loadMonthCards === "function") loadMonthCards(month); if (typeof loadMonthBankDocs === "function") loadMonthBankDocs(month); if (typeof loadMonthInvestments === "function") loadMonthInvestments(month); if (typeof loadMonthTaxes === "function") loadMonthTaxes(month);
+                    if (isMoved) {
+                        if (typeof ensureMonthInDropdown === 'function') ensureMonthInDropdown(targetMonth);
+                        const sel = document.getElementById('month-selector');
+                        if (sel) {
+                            sel.value = targetMonth;
+                            if (typeof onMonthChange === 'function') onMonthChange();
+                        }
+                    }
+                    loadMonthCards(targetMonth);
+                    if (typeof loadMonthDocuments === 'function') loadMonthDocuments(targetMonth);
                 } else {
                     if (statusEl) {
                         statusEl.innerHTML = `❌ <strong>Error:</strong> ${data.error || 'No se pudo procesar el resumen.'}`;
@@ -2751,14 +2771,24 @@
                 });
                 const data = await res.json();
                 if (data.success) {
+                    const targetMonth = data.target_month || month;
+                    const isMoved = !!data.moved && (targetMonth !== month);
                     if (statusEl) {
-                        statusEl.innerHTML = `✅ <strong>${data.message || 'Documento bancario procesado con éxito.'}</strong>`;
+                        statusEl.innerHTML = '✅ <strong>' + (data.message || 'Documento bancario procesado con éxito.') + '</strong>';
                         statusEl.className = 'p-3 rounded-xl text-xs font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 block';
-                        setTimeout(() => statusEl.classList.add('hidden'), 4000);
+                        setTimeout(() => statusEl.classList.add('hidden'), 5000);
                     }
                     if (fileInput) fileInput.value = '';
-                    loadMonthBankDocs(month);
-                    if (typeof loadMonthDocuments === 'function') loadMonthDocuments(month);
+                    if (isMoved) {
+                        if (typeof ensureMonthInDropdown === 'function') ensureMonthInDropdown(targetMonth);
+                        const sel = document.getElementById('month-selector');
+                        if (sel) {
+                            sel.value = targetMonth;
+                            if (typeof onMonthChange === 'function') onMonthChange();
+                        }
+                    }
+                    loadMonthBankDocs(targetMonth);
+                    if (typeof loadMonthDocuments === 'function') loadMonthDocuments(targetMonth);
                 } else {
                     if (statusEl) {
                         statusEl.innerHTML = `❌ Error: ${data.error || 'No se pudo interpretar el archivo.'}`;
@@ -2989,14 +3019,24 @@
                 });
                 const data = await res.json();
                 if (data.success) {
+                    const targetMonth = data.target_month || month;
+                    const isMoved = !!data.moved && (targetMonth !== month);
                     if (statusEl) {
-                        statusEl.innerHTML = `✅ <strong>${data.message || 'Boleto procesado con éxito.'}</strong>`;
+                        statusEl.innerHTML = '✅ <strong>' + (data.message || 'Boleto procesado con éxito.') + '</strong>';
                         statusEl.className = 'p-3 rounded-xl text-xs font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 block';
-                        setTimeout(() => statusEl.classList.add('hidden'), 4000);
+                        setTimeout(() => statusEl.classList.add('hidden'), 5000);
                     }
                     if (fileInput) fileInput.value = '';
-                    loadMonthInvestments(month);
-                    if (typeof loadMonthDocuments === 'function') loadMonthDocuments(month);
+                    if (isMoved) {
+                        if (typeof ensureMonthInDropdown === 'function') ensureMonthInDropdown(targetMonth);
+                        const sel = document.getElementById('month-selector');
+                        if (sel) {
+                            sel.value = targetMonth;
+                            if (typeof onMonthChange === 'function') onMonthChange();
+                        }
+                    }
+                    loadMonthInvestments(targetMonth);
+                    if (typeof loadMonthDocuments === 'function') loadMonthDocuments(targetMonth);
                 } else {
                     if (statusEl) {
                         statusEl.innerHTML = `❌ Error: ${data.error || 'No se pudo interpretar el archivo bursátil.'}`;
@@ -3223,14 +3263,24 @@
                 });
                 const data = await res.json();
                 if (data.success) {
+                    const targetMonth = data.target_month || month;
+                    const isMoved = !!data.moved && (targetMonth !== month);
                     if (statusEl) {
-                        statusEl.innerHTML = `✅ <strong>${data.message || 'Comprobante tributario procesado con éxito.'}</strong>`;
+                        statusEl.innerHTML = '✅ <strong>' + (data.message || 'Comprobante tributario procesado con éxito.') + '</strong>';
                         statusEl.className = 'p-3 rounded-xl text-xs font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 block';
-                        setTimeout(() => statusEl.classList.add('hidden'), 4000);
+                        setTimeout(() => statusEl.classList.add('hidden'), 5000);
                     }
                     if (fileInput) fileInput.value = '';
-                    loadMonthTaxes(month);
-                    if (typeof loadMonthDocuments === 'function') loadMonthDocuments(month);
+                    if (isMoved) {
+                        if (typeof ensureMonthInDropdown === 'function') ensureMonthInDropdown(targetMonth);
+                        const sel = document.getElementById('month-selector');
+                        if (sel) {
+                            sel.value = targetMonth;
+                            if (typeof onMonthChange === 'function') onMonthChange();
+                        }
+                    }
+                    loadMonthTaxes(targetMonth);
+                    if (typeof loadMonthDocuments === 'function') loadMonthDocuments(targetMonth);
                 } else {
                     if (statusEl) {
                         statusEl.innerHTML = `❌ Error: ${data.error || 'No se pudo interpretar el archivo impositivo.'}`;

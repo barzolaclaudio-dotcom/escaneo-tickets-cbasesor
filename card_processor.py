@@ -8,7 +8,7 @@ from datetime import datetime
 import pymupdf
 import requests
 import os
-from ticket_ocr import sanitize_email, get_user_data_dir
+from ticket_ocr import sanitize_email, get_user_data_dir, redistribute_user_documents
 
 logger = logging.getLogger("card_processor")
 logger.setLevel(logging.INFO)
@@ -23,6 +23,11 @@ def get_cards_data_file(month_str: str, user_email: str = None) -> Path:
 
 def load_monthly_cards(month_str: str, user_email: str = None) -> list[dict]:
     """Carga los resúmenes de tarjetas parseados para un mes dado."""
+    if user_email:
+        try:
+            redistribute_user_documents(user_email)
+        except Exception as err:
+            logger.warning(f"Error verificando distribución de tarjetas: {err}")
     file_path = get_cards_data_file(month_str, user_email)
     if not file_path.exists():
         return []
