@@ -37,6 +37,12 @@ from investment_processor import (
     add_investment_to_month,
     delete_investment_from_month
 )
+from tax_processor import (
+    parse_tax_or_vep_pdf,
+    load_monthly_taxes,
+    add_tax_doc_to_month,
+    delete_tax_doc_from_month
+)
 from pydantic import BaseModel
 from typing import Optional, List
 from fastapi import Request, Header
@@ -508,6 +514,62 @@ async def delete_monthly_investment_api(month: str, inv_id: str, authorization: 
     if not user:
         return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
     ok = delete_investment_from_month(month, inv_id, user["email"])
+    return {"success": ok}
+
+# -------------------------------------------------------------
+# Endpoints de Retenciones y VEPs Impositivos (Etapa 4)
+# -------------------------------------------------------------
+@app.post("/api/taxes/{month}/upload-and-parse")
+async def upload_and_parse_tax_doc(
+    month: str,
+    file: UploadFile = File(...),
+    authorization: Optional[str] = Header(None)
+):
+    user = get_auth_user(authorization)
+    if not user:
+        return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
+    
+    content = await file.read()
+    if not content:
+        return JSONResponse(status_code=400, content={"success": False, "error": "Archivo vacío"})
+        
+    filename = file.filename or "comprobante_fiscal.pdf"
+    clean_name = Path(filename).name.replace(" ", "_")
+    
+    # 1. Guardar copia física en la carpeta de documentos del usuario
+    docs_dir = get_user_month_docs_dir(user["email"], month)
+    dest_path = docs_dir / clean_name
+    try:
+        with open(dest_path, "wb") as f:
+            f.write(content)
+    except Exception as e:
+        logger.error(f"Error guardando archivo físico tributario: {e}")
+
+    # 2. Parsear con PyMuPDF + Gemini
+    parsed = parse_tax_or_vep_pdf(content, filename_hint=clean_name)
+    if not parsed.get("success"):
+        return JSONResponse(status_code=422, content={"success": False, "error": parsed.get("error", "Error procesando el comprobante impositivo")})
+        
+    # 3. Guardar en JSON mensual
+    tax_saved = add_tax_doc_to_month(month, parsed, user["email"])
+    tipo_desc = "Certificado de Retención" if tax_saved.get("tipo_documento") == "certificado_retencion" else "Pago de VEP"
+    entidad_desc = tax_saved.get("agente_retencion_nombre") or tax_saved.get("organismo") or "AFIP/ARCA"
+    return {"success": True, "tax_doc": tax_saved, "message": f"{tipo_desc} ({entidad_desc}) procesado con éxito."}
+
+@app.get("/api/taxes/{month}")
+async def get_monthly_taxes_api(month: str, authorization: Optional[str] = Header(None)):
+    user = get_auth_user(authorization)
+    if not user:
+        return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
+    tax_docs = load_monthly_taxes(month, user["email"])
+    return {"success": True, "taxes": tax_docs}
+
+@app.delete("/api/taxes/{month}/{doc_id}")
+async def delete_monthly_tax_doc_api(month: str, doc_id: str, authorization: Optional[str] = Header(None)):
+    user = get_auth_user(authorization)
+    if not user:
+        return JSONResponse(status_code=401, content={"success": False, "error": "No autorizado"})
+    ok = delete_tax_doc_from_month(month, doc_id, user["email"])
     return {"success": ok}
 
 @app.post("/api/user/send-accountant-report")

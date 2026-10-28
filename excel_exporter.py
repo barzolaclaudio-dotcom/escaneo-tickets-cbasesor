@@ -421,6 +421,98 @@ def generate_excel_report(month_str: str, user_email: str = None) -> bytes:
                 total_gasto
             ])
 
+    # -------------------------------------------------------------
+    # HOJA 7: Certificados de Retención y Pagos de VEPs (Etapa 4)
+    # -------------------------------------------------------------
+    try:
+        from tax_processor import load_monthly_taxes
+        tax_docs = load_monthly_taxes(month_str, user_email=user_email)
+    except Exception:
+        tax_docs = []
+
+    if tax_docs:
+        ws7 = wb.create_sheet(title="Retenciones y VEPs")
+        ws7.views.sheetView[0].showGridLines = True
+        
+        # Título
+        ws7.merge_cells("A1:I1")
+        title_cell_tax = ws7["A1"]
+        title_cell_tax.value = f"CERTIFICADOS DE RETENCIÓN Y PAGOS DE VEPS - {month_str}"
+        title_cell_tax.font = title_font
+        title_cell_tax.alignment = Alignment(horizontal="center", vertical="center")
+        ws7.row_dimensions[1].height = 25
+
+        retenciones = [t for t in tax_docs if t.get("tipo_documento") == "certificado_retencion"]
+        veps = [t for t in tax_docs if t.get("tipo_documento") == "pago_vep"]
+
+        # SECCIÓN 1: RETENCIONES SUFRIDAS (CRÉDITO FISCAL A FAVOR)
+        if retenciones:
+            ws7.append([])
+            ws7.append(["RETENCIONES SUFRIDAS (CRÉDITO FISCAL A FAVOR)"])
+            ws7.cell(row=ws7.max_row, column=1).font = Font(name="Calibri", size=12, bold=True, color="D4AF37")
+            ws7.append(["Agente de Retención", "CUIT Agente", "Impuesto Retenido", "Régimen / Jurisdicción", "N° Certificado", "Fecha", "Base Imponible ($)", "Alícuota (%)", "Importe Retenido ($)"])
+            ret_hdr_row = ws7.max_row
+            for col_idx in range(1, 10):
+                c = ws7.cell(row=ret_hdr_row, column=col_idx)
+                c.fill = gold_fill
+                c.font = gold_font
+                c.alignment = Alignment(horizontal="center", vertical="center")
+
+            total_retenido = 0.0
+            for r in retenciones:
+                monto_ret = r.get("importe_retenido", 0.0)
+                total_retenido += monto_ret
+                regimen_str = f"{r.get('regimen', '')} - {r.get('jurisdiccion', '')}".strip(" -")
+                ws7.append([
+                    r.get("agente_retencion_nombre", ""),
+                    r.get("agente_retencion_cuit", ""),
+                    r.get("impuesto_retenido", ""),
+                    regimen_str,
+                    r.get("numero_certificado") or "N/D",
+                    r.get("fecha_emision", ""),
+                    r.get("base_imponible", 0.0),
+                    r.get("alicuota_porcentaje", 0.0),
+                    monto_ret
+                ])
+            # Total Retenciones
+            ws7.append(["TOTAL CRÉDITO RETENCIONES:", "", "", "", "", "", "", "", total_retenido])
+            tot_ret_row = ws7.max_row
+            ws7.cell(row=tot_ret_row, column=1).font = Font(bold=True)
+            ws7.cell(row=tot_ret_row, column=9).font = Font(bold=True, color="D4AF37")
+
+        # SECCIÓN 2: PAGOS DE VEPS IMPOSITIVOS
+        if veps:
+            ws7.append([])
+            ws7.append(["PAGOS DE VEPS IMPOSITIVOS Y PREVISIONALES"])
+            ws7.cell(row=ws7.max_row, column=1).font = Font(name="Calibri", size=12, bold=True, color="D4AF37")
+            ws7.append(["Organismo", "N° de VEP", "Concepto / Subconcepto", "Período Fiscal", "Fecha de Pago", "Entidad de Pago", "Monto Pagado ($)"])
+            vep_hdr_row = ws7.max_row
+            for col_idx in range(1, 8):
+                c = ws7.cell(row=vep_hdr_row, column=col_idx)
+                c.fill = dark_fill
+                c.font = header_font
+                c.alignment = Alignment(horizontal="center", vertical="center")
+
+            total_veps = 0.0
+            for v in veps:
+                monto_vep = v.get("monto_pagado", 0.0)
+                total_veps += monto_vep
+                concepto_str = f"{v.get('concepto', '')} {v.get('subconcepto', '')}".strip()
+                ws7.append([
+                    v.get("organismo", "AFIP / ARCA"),
+                    v.get("numero_vep") or "N/D",
+                    concepto_str,
+                    v.get("periodo_fiscal", ""),
+                    v.get("fecha_pago", ""),
+                    v.get("entidad_pago", ""),
+                    monto_vep
+                ])
+            # Total VEPs
+            ws7.append(["TOTAL VEPS PAGADOS:", "", "", "", "", "", total_veps])
+            tot_vep_row = ws7.max_row
+            ws7.cell(row=tot_vep_row, column=1).font = Font(bold=True)
+            ws7.cell(row=tot_vep_row, column=7).font = Font(bold=True, color="D4AF37")
+
     # Ajustar ancho de columnas automáticamente
     for sheet in wb.worksheets:
         for col in sheet.columns:

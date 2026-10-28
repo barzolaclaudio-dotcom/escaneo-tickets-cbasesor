@@ -142,16 +142,20 @@ Registro de lo aprendido y decidido. Actualizar cada vez que aprendamos algo nue
   - Interfaz web interactiva: nuevo botón temático *"Inversiones & Cauciones (IA)"* en color esmeralda bursátil (`#0d2818`), modal `investments-modal` con visor de indicadores de rendimiento (Tasa TNA, Plazo, Intereses y Aranceles desglosados) y eliminación con confirmación.
   - **Integración con Excel:** Nueva pestaña institucional **`Inversiones y Cauciones`** (Hoja 6) en el archivo `Gastos_Mes_Año.xlsx`.
   - Inclusión en sincronización automática y paquete contable mensual.
+- **Módulo de Certificados de Retención y VEPs Impositivos con IA (Etapa 4 - Octubre 2026):**
+  - **ESTADO:** ✅ COMPLETADO E INTEGRADO.
+  - Procesador tributario inteligente (`tax_processor.py`) usando PyMuPDF + Gemini IA.
+  - Soporta certificados de retención (Ganancias RG 830, IVA, Ingresos Brutos / SIRCUPA, Seguridad Social) y comprobantes de pago de VEPs (AFIP / ARCA, Rentas provinciales, Autónomos, Monotributo, Convenio Multilateral).
+  - Extracción automática de:
+    - Agente de retención (Razón Social y CUIT exacto) o entidad/organismo recaudador.
+    - Impuesto retenido, régimen y jurisdicción oficial.
+    - Número de certificado oficial o N° de VEP.
+    - Fecha de emisión o pago, período fiscal (MM/YYYY).
+    - Base imponible, alícuota porcentual (%) e **importe retenido exacto** (crédito fiscal a favor para las DDJJ del contador) o monto abonado de VEPs.
+  - Interfaz web interactiva: botón temático *"Retenciones & VEPs (IA)"* en color ámbar impositivo (`#241708`), modal `taxes-modal` con visualizador de créditos a favor y pagos de VEPs, y control de eliminación.
+  - **Integración con Excel:** Nueva pestaña institucional **`Retenciones y VEPs`** (Hoja 7) en el archivo `Gastos_Mes_Año.xlsx` con totales calculados para que el contador descuente directamente en las declaraciones juradas.
 
 ## Hoja de Ruta Pendiente (Próximas Etapas del Sistema Contable & Financiero Integral)
-
-### 📌 Etapa 4 (Pendiente): Certificados de Retención de Clientes & VEPs Impositivos
-- **Objetivo:** Centralización del crédito fiscal y retenciones para las declaraciones juradas del contador.
-- **Documentos soportados:**
-  - Certificados de retención emitidos por clientes (Retención de Impuesto a las Ganancias, Retención de IVA, Retenciones provinciales de Ingresos Brutos / SIRCUPA).
-  - Comprobantes de pago de VEP (AFIP/ARCA, Convenio Multilateral IIBB de Credicoop/BNA).
-- **Datos a extraer:** CUIT del agente de retención, régimen impositivo, número de certificado, fecha, base imponible, alícuota e importe retenido exacto.
-- **Salida:** Planilla consolidada de `Retenciones_Sufridas` para que el contador descuente directamente de los pagos a cuenta mensuales y anuales.
 
 ### 📌 Etapa 5 (Pendiente): Agente de IA para Asesoramiento Financiero y Consejos de Ahorro 💡
 - **Objetivo:** Auditor inteligente que analiza el 100% del ecosistema financiero del mes (Tickets + Tarjetas + Bancos + Inversiones).
