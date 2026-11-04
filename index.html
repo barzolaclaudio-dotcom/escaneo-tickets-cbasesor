@@ -1774,6 +1774,16 @@
         // INDEXEDDB VAULT (Persistencia Blindada en Celular)
         // ==========================================
         const DB_NAME = 'CBTicketsVault';
+
+        function markMonthAsDeleted(monthKey) {
+            try { localStorage.setItem(`cb_deleted_${monthKey}`, 'true'); } catch(e) {}
+        }
+        function isMonthMarkedDeleted(monthKey) {
+            try { return localStorage.getItem(`cb_deleted_${monthKey}`) === 'true'; } catch(e) { return false; }
+        }
+        function unmarkMonthAsDeleted(monthKey) {
+            try { localStorage.removeItem(`cb_deleted_${monthKey}`); } catch(e) {}
+        }
         const DB_VERSION = 1;
 
         function openVaultDB() {
@@ -1792,6 +1802,8 @@
 
         async function saveMonthToVault(email, monthKey, summaryData, pdfBlob) {
             if (!monthKey || !summaryData) return;
+            const tCount = summaryData.tickets ? summaryData.tickets.length : (summaryData.tickets_count || 0);
+            if (tCount > 0) unmarkMonthAsDeleted(monthKey);
             try {
                 const db = await openVaultDB();
                 if (!db) return;
@@ -1823,6 +1835,7 @@
         }
 
         async function getMonthFromVault(email, monthKey) {
+            if (isMonthMarkedDeleted(monthKey)) return null;
             try {
                 const db = await openVaultDB();
                 if (!db) return null;
@@ -1849,7 +1862,10 @@
                     const req = store.getAll();
                     req.onsuccess = () => {
                         const safeEmail = (email || '').toLowerCase();
-                        const filtered = (req.result || []).filter(item => item.email === safeEmail);
+                        const filtered = (req.result || []).filter(item => {
+                            if (isMonthMarkedDeleted(item.monthKey)) return false;
+                            return item.email === safeEmail;
+                        });
                         resolve(filtered);
                     };
                     req.onerror = () => resolve([]);
@@ -1969,6 +1985,7 @@
             isRestoringToServer = true;
             try {
                 for (const m of cachedMonths) {
+                    if (isMonthMarkedDeleted(m.monthKey)) continue;
                     const tickets = m.expensesData ? (m.expensesData.tickets || []) : [];
                     if (tickets.length > 0) {
                         const fd = new FormData();
@@ -4655,6 +4672,18 @@
             const key = document.getElementById('month-selector').value;
             const email = getUserEmail();
             
+            if (isMonthMarkedDeleted(key)) {
+                applyExpensesToUI({
+                    total_spent: 0,
+                    total_iva: 0,
+                    total_percepcion_iibb: 0,
+                    total_subtotal: 0,
+                    vendor_breakdown: [],
+                    tickets: []
+                });
+                return;
+            }
+            
             // 1. Mostrar de inmediato desde Vault local si existe
             const localData = await getMonthFromVault(email, key);
             if (localData && localData.expensesData) {
@@ -4750,15 +4779,7 @@ Esta acción borrará de forma TOTAL y PERMANENTE:
                 const res = await fetch('/api/delete-month-total', { method: 'POST', body: formData });
                 const data = await res.json();
                 if (data.success) {
-                    try {
-                        const db = await openVaultDB();
-                        if (db) {
-                            const tx = db.transaction('months', 'readwrite');
-                            const store = tx.objectStore('months');
-                            const vaultKey = `${(email || 'default').toLowerCase()}_${monthKey}`;
-                            store.delete(vaultKey);
-                        }
-                    } catch(e) {}
+                    await deleteVaultMonth(monthKey);
                     
                     applyExpensesToUI({
                         total_spent: 0,
@@ -5348,12 +5369,30 @@ Esta acción borrará de forma TOTAL y PERMANENTE:
         }
 
         async function deleteVaultMonth(monthKey) {
+            markMonthAsDeleted(monthKey);
             try {
                 const db = await openVaultDB();
                 if (!db) return;
-                const store = db.transaction('months', 'readwrite').objectStore('months');
-                store.delete(`${(getUserEmail() || 'default').toLowerCase()}_${monthKey}`);
-            } catch (e) {}
+                return new Promise((resolve) => {
+                    const tx = db.transaction('months', 'readwrite');
+                    const store = tx.objectStore('months');
+                    const req = store.openCursor();
+                    req.onsuccess = (e) => {
+                        const cursor = e.target.result;
+                        if (cursor) {
+                            const item = cursor.value;
+                            if (item.monthKey === monthKey || (cursor.key && String(cursor.key).includes(monthKey))) {
+                                cursor.delete();
+                            }
+                            cursor.continue();
+                        }
+                    };
+                    tx.oncomplete = () => resolve(true);
+                    tx.onerror = () => resolve(false);
+                });
+            } catch (e) {
+                console.warn('deleteVaultMonth error:', e);
+            }
         }
 
         async function afterTicketChange(monthKeys, emptied) {

@@ -218,13 +218,20 @@ def delete_file_from_gdrive(filename: str, target_folder_name: str = GDRIVE_FOLD
         return
     try:
         folder_id = get_target_folder_id(service, user_email)
-        if not folder_id:
-            return
-        query = f"name = '{filename}' and '{folder_id}' in parents and trashed = false"
-        results = service.files().list(q=query, fields="files(id)").execute()
-        for f_item in results.get('files', []):
-            service.files().delete(fileId=f_item['id']).execute()
-            logger.info(f"Eliminado de Google Drive: {filename}")
+        if folder_id:
+            query = f"name = '{filename}' and '{folder_id}' in parents and trashed = false"
+            results = service.files().list(q=query, fields="files(id)").execute()
+            for f_item in results.get('files', []):
+                service.files().delete(fileId=f_item['id']).execute()
+                logger.info(f"Eliminado de Google Drive: {filename}")
+
+        main_folder_id = get_or_create_folder(service, target_folder_name)
+        if main_folder_id and main_folder_id != folder_id:
+            query = f"name = '{filename}' and '{main_folder_id}' in parents and trashed = false"
+            results = service.files().list(q=query, fields="files(id)").execute()
+            for f_item in results.get('files', []):
+                service.files().delete(fileId=f_item['id']).execute()
+                logger.info(f"Eliminado de Google Drive (raíz): {filename}")
     except Exception as e:
         logger.error(f"Error eliminando {filename} de Google Drive: {e}")
 
