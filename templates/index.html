@@ -4668,7 +4668,13 @@
             const key = document.getElementById('month-selector').value;
             const email = getUserEmail();
             
-            if (isMonthMarkedDeleted(key)) {
+            // 1. Si no está marcado como borrado, mostrar de inmediato desde Vault local (render instantáneo)
+            if (!isMonthMarkedDeleted(key)) {
+                const localData = await getMonthFromVault(email, key);
+                if (localData && localData.expensesData) {
+                    applyExpensesToUI(localData.expensesData);
+                }
+            } else {
                 applyExpensesToUI({
                     total_spent: 0,
                     total_iva: 0,
@@ -4677,21 +4683,18 @@
                     vendor_breakdown: [],
                     tickets: []
                 });
-                return;
-            }
-            
-            // 1. Mostrar de inmediato desde Vault local si existe
-            const localData = await getMonthFromVault(email, key);
-            if (localData && localData.expensesData) {
-                applyExpensesToUI(localData.expensesData);
             }
 
+            // 2. Consultar SIEMPRE al servidor para obtener la verdad sincronizada entre dispositivos
             const url = email ? `/api/expenses/${key}?user_email=${encodeURIComponent(email)}` : `/api/expenses/${key}`;
             try {
                 const res = await fetch(url);
                 const data = await res.json();
                 
                 if (data && data.tickets && data.tickets.length > 0) {
+                    // Si el servidor tiene tickets (cargados desde cualquier celular o PC),
+                    // quitamos la marca de borrado y mostramos los datos reales actualizados
+                    unmarkMonthAsDeleted(key);
                     applyExpensesToUI(data);
                     saveMonthToVault(email, key, data);
                 } else {
