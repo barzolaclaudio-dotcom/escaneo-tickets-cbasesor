@@ -663,7 +663,7 @@
                         </button>
                         <button onclick="deleteCurrentMonthPDF()" class="py-2 px-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 font-medium rounded-lg border border-rose-500/30 transition flex items-center justify-center gap-1">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                            <span>Resetear mes</span>
+                            <span>Reset total del mes</span>
                         </button>
                     </div>
                 </div>
@@ -675,7 +675,13 @@
                             <svg class="w-5 h-5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                             Control de Gastos & Régimen Impositivo
                         </h3>
+                        <div class="flex items-center gap-2">
                         <span id="expense-month-badge" class="text-[10px] font-semibold text-gold-400 bg-gold-500/10 px-2 py-0.5 rounded border border-gold-500/30">Octubre</span>
+                        <button onclick="deleteCurrentMonthPDF()" class="text-[10px] text-rose-400/80 hover:text-rose-300 hover:bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 transition flex items-center gap-1" title="Eliminar todos los datos y comprobantes de este mes">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            <span>Reset total</span>
+                        </button>
+                    </div>
                     </div>
 
                     <!-- Métricas Principales (Grid de 4: 2x2 en celular, 4 en una fila en tablet/PC) -->
@@ -829,6 +835,10 @@
                         <p id="vd-subtitle" class="text-xs text-cb-muted"></p>
                     </div>
                 </div>
+                <button onclick="deleteAllVendorTickets()" class="px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 shrink-0" title="Eliminar todos los comprobantes y datos de este comercio">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    <span>Eliminar todos</span>
+                </button>
             </div>
             <div id="vd-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
         </div>
@@ -4714,7 +4724,19 @@
 
         async function deleteCurrentMonthPDF() {
             const monthKey = document.getElementById('month-selector').value;
-            if (!confirm('⚠️ ¿Estás seguro de ELIMINAR COMPLETAMENTE el PDF de este mes?')) return;
+            const [y, m] = (monthKey || '').split('_');
+            const monthName = (typeof MONTH_NAMES !== 'undefined' && m) ? MONTH_NAMES[parseInt(m, 10) - 1] : monthKey;
+            
+            const msg = `⚠️ ¿ELIMINAR TODOS LOS DATOS de ${monthName} ${y}?
+
+Esta acción borrará de forma TOTAL y PERMANENTE:
+• El PDF consolidado del mes
+• Todos los tickets, comprobantes y fotos
+• Todos los registros contables y montos (se reinician a $0.00)
+• Documentos financieros asociados
+
+¿Estás completamente seguro de continuar?`;
+            if (!confirm(msg)) return;
             deleteSpecificMonthPDF(monthKey);
         }
 
@@ -4725,7 +4747,7 @@
             if (email) formData.append('user_email', email);
             
             try {
-                const res = await fetch('/api/delete-month-pdf', { method: 'POST', body: formData });
+                const res = await fetch('/api/delete-month-total', { method: 'POST', body: formData });
                 const data = await res.json();
                 if (data.success) {
                     try {
@@ -4737,7 +4759,21 @@
                             store.delete(vaultKey);
                         }
                     } catch(e) {}
-                    fetchStats();
+                    
+                    applyExpensesToUI({
+                        total_spent: 0,
+                        total_iva: 0,
+                        total_percepcion_iibb: 0,
+                        total_subtotal: 0,
+                        vendor_breakdown: [],
+                        tickets: []
+                    });
+                    if (typeof vendorDetailOpen !== 'undefined' && vendorDetailOpen) {
+                        closeVendorDetail();
+                    }
+                    
+                    await fetchStats();
+                    alert('✅ Todos los comprobantes y datos del mes fueron eliminados correctamente.');
                 } else {
                     alert('Error: ' + (data.error || 'No se pudo eliminar'));
                 }
@@ -5382,6 +5418,40 @@
                 if (!data.success) { alert('Error: ' + (data.error || 'No se pudo eliminar')); return; }
                 const emptied = data.remaining === 0 ? [monthKey] : null;
                 await afterTicketChange(emptied ? [] : [monthKey], emptied);
+            } catch (err) {
+                alert('Error de conexión: ' + err.message);
+            }
+        }
+
+        async function deleteAllVendorTickets() {
+            if (!currentVendor) return;
+            const monthKey = document.getElementById('month-selector').value;
+            const items = lastTickets.filter(t => vendorOf(t) === currentVendor);
+            if (items.length === 0) {
+                alert('No hay tickets de este comercio para eliminar.');
+                return;
+            }
+            const totalVendorMoney = items.reduce((s, x) => s + (Number(x.total) || 0), 0);
+            const msg = `⚠️ ¿Eliminar de forma total TODOS los ${items.length} ticket${items.length === 1 ? '' : 's'} de "${currentVendor}" en este mes?\n\nMonto acumulado: ${fmtMoney(totalVendorMoney)}\n\nSe borrarán permanentemente sus datos contables, montos y páginas del PDF consolidado.`;
+            if (!confirm(msg)) return;
+            
+            const email = getUserEmail();
+            const fd = new FormData();
+            fd.append('month', monthKey);
+            fd.append('vendor', currentVendor);
+            if (email) fd.append('user_email', email);
+            
+            try {
+                const res = await fetch('/api/vendor-delete', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (!data.success) {
+                    alert('Error: ' + (data.error || 'No se pudieron eliminar'));
+                    return;
+                }
+                closeVendorDetail();
+                const emptied = data.remaining === 0 ? [monthKey] : null;
+                await afterTicketChange(emptied ? [] : [monthKey], emptied);
+                alert(`✅ Se eliminaron todos los tickets y datos de "${currentVendor}".`);
             } catch (err) {
                 alert('Error de conexión: ' + err.message);
             }

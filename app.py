@@ -1199,9 +1199,16 @@ async def delete_last_ticket(month: str = Form(...), user_email: str = Form(None
         return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
 
 @app.post("/api/delete-month-pdf")
-async def delete_month_pdf(month: str = Form(...), user_email: str = Form(None)):
+@app.post("/api/delete-month-total")
+async def delete_month_total_endpoint(
+    background_tasks: BackgroundTasks,
+    month: str = Form(...),
+    user_email: str = Form(None),
+    delete_all_docs: bool = Form(True)
+):
+    from ticket_manager import delete_entire_month_total
     try:
-        res = delete_entire_month_pdf(month, user_email=user_email)
+        res = delete_entire_month_total(month, user_email=user_email, delete_all_docs=delete_all_docs)
         return JSONResponse(content=res)
     except Exception as e:
         return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
@@ -1246,6 +1253,22 @@ async def ticket_delete(
     from ticket_manager import delete_ticket
     try:
         res = delete_ticket(month, index, user_email)
+        if res.get("success") and res.get("remaining", 0) > 0:
+            background_tasks.add_task(sync_month_to_gdrive, res["month"], PDFS_DIR, DATA_DIR, user_email)
+        return JSONResponse(content=res)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+
+@app.post("/api/vendor-delete")
+async def vendor_delete(
+    background_tasks: BackgroundTasks,
+    month: str = Form(...),
+    vendor: str = Form(...),
+    user_email: str = Form(None)
+):
+    from ticket_manager import delete_vendor_tickets
+    try:
+        res = delete_vendor_tickets(month, vendor, user_email)
         if res.get("success") and res.get("remaining", 0) > 0:
             background_tasks.add_task(sync_month_to_gdrive, res["month"], PDFS_DIR, DATA_DIR, user_email)
         return JSONResponse(content=res)
